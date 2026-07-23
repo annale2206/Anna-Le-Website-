@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>anna_le — threads of becoming</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .hero-sub{
+    font-family:var(--mono); color:var(--sky); font-size:1.15rem;
+    margin:-4px 0 30px;
+  }
+  .abstract{ max-width:70ch; font-size:1.1rem; }
+
+  .work-group{ margin-top:70px; }
+  .work-group .roman{
+    font-family:var(--mono); color:var(--green-dim); font-size:1.05rem;
+    letter-spacing:.06em;
+  }
+  .work-group h2{ margin-top:2px; }
+
+  .featured-video{
+    max-width:800px;
+    margin:40px auto 0;
+  }
+  .featured-video .frame{
+    width:100%;
+    aspect-ratio:16/9;
+    border:2px solid var(--green-dim);
+    box-shadow:6px 6px 0 rgba(0,0,0,.4);
+  }
+  .featured-video .caption{
+    font-family:var(--mono); color:var(--green-dim); font-size:1rem;
+    text-align:center; margin-top:10px;
+  }
+
+  .gallery{
+    display:grid;
+    grid-template-columns:repeat(2, 1fr);
+    gap:34px;
+    margin-top:34px;
+  }
+  .gallery img{
+    width:100%;
+    border:2px solid var(--green-dim);
+    box-shadow:6px 6px 0 rgba(0,0,0,.4);
+  }
+  .gallery .work-meta{ font-family:var(--mono); color:var(--green-dim); font-size:1rem; margin:10px 0 4px; }
+  .gallery h3{ margin:0 0 6px; font-style:italic; }
+
+  @media (max-width:800px){
+    .gallery{ grid-template-columns:1fr; }
+  }
+
+  .paper-cta{
+    margin-top:90px;
+    padding:30px;
+    border:2px dashed var(--green-dim);
+    text-align:center;
+  }
+  .paper-cta p{ margin:0 auto 16px; max-width:50ch; }
+</style>
+</head>
+<body data-petals="6">
+
+<header class="nav">
+  <a class="logo" href="index.html">anna<span>_</span>le</a>
+</header>
+
+<main class="page">
+
+  <div class="eyebrow">
+    <h1>threads of becoming</h1>
+    <span class="path">~/anna/projects/threads-of-becoming</span>
+  </div>
+  <div class="hero-sub">MFA thesis exhibition — Washington State University, 2025</div>
+
+  <p class="abstract">
+    This thesis explores the process of self-reconstruction within the 
+    immigrant experience, examining how cultural displacement challenges notions of identity
+    and belonging. <em>Threads of Becoming</em> includes works that reflect a personal journey
+    of self-discovery and adaptation, but they also extend beyond the personal, gesturing toward
+    a collective process of transformation.
+  </p>
+  
+
+  <div class="featured-video">
+    <iframe class="frame" src="https://www.youtube.com/embed/0KCPgme33Ho"
+            title="Threads of Becoming — exhibition documentation" frameborder="0" allowfullscreen></iframe>
+    <div class="caption">exhibition documentation</div>
+  </div>
+
+  <!-- I. MIND -->
+  <section class="work-group">
+    <div class="roman">I.</div>
+    <h2>Mind: Meditating</h2>
+   
+
+    <div class="gallery">
+      <div>
+        <img src="waves-of-transmission.png" alt="Waves of Transmission, video still">
+        <div class="work-meta">Fig. 1 — video art on TV screen, 2024</div>
+        <h3>Waves of Transmission</h3>
+      </div>
+      <div>
+        <img src="between-stillness-and-bloom.png" alt="Between Stillness and Bloom, video still">
+        <div class="work-meta">Fig. 2 — video art on TV screen, 2024</div>
+        <h3>Between Stillness and Bloom</h3>
+      </div>
+    </div>
+  </section>
+
+  <!-- II. BODY -->
+  <section class="work-group">
+    <div class="roman">II.</div>
+    <h2>Body: Interactive</h2>
+   
+
+    <div class="gallery">
+      <div>
+        <img src="threads-of-becoming.png" alt="Threads of Becoming, installation view">
+        <div class="work-meta">Fig. 3 — sound/visual interactive on multi-projectors, 2024</div>
+        <h3>Threads of Becoming</h3>
+      </div>
+    </div>
+  </section>
+
+  <!-- III. SOUL -->
+  <section class="work-group">
+    <div class="roman">III.</div>
+    <h2>Soul: Becoming</h2>
+   
+
+    <div class="gallery">
+      <div>
+        <img src="unravel.png" alt="Unravel, video still">
+        <div class="work-meta">Fig. 4 — video art on TV screen, 2024</div>
+        <h3>Unravel</h3>
+      </div>
+      <div>
+        <img src="wovensoul.png" alt="WovenSoul, documentation photos">
+        <div class="work-meta">Fig. 5 — video art on TV screen, 2024</div>
+        <h3>WovenSoul</h3>
+      </div>
+    </div>
+  </section>
+
+  <div class="paper-cta">
+    <span class="tag">// the paper</span>
+    <p>
+      The full written thesis
+    </p>
+    <!-- replace with the real path once the PDF is in your project folder -->
+    <a class="btn" href="threads-of-becoming-thesis.pdf" target="_blank">read the full thesis (PDF)</a>
+  </div>
+
+</main>
+
+<footer class="site-footer">© anna_le </footer>
+
+<script src="main.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>anna_le — interactive</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .hero-sub{
+    font-family:var(--mono); color:var(--sky); font-size:1.15rem;
+    margin:-4px 0 30px;
+  }
+
+  .video-grid{
+    display:grid;
+    grid-template-columns:repeat(2, 1fr);
+    gap:34px;
+    margin-top:34px;
+  }
+  .video-grid .frame{
+    width:100%;
+    aspect-ratio:16/9;
+    border:2px solid var(--green-dim);
+    box-shadow:6px 6px 0 rgba(0,0,0,.4);
+  }
+  .video-grid .caption{
+    font-family:var(--mono); color:var(--green-dim); font-size:1rem;
+    margin-top:10px;
+  }
+
+  @media (max-width:800px){
+    .video-grid{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body data-petals="6">
+
+<header class="nav">
+  <a class="logo" href="index.html">anna<span>_</span>le</a>
+</header>
+
+<main class="page">
+
+  <div class="eyebrow">
+    <h1>interactive</h1>
+    <span class="path">~/anna/art-practice/interactive</span>
+  </div>
+  <div class="hero-sub">interactive works — documentation</div>
+
+  <div class="video-grid">
+    <div>
+      <iframe class="frame" src="https://www.youtube.com/embed/LZSsrpJ-nw8"
+              title="interactive work" frameborder="0" allowfullscreen></iframe>
+      <div class="caption">interactive work 01</div>
+    </div>
+    <div>
+      <iframe class="frame" src="https://www.youtube.com/embed/exKIlsMt908"
+              title="interactive work" frameborder="0" allowfullscreen></iframe>
+      <div class="caption">interactive work 02</div>
+    </div>
+    <div>
+      <iframe class="frame" src="https://www.youtube.com/embed/Wu1U-AZxeSI"
+              title="interactive work" frameborder="0" allowfullscreen></iframe>
+      <div class="caption">interactive work 03</div>
+    </div>
+    <div>
+      <iframe class="frame" src="https://www.youtube.com/embed/mcMHSCMEs8U"
+              title="interactive work" frameborder="0" allowfullscreen></iframe>
+      <div class="caption">interactive work 04</div>
+    </div>
+    <div>
+      <iframe class="frame" src="https://www.youtube.com/embed/Aphd7Zwqyho"
+              title="interactive work" frameborder="0" allowfullscreen></iframe>
+      <div class="caption">interactive work 05</div>
+    </div>
+    <div>
+      <iframe class="frame" src="https://www.youtube.com/embed/PosV55c307Q"
+              title="interactive work" frameborder="0" allowfullscreen></iframe>
+      <div class="caption">interactive work 06</div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="site-footer">© anna_le — built from static, thread, and code</footer>
+
+<script src="main.js" defer></script>
+</body>
+</html>

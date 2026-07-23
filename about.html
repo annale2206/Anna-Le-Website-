@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>anna_le — about</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  /* page-specific, minimal overrides for the about page */
+  .about-hero{
+    max-width:56ch;
+    margin:10px 0 70px;
+  }
+  .about-hero p{ font-size:1.15rem; }
+
+  /* no green text on this page — override the shared green accents */
+  .logo{ color:var(--cream); }
+  .ticker{ color:var(--cream); }
+  .eyebrow .path{ color:var(--cream); }
+  .tag{ color:var(--cream); }
+
+  .journey{
+    margin:0 0 80px;
+    position:relative;
+  }
+  .journey svg{ width:100%; height:auto; display:block; overflow:visible; }
+
+  .journey-path{
+    fill:none; stroke:var(--sky); stroke-width:2;
+    stroke-dasharray:6 8;
+    stroke-dashoffset:1000;
+    animation:draw-path 2.2s ease forwards;
+  }
+  @keyframes draw-path{ to{ stroke-dashoffset:0; } }
+
+  .journey-node{ fill:var(--bg); stroke:var(--sky); stroke-width:2; }
+  .journey-node.end{ stroke:var(--pink); }
+  .journey-ring{
+    fill:none; stroke:var(--sky); stroke-width:1; opacity:.5;
+    animation:ring-pulse 2.6s ease-in-out infinite;
+    transform-box:fill-box; transform-origin:center;
+  }
+  .journey-ring.end{ stroke:var(--pink); animation-delay:.3s; }
+  @keyframes ring-pulse{
+    0%{ transform:scale(.7); opacity:.6; }
+    100%{ transform:scale(1.6); opacity:0; }
+  }
+
+  .journey-label{
+    font-family:var(--mono); font-size:15px; fill:var(--cream);
+  }
+
+  .journey-photo{
+    position:absolute;
+    left:50%; top:58%;
+    transform:translate(-50%,-40%);
+    max-width:170px;
+    filter:drop-shadow(0 10px 18px rgba(0,0,0,.5));
+  }
+  .journey-photo img{ width:100%; display:block; }
+
+  .about-body{ max-width:62ch; }
+  .about-body h2{ margin-top:0; }
+  .about-body p{ margin-bottom:20px; }
+
+  @media (max-width:700px){
+    .journey-label{ font-size:12px; }
+    .journey-photo{ max-width:110px; }
+  }
+</style>
+</head>
+<body data-petals="6">
+
+<header class="nav">
+  <a class="logo" href="index.html">anna<span>_</span>le</a>
+</header>
+
+<main class="page">
+
+  <!-- signature element: a minimal flight-path map, Việt Nam → United States -->
+  <section class="journey">
+    <svg viewBox="0 0 900 220">
+      <path class="journey-path" d="M140,150 Q450,20 760,90"/>
+
+      <circle class="journey-ring" cx="140" cy="150" r="10"/>
+      <circle class="journey-node" cx="140" cy="150" r="6"/>
+      <text class="journey-label" x="140" y="185" text-anchor="middle">Việt Nam</text>
+
+      <circle class="journey-ring end" cx="760" cy="90" r="10"/>
+      <circle class="journey-node end" cx="760" cy="90" r="6"/>
+      <text class="journey-label" x="760" y="125" text-anchor="middle">United States</text>
+    </svg>
+
+    <div class="journey-photo">
+      <img src="image2.png" alt="Anna Le, wearable sculpture headpiece">
+    </div>
+  </section>
+
+  <section class="section about-body" id="bio">
+    <h2>hi, I'm Anna</h2>
+    <p>
+      I was born and raised in Vietnam and moved to the United States at eighteen,
+      carrying curiosity and excitement for a new journey. Leaving home alone taught me
+      to embrace uncertainty, reshape myself, and see identity not as something fixed,
+      but as something discovered through exploration.
+      Art became my way of navigating that journey. It allows me to ask questions, to
+      understand myself through making, and to imagine new ways of relating to the world.
+    </p>
+
+    <h2>artist statement</h2>
+    <p>
+      I make worlds to understand how we become who we are.
+      My work explores identity as something in motion; a persona shaped through
+      performance, memory, technology, and the environments around us.
+      I am interested in the many versions of the self we create, wear, and perform,
+      and in how these versions change as we move through physical and digital spaces.
+    </p>
+  </section>
+
+</main>
+
+<footer class="site-footer">© anna_le</footer>
+
+<script src="main.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>anna_le — us</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .hero-sub{
+    font-family:var(--mono); color:var(--sky); font-size:1.15rem;
+    margin:-4px 0 30px;
+  }
+  .statement{ max-width:70ch; font-size:1.1rem; }
+
+  .featured-video{
+    max-width:800px;
+    margin:40px auto 0;
+  }
+  .featured-video .frame{
+    width:100%;
+    aspect-ratio:16/9;
+    border:2px solid var(--green-dim);
+    box-shadow:6px 6px 0 rgba(0,0,0,.4);
+  }
+  .featured-video .caption{
+    font-family:var(--mono); color:var(--green-dim); font-size:1rem;
+    text-align:center; margin-top:10px;
+  }
+
+  .gallery{
+    display:grid;
+    grid-template-columns:repeat(2, 1fr);
+    gap:34px;
+    margin-top:34px;
+  }
+  .gallery img{
+    width:100%;
+    border:2px solid var(--green-dim);
+    box-shadow:6px 6px 0 rgba(0,0,0,.4);
+  }
+  .gallery .work-meta{ font-family:var(--mono); color:var(--green-dim); font-size:1rem; margin:10px 0 4px; }
+  .gallery h3{ margin:0 0 6px; font-style:italic; }
+
+  @media (max-width:800px){
+    .gallery{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body data-petals="6">
+
+<header class="nav">
+  <a class="logo" href="index.html">anna<span>_</span>le</a>
+</header>
+
+<main class="page">
+
+  <div class="eyebrow">
+    <h1>us</h1>
+    <span class="path">~/anna/projects/us</span>
+  </div>
+  <div class="hero-sub">immersive interactive installation</div>
+
+  <p class="statement">
+    <em>Us</em> is an immersive interactive installation combining crochet, embroidery, sound,
+    multi-screens, and projection to create a space where viewers become active participants.
+    The viewers are invited to interact with objects, physical and digital landscape using
+    multiple senses;  seeing, listening, touching, and moving body.
+  </p>
+  <p class="statement">
+    Handcrafted elements, such as crochet and embroidery, form organic, textured sculptures
+    that evoke natural ecosystems, while digital screens and projections expand the environment
+    into a virtual realm. Floating bubbles symbolize the fleeting, ever-changing nature of life,
+    reflecting themes of impermanence and interconnectedness. Through camera sensors, viewers
+    become part of the installation, with their movements triggering digital bubbles to appear
+    and move around.
+  </p>
+  <p class="statement">
+    The goal of <em>Us</em> is to challenge and question where our focus lies when we find
+    ourselves in the blurred space between the physical and digital worlds in today's
+    technology-driven environment. It invites viewers to consider how these blurred lines
+    influence our understanding of reality and our relationship with the world around us, while
+    exploring how technology shapes our interactions, perceptions, imagination, and sense of
+    presence.
+  </p>
+
+  <div class="featured-video">
+    <iframe class="frame" src="https://www.youtube.com/embed/EWaVGIhAPwA"
+            title="Us — installation documentation" frameborder="0" allowfullscreen></iframe>
+    <div class="caption">installation documentation</div>
+  </div>
+
+  <!--
+    Gallery placeholder — add photos of the installation the same way
+    project2.html does, e.g.:
+
+    <div class="gallery">
+      <div>
+        <img src="us-01.png" alt="Us, installation view">
+        <div class="work-meta">2023</div>
+        <h3>Us</h3>
+      </div>
+    </div>
+  -->
+
+</main>
+
+<footer class="site-footer">© anna_le</footer>
+
+<script src="main.js" defer></script>
+</body>
+</html>

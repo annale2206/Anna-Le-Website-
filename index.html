@@ -1,72 +1,401 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Kasey Short</title>
-  <link rel="stylesheet" href="style.css">
-</head>
+<meta charset="UTF-8">
+<title>anna_le — blossom nav tree</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bungee&family=VT323&family=Space+Grotesk:wght@400;500;700&display=swap');
 
+  :root{
+    --bg:#131b24;
+    --bg-dot:#1c2733;
+    --green:#9dff9e;
+    --green-dim:#5fae6a;
+    --pink:#ff3d9a;
+    --purple:#8a5cf6;
+    --purple-deep:#2a1750;
+    --orange:#ff9f4d;
+    --sky:#7fd4ff;
+    --yellow:#ffd23f;
+    --teal:#43e0c9;
+    --bark:#6b4a8a;
+    --cream:#eef4ee;
+    --mono:'VT323', monospace;
+    --display:'Bungee', system-ui;
+    --body:'Space Grotesk', system-ui;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh;
+    background-color:var(--bg);
+    background-image:radial-gradient(var(--bg-dot) 1px, transparent 1px);
+    background-size:14px 14px;
+    color:var(--cream); font-family:var(--body);
+    display:flex; flex-direction:column; align-items:center;
+    padding:50px 20px 80px;
+    position:relative;
+    overflow:hidden;
+  }
+  h1{
+    font-family:var(--display); font-size:1.3rem; color:var(--green);
+    letter-spacing:.03em; margin:0 0 26px; z-index:2;
+  }
+
+  .stage{ position:relative; width:100%; max-width:1180px; z-index:2; }
+  svg{ width:100%; height:auto; display:block; overflow:visible; }
+
+  .branch{
+    fill:none; stroke:var(--bark); stroke-linecap:round;
+    stroke-dasharray:1; stroke-dashoffset:1;
+    animation:grow 1.4s ease forwards;
+  }
+  .b1{ stroke-width:9; }
+  .b2{ stroke-width:6; animation-delay:.55s; }
+  .b3{ stroke-width:3; animation-delay:1.5s; }
+  .b2-tip{ stroke:#8a6bb0; }
+  @keyframes grow{ to{ stroke-dashoffset:0; } }
+
+  .trunk-fill{
+    fill:url(#barkgrad); opacity:0;
+    animation:trunkin .9s ease forwards;
+  }
+  @keyframes trunkin{ to{ opacity:1; } }
+  .grain{
+    fill:none; stroke:#3a2650; stroke-width:2; opacity:0;
+    animation:grainin .8s ease forwards; animation-delay:.5s;
+  }
+  @keyframes grainin{ to{ opacity:.4; } }
+  .ground{
+    opacity:0; animation:grainin .8s ease forwards; animation-delay:.2s;
+  }
+  .grass{
+    fill:none; stroke:var(--green-dim); stroke-width:2.5; stroke-linecap:round;
+    opacity:0; animation:grainin .6s ease forwards; animation-delay:.4s;
+  }
+  .blade{
+    transform-origin:0px 0px;
+    opacity:0;
+    animation:bladein .55s ease forwards;
+  }
+  @keyframes bladein{
+    from{ opacity:0; transform:scaleY(.15); }
+    to{ opacity:.95; transform:scaleY(1); }
+  }
+
+  .leaf{
+    opacity:0;
+    animation:leafin .5s ease forwards;
+    transform-origin:center;
+  }
+  .leaf path{ fill:var(--green-dim); }
+  .leaf line{ stroke:rgba(0,0,0,.3); stroke-width:1; }
+  @keyframes leafin{ from{opacity:0; transform:scale(.3);} to{opacity:.9; transform:scale(1);} }
+
+  .label{
+    font-family:var(--mono); font-size:20px; letter-spacing:.05em;
+    opacity:0; animation:fadein .6s ease forwards;
+  }
+  @keyframes fadein{ to{ opacity:1; } }
+
+  .flower{
+    cursor:pointer; opacity:0;
+    animation:bloom .6s cubic-bezier(.2,1.6,.4,1) forwards;
+    transform-origin:center;
+  }
+  @keyframes bloom{ from{opacity:0; transform:scale(0);} to{opacity:1; transform:scale(1);} }
+  .flower:hover{ filter:brightness(1.3); }
+  .petal{ transition:transform .15s ease; }
+  .flower:hover .petal{ transform:scale(1.12); }
+
+  .petal-fall{
+    position:absolute; top:-20px; font-size:14px;
+    animation:fall linear infinite;
+    z-index:1; opacity:.8;
+  }
+  @keyframes fall{
+    0%{ transform:translateY(0) rotate(0deg); }
+    100%{ transform:translateY(760px) rotate(360deg); }
+  }
+</style>
+</head>
 <body>
 
+<div class="stage">
+  <svg viewBox="0 0 1200 800">
+    <defs>
+      <symbol id="flower" viewBox="-22 -22 44 44">
+        <g class="petal">
+          <ellipse cx="0" cy="-12" rx="7" ry="11" fill="currentColor"/>
+          <ellipse cx="11" cy="-4" rx="7" ry="11" fill="currentColor" transform="rotate(72 11 -4)"/>
+          <ellipse cx="7" cy="10" rx="7" ry="11" fill="currentColor" transform="rotate(144 7 10)"/>
+          <ellipse cx="-7" cy="10" rx="7" ry="11" fill="currentColor" transform="rotate(216 -7 10)"/>
+          <ellipse cx="-11" cy="-4" rx="7" ry="11" fill="currentColor" transform="rotate(288 -11 -4)"/>
+        </g>
+        <circle r="6" fill="#2a1750" stroke="var(--cream)" stroke-width="1"/>
+      </symbol>
+      <linearGradient id="barkgrad" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#3a2650"/>
+        <stop offset="45%" stop-color="#7a5a9e"/>
+        <stop offset="100%" stop-color="#3a2650"/>
+      </linearGradient>
+    </defs>
 
-<img id="custom-cursor" src="mouse.png" alt="">
+    <!-- green field -->
+    <path class="ground" d="M0,800 L0,760 C120,745 260,752 400,748 C520,745 500,760 600,758 C700,760 680,745 800,748 C940,752 1080,745 1200,760 L1200,800 Z" fill="#1e3324"/>
+    <path class="ground" d="M0,800 L0,775 C150,765 300,770 450,768 C540,767 560,772 600,772 C640,772 660,767 750,768 C900,770 1050,765 1200,775 L1200,800 Z" fill="#274430" style="animation-delay:.1s"/>
 
-<video class="floating-video video-three" autoplay muted loop playsinline>
-  <source src="video3.mov" type='video/quicktime; codecs="hvc1"'>
-  <source src="video3.webm" type="video/webm">
-</video>
+    <!-- ground -->
+    <ellipse class="ground" cx="600" cy="789" rx="95" ry="13" fill="#232f28"/>
+    <g id="grassLayer"></g>
 
-  <header>
-    <div class="bubble-title">
-      <h1>Kasey Short</h1>
-      <p>Artist</p>
-    </div>
-  </header>
+    <!-- trunk (tapered, filled, with root flare) -->
+    <path class="trunk-fill" d="M563,785 C568,735 570,700 572,690
+      C574,660 568,635 565,620
+      C562,595 585,565 590,540
+      L610,540
+      C600,565 590,595 595,620
+      C600,650 610,665 618,690
+      C626,715 632,750 637,785
+      C620,790 605,792 600,792
+      C595,792 578,790 563,785 Z"/>
+    <path class="grain" d="M579,772 C582,700 578,650 588,545" pathLength="1"/>
+    <path class="grain" d="M615,772 C610,700 614,650 604,545" pathLength="1"/>
 
-  <nav>
-    <a href="index.html">ABOUT</a>
-    <a href="projects.html">PROJECTS</a>
-    <a href="cv.html">CV</a>
-  </nav>
+    <!-- 5 main branches, fanning up from the fork — tapered (thick base, thinner tip) -->
+    <path class="branch b2" d="M600,520 C540,490 465,465 382.5,437.5" pathLength="1" style="stroke-width:10"/>
+    <path class="branch b2 b2-tip" d="M382.5,437.5 C300,410 210,380 120,340" pathLength="1" style="stroke-width:5; animation-delay:.15s"/>
 
-  <main>
-    </section>
+    <path class="branch b2" d="M600,520 C560,470 515,410 468.75,347.5" pathLength="1" style="stroke-width:10; animation-delay:.65s"/>
+    <path class="branch b2 b2-tip" d="M468.75,347.5 C422.5,285 375,220 330,160" pathLength="1" style="stroke-width:5; animation-delay:.8s"/>
 
-<video class="hero-video" autoplay muted loop playsinline>
-  <source src="introvideo.webm" type="video/webm">
-</video>
+    <path class="branch b2" d="M600,520 C600,470 600,405 600,337.5" pathLength="1" style="stroke-width:10; animation-delay:.75s"/>
+    <path class="branch b2 b2-tip" d="M600,337.5 C600,270 600,200 600,140" pathLength="1" style="stroke-width:5; animation-delay:.9s"/>
 
-  <section class="statement-box">
+    <path class="branch b2" d="M600,520 C640,470 685,410 731.25,347.5" pathLength="1" style="stroke-width:10; animation-delay:.85s"/>
+    <path class="branch b2 b2-tip" d="M731.25,347.5 C777.5,285 825,220 870,160" pathLength="1" style="stroke-width:5; animation-delay:1s"/>
 
-  <div class="bio-title">
-    <h2>ABOUT</h2>
-  </div>
+    <path class="branch b2" d="M600,520 C660,490 735,465 817.5,437.5" pathLength="1" style="stroke-width:10; animation-delay:.95s"/>
+    <path class="branch b2 b2-tip" d="M817.5,437.5 C900,410 990,380 1080,340" pathLength="1" style="stroke-width:5; animation-delay:1.1s"/>
 
-  <div class="bio-text">
-    <p>
-      Kasey Short is an interdisciplinary artist working in sculpture and
-      new media. Kasey's practice intersects art and technology through
-      time-based and interactive mediums relating to installation,
-      architecture, public art and sculptural performance.
+    <!-- PROJECTS sub-branches -->
+    <path class="branch b3" d="M330,160 C300,130 270,105 230,90" pathLength="1" style="animation-delay:1.6s"/>
+    <path class="branch b3" d="M330,160 C320,120 310,75 300,40" pathLength="1" style="animation-delay:1.7s"/>
+    <path class="branch b3" d="M330,160 C350,115 370,65 390,30" pathLength="1" style="animation-delay:1.8s"/>
+    <path class="branch b3" d="M330,160 C390,130 430,100 450,80" pathLength="1" style="animation-delay:1.9s"/>
 
-      Kasey received his MFA from the University of Pennsylvania and a
-      BFA from Texas State University.
+    <!-- RESEARCH sub-branches -->
+    <path class="branch b3" d="M600,140 C560,110 530,80 500,60" pathLength="1" style="animation-delay:1.6s"/>
+    <path class="branch b3" d="M600,140 C580,100 570,55 560,20" pathLength="1" style="animation-delay:1.7s"/>
 
-      Kasey has exhibited works Nationally and Internationally 
-      and attended residencies such as the Vermont Studio Center,
-      ACRE Projects in Chicago, IL, AVL-Mundo Foundation in Rotterdam, NL
-      The Texas Biennial and many other national and international space
+    <!-- ART PRACTICE sub-branches -->
+    <path class="branch b3" d="M870,160 C810,130 770,100 750,80" pathLength="1" style="animation-delay:1.6s"/>
+    <path class="branch b3" d="M870,160 C850,115 830,65 810,30" pathLength="1" style="animation-delay:1.7s"/>
+    <path class="branch b3" d="M870,160 C880,120 890,75 900,40" pathLength="1" style="animation-delay:1.8s"/>
 
-       Kasey is a recipient of the Charles Addams Memorial Prize,
-       the Vermont Studio Center Scholarship Award, the Dallas Chamber
-       of Commerce Emerging Artist Award and a grant recipient from the Houston Art Alliance
-    </p>
-  </div>
+    <!-- leaves scattered along the branches -->
+    <g transform="translate(440,440) rotate(-35) scale(1.1)"><g class="leaf" style="animation-delay:2s">
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--green-dim)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+    </g></g>
+    <g transform="translate(395,395) rotate(20) scale(.85)"><g class="leaf" style="animation-delay:2.03s">
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="#7bc98a"/><line x1="0" y1="-12" x2="0" y2="12"/>
+    </g></g>
+    <g transform="translate(380,330) rotate(18) scale(1)"><g class="leaf" style="animation-delay:2.05s">
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--green-dim)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+    </g></g>
+    <g transform="translate(600,320) rotate(2) scale(1.15)"><g class="leaf" style="animation-delay:2.1s">
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--green-dim)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+    </g></g>
+    <g transform="translate(555,375) rotate(-22) scale(.85)"><g class="leaf" style="animation-delay:2.12s">
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="#7bc98a"/><line x1="0" y1="-12" x2="0" y2="12"/>
+    </g></g>
+    <g transform="translate(760,330) rotate(-18) scale(1)"><g class="leaf" style="animation-delay:2.15s">
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--green-dim)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+    </g></g>
+    <g transform="translate(700,300) rotate(12) scale(.9)"><g class="leaf" style="animation-delay:2.18s">
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="#7bc98a"/><line x1="0" y1="-12" x2="0" y2="12"/>
+    </g></g>
+    <g transform="translate(760,440) rotate(32) scale(1.1)"><g class="leaf" style="animation-delay:2.2s">
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--green-dim)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+    </g></g>
+    <g transform="translate(825,395) rotate(-20) scale(.85)"><g class="leaf" style="animation-delay:2.22s">
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="#7bc98a"/><line x1="0" y1="-12" x2="0" y2="12"/>
+    </g></g>
+    <!-- big leaves -->
+    <g transform="translate(500,405) rotate(-25) scale(2.1)"><g class="leaf" style="animation-delay:2.3s">
+      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="var(--green)"/><line x1="0" y1="-12" x2="0" y2="13"/>
+    </g></g>
+    <g transform="translate(430,375) rotate(15) scale(1.8)"><g class="leaf" style="animation-delay:2.33s">
+      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="#7bc98a"/><line x1="0" y1="-12" x2="0" y2="13"/>
+    </g></g>
+    <g transform="translate(650,270) rotate(20) scale(2)"><g class="leaf" style="animation-delay:2.39s">
+      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="var(--green)"/><line x1="0" y1="-12" x2="0" y2="13"/>
+    </g></g>
+    <g transform="translate(700,375) rotate(-18) scale(1.8)"><g class="leaf" style="animation-delay:2.42s">
+      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="#7bc98a"/><line x1="0" y1="-12" x2="0" y2="13"/>
+    </g></g>
+    <g transform="translate(600,235) rotate(4) scale(2.2)"><g class="leaf" style="animation-delay:2.45s">
+      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="var(--green)"/><line x1="0" y1="-12" x2="0" y2="13"/>
+    </g></g>
+    <g transform="translate(750,220) rotate(30) scale(1.6)"><g class="leaf" style="animation-delay:2.53s">
+      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="var(--green)"/><line x1="0" y1="-12" x2="0" y2="13"/>
+    </g></g>
+    <g transform="translate(840,215) rotate(-15) scale(1.4)"><g class="leaf" style="animation-delay:2.56s">
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="#7bc98a"/><line x1="0" y1="-12" x2="0" y2="12"/>
+    </g></g>
+    <g transform="translate(470,300) rotate(35) scale(1.5)"><g class="leaf" style="animation-delay:2.59s">
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--green-dim)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+    </g></g>
+    <g transform="translate(735,300) rotate(-35) scale(1.5)"><g class="leaf" style="animation-delay:2.62s">
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--green-dim)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+    </g></g>
+    <g transform="translate(340,420) rotate(10) scale(1.3)"><g class="leaf" style="animation-delay:2.65s">
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="#7bc98a"/><line x1="0" y1="-12" x2="0" y2="12"/>
+    </g></g>
+    <g transform="translate(860,420) rotate(-10) scale(1.3)"><g class="leaf" style="animation-delay:2.68s">
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="#7bc98a"/><line x1="0" y1="-12" x2="0" y2="12"/>
+    </g></g>
 
-</section>
-  ...
+    <!-- more leaves, spread around the sides / bottom of the crown -->
+    <g transform="translate(160,380) rotate(-25) scale(1.4)"><g class="leaf" style="animation-delay:2.71s">
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--green)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+    </g></g>
+    <g transform="translate(230,420) rotate(20) scale(1.2)"><g class="leaf" style="animation-delay:2.74s">
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="#7bc98a"/><line x1="0" y1="-12" x2="0" y2="12"/>
+    </g></g>
+    <g transform="translate(1010,380) rotate(25) scale(1.4)"><g class="leaf" style="animation-delay:2.77s">
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--green)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+    </g></g>
+    <g transform="translate(945,420) rotate(-20) scale(1.2)"><g class="leaf" style="animation-delay:2.8s">
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="#7bc98a"/><line x1="0" y1="-12" x2="0" y2="12"/>
+    </g></g>
+    <g transform="translate(560,470) rotate(-8) scale(1.3)"><g class="leaf" style="animation-delay:2.83s">
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--green-dim)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+    </g></g>
+    <g transform="translate(645,470) rotate(8) scale(1.3)"><g class="leaf" style="animation-delay:2.86s">
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--green-dim)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+    </g></g>
 
- </main>
+    <!-- main branch labels -->
+    <text class="label" x="30" y="365" fill="var(--orange)" style="animation-delay:2.3s">about</text>
+    <text class="label" x="235" y="185" fill="var(--pink)" style="animation-delay:2.35s">projects</text>
+    <text class="label" x="500" y="175" fill="var(--sky)" style="animation-delay:2.4s">research</text>
+    <text class="label" x="880" y="185" fill="var(--green)" style="animation-delay:2.45s">art practice</text>
+    <text class="label" x="1080" y="365" fill="var(--purple)" style="animation-delay:2.5s">cv</text>
 
-  <script src="main.js"></script>
+    <!-- MAIN flowers -->
+    <use class="flower" href="#flower" x="94" y="314" width="52" height="52" style="color:var(--orange); animation-delay:2.6s"
+         data-href="about.html"/>
+    <use class="flower" href="#flower" x="304" y="134" width="52" height="52" style="color:var(--pink); animation-delay:2.65s"/>
+    <use class="flower" href="#flower" x="574" y="114" width="52" height="52" style="color:var(--sky); animation-delay:2.7s"/>
+    <use class="flower" href="#flower" x="844" y="134" width="52" height="52" style="color:var(--green); animation-delay:2.75s"/>
+    <use class="flower" href="#flower" x="1054" y="314" width="52" height="52" style="color:var(--purple); animation-delay:2.8s"
+         data-href="cv.html"/>
+
+    <!-- PROJECTS sub-flowers -->
+    <use class="flower" href="#flower" x="213" y="73" width="32" height="32" style="color:var(--yellow); animation-delay:2.95s"
+         data-href="project1.html"/>
+    <use class="flower" href="#flower" x="283" y="23" width="32" height="32" style="color:var(--orange); animation-delay:3.05s"
+         data-href="project2.html"/>
+    <use class="flower" href="#flower" x="373" y="13" width="32" height="32" style="color:var(--teal); animation-delay:3.15s"
+         data-href="project3.html"/>
+    <use class="flower" href="#flower" x="433" y="63" width="32" height="32" style="color:var(--sky); animation-delay:3.25s"
+         data-href="project4.html"/>
+
+    <!-- PROJECTS sub-flower labels -->
+    <text class="label" x="229" y="115" fill="var(--yellow)" text-anchor="middle"
+          transform="rotate(-6 229 115)" style="font-size:17px; animation-delay:3.4s">manifesto fiction</text>
+    <text class="label" x="299" y="-2" fill="var(--orange)" text-anchor="middle"
+          transform="rotate(4 299 -2)" style="font-size:17px; animation-delay:3.45s">Threads of Becoming</text>
+    <text class="label" x="405" y="-14" fill="var(--teal)" text-anchor="middle"
+          transform="rotate(-3 405 -14)" style="font-size:17px; animation-delay:3.5s">Us</text>
+    <text class="label" x="449" y="105" fill="var(--sky)" text-anchor="middle"
+          transform="rotate(5 449 105)" style="font-size:17px; animation-delay:3.55s">Color of Love</text>
+
+    <!-- RESEARCH sub-flowers -->
+    <use class="flower" href="#flower" x="483" y="43" width="32" height="32" style="color:var(--purple); animation-delay:2.95s"
+         data-href="persona.html"/>
+    <use class="flower" href="#flower" x="543" y="3" width="32" height="32" style="color:var(--teal); animation-delay:3.05s"
+         data-href="cindy-sherman.html"/>
+
+    <text class="label" x="499" y="80" fill="var(--purple)" text-anchor="middle"
+          transform="rotate(-5 499 80)" style="font-size:17px; animation-delay:3.6s">persona</text>
+    <text class="label" x="559" y="-15" fill="var(--teal)" text-anchor="middle"
+          transform="rotate(4 559 -15)" style="font-size:17px; animation-delay:3.65s">Cindy Sherman</text>
+
+    <!-- ART PRACTICE sub-flowers -->
+    <use class="flower" href="#flower" x="733" y="63" width="32" height="32" style="color:var(--pink); animation-delay:2.95s"
+         data-href="interactive.html"/>
+    <use class="flower" href="#flower" x="793" y="13" width="32" height="32" style="color:var(--yellow); animation-delay:3.05s"
+         data-href="sculptures.html"/>
+    <use class="flower" href="#flower" x="883" y="23" width="32" height="32" style="color:var(--teal); animation-delay:3.15s"
+         data-href="collaboration.html"/>
+
+    <text class="label" x="749" y="100" fill="var(--pink)" text-anchor="middle"
+          transform="rotate(5 749 100)" style="font-size:17px; animation-delay:3.7s">interactive</text>
+    <text class="label" x="809" y="-12" fill="var(--yellow)" text-anchor="middle"
+          transform="rotate(-4 809 -12)" style="font-size:17px; animation-delay:3.75s">sculptures</text>
+    <text class="label" x="899" y="0" fill="var(--teal)" text-anchor="middle"
+          transform="rotate(6 899 0)" style="font-size:17px; animation-delay:3.8s">collaboration</text>
+
+    <!-- figure, seated on the grass beside the trunk -->
+    <image href="image1.png" x="700" y="440" width="260" height="360" preserveAspectRatio="xMidYMax meet"/>
+
+  </svg>
+</div>
+
+<h1 style="margin-top:20px;">anna<span style="color:var(--pink)">_</span>le</h1>
+
+<script>
+  document.querySelectorAll('.flower').forEach(node=>{
+    node.addEventListener('click', ()=>{
+      const href = node.dataset.href;
+      if(href) window.location.href = href;
+    });
+  });
+
+  const petalColors = ['#ff3d9a','#ff9f4d','#7fd4ff','#ffd23f','#9dff9e','#8a5cf6'];
+  const body = document.body;
+  for(let i=0;i<14;i++){
+    const p = document.createElement('div');
+    p.className = 'petal-fall';
+    p.textContent = '❁';
+    p.style.left = Math.random()*100 + 'vw';
+    p.style.color = petalColors[i % petalColors.length];
+    p.style.animationDuration = (8 + Math.random()*8) + 's';
+    p.style.animationDelay = (Math.random()*10) + 's';
+    p.style.fontSize = (10 + Math.random()*10) + 'px';
+    body.appendChild(p);
+  }
+
+  // generate a dense, naturalistic field of tapered grass blades
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const grassLayer = document.getElementById('grassLayer');
+  const bladeColors = ['#5fae6a','#7bc98a','#3f7a52','#8fd99c'];
+  const bladeCount = 130;
+  for(let i=0;i<bladeCount;i++){
+    const x = 5 + Math.random()*1190;
+    const y = 756 + Math.sin(x/140) * 9 + (Math.random()*10 - 5);
+    const h = 20 + Math.random()*30;
+    const rot = -16 + Math.random()*32;
+    const bow = 2 + Math.random()*4;
+    const color = bladeColors[Math.floor(Math.random()*bladeColors.length)];
+    const delay = Math.random()*1.2;
+
+    const g = document.createElementNS(svgNS,'g');
+    g.setAttribute('transform', `translate(${x.toFixed(1)},${y.toFixed(1)}) rotate(${rot.toFixed(1)})`);
+
+    const path = document.createElementNS(svgNS,'path');
+    const d = `M0,0 C${-bow},${-h*0.4} ${-bow*0.6},${-h*0.75} 0,${-h} `
+             + `C${bow*0.6},${-h*0.75} ${bow},${-h*0.4} 0,0 Z`;
+    path.setAttribute('d', d);
+    path.setAttribute('class','blade');
+    path.setAttribute('fill', color);
+    path.style.animationDelay = delay.toFixed(2)+'s';
+
+    g.appendChild(path);
+    grassLayer.appendChild(g);
+  }
+</script>
+
 </body>
 </html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>anna_le — sculptures</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .hero-sub{
+    font-family:var(--mono); color:var(--sky); font-size:1.15rem;
+    margin:-4px 0 30px;
+  }
+
+  .gallery{
+    display:grid;
+    grid-template-columns:repeat(2, 1fr);
+    gap:34px;
+    margin-top:34px;
+  }
+  .gallery img{
+    width:100%;
+    border:2px solid var(--green-dim);
+    box-shadow:6px 6px 0 rgba(0,0,0,.4);
+  }
+  .gallery .caption{
+    font-family:var(--mono); color:var(--green-dim); font-size:1rem;
+    margin-top:10px;
+  }
+  .gallery .full-width{ grid-column:1 / -1; }
+
+  @media (max-width:800px){
+    .gallery{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body data-petals="6">
+
+<header class="nav">
+  <a class="logo" href="index.html">anna<span>_</span>le</a>
+</header>
+
+<main class="page">
+
+  <div class="eyebrow">
+    <h1>sculptures</h1>
+    <span class="path">~/anna/art-practice/sculptures</span>
+  </div>
+  <div class="hero-sub">crochet-mapping projection &amp; studio work</div>
+
+  <div class="gallery">
+    <div>
+      <img src="the-sun.png" alt="The Sun, crochet-mapping projection">
+      <div class="caption">The Sun — crochet-mapping projection</div>
+    </div>
+    <div>
+      <img src="city.png" alt="City, mapping-projection">
+      <div class="caption">City — mapping-projection</div>
+    </div>
+    <div class="full-width">
+      <img src="sculpture-studio-01.png" alt="Studio view, crochet and embroidery sculptural forms">
+      <div class="caption">studio view</div>
+    </div>
+    <div>
+      <img src="sculpture-studio-02.png" alt="Studio view, crochet sculptural seating and forms">
+      <div class="caption">studio view</div>
+    </div>
+    <div>
+      <img src="sculpture-studio-03.png" alt="Studio view, crochet and mixed-media installation corner">
+      <div class="caption">studio view</div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="site-footer">© anna_le — built from static, thread, and code</footer>
+
+<script src="main.js" defer></script>
+</body>
+</html>

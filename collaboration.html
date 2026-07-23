@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>anna_le — collaboration</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .hero-sub{
+    font-family:var(--mono); color:var(--sky); font-size:1.15rem;
+    margin:-4px 0 30px;
+  }
+
+  .video-grid{
+    display:grid;
+    grid-template-columns:repeat(2, 1fr);
+    gap:34px;
+    margin-top:34px;
+  }
+  .video-grid .frame{
+    width:100%;
+    aspect-ratio:16/9;
+    border:2px solid var(--green-dim);
+    box-shadow:6px 6px 0 rgba(0,0,0,.4);
+  }
+  .video-grid .caption{
+    font-family:var(--mono); color:var(--green-dim); font-size:1rem;
+    margin-top:10px;
+  }
+
+  @media (max-width:800px){
+    .video-grid{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body data-petals="6">
+
+<header class="nav">
+  <a class="logo" href="index.html">anna<span>_</span>le</a>
+</header>
+
+<main class="page">
+
+  <div class="eyebrow">
+    <h1>collaboration</h1>
+    <span class="path">~/anna/art-practice/collaboration</span>
+  </div>
+  <div class="hero-sub">collaborative works — documentation</div>
+
+  <div class="video-grid">
+    <div>
+      <iframe class="frame" src="https://www.youtube.com/embed/1ntDb_3LuYQ"
+              title="collaboration work" frameborder="0" allowfullscreen></iframe>
+      <div class="caption">collaboration 01</div>
+    </div>
+    <div>
+      <iframe class="frame" src="https://www.youtube.com/embed/1kR8D-ZBBVw"
+              title="collaboration work" frameborder="0" allowfullscreen></iframe>
+      <div class="caption">collaboration 02</div>
+    </div>
+    <div>
+      <iframe class="frame" src="https://www.youtube.com/embed/-DLq6uD_WSc"
+              title="collaboration work" frameborder="0" allowfullscreen></iframe>
+      <div class="caption">collaboration 03</div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="site-footer">© anna_le — built from static, thread, and code</footer>
+
+<script src="main.js" defer></script>
+</body>
+</html>

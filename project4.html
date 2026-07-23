@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>anna_le — color of love</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .hero-sub{
+    font-family:var(--mono); color:var(--sky); font-size:1.15rem;
+    margin:-4px 0 30px;
+  }
+  .statement{ max-width:70ch; font-size:1.1rem; }
+
+  .featured-video{
+    max-width:800px;
+    margin:40px auto 0;
+  }
+  .featured-video .frame{
+    width:100%;
+    aspect-ratio:16/9;
+    border:2px solid var(--green-dim);
+    box-shadow:6px 6px 0 rgba(0,0,0,.4);
+  }
+  .featured-video .caption{
+    font-family:var(--mono); color:var(--green-dim); font-size:1rem;
+    text-align:center; margin-top:10px;
+  }
+
+  .draft-note{
+    max-width:70ch;
+    margin:34px 0;
+    padding:14px 18px;
+    border:1px dashed var(--pink);
+    font-family:var(--mono);
+    font-size:.95rem;
+    color:var(--pink);
+  }
+
+  .gallery{
+    display:grid;
+    grid-template-columns:repeat(2, 1fr);
+    gap:34px;
+    margin-top:34px;
+  }
+  .gallery img{
+    width:100%;
+    border:2px solid var(--green-dim);
+    box-shadow:6px 6px 0 rgba(0,0,0,.4);
+  }
+  .gallery .work-meta{ font-family:var(--mono); color:var(--green-dim); font-size:1rem; margin:10px 0 4px; }
+  .gallery h3{ margin:0 0 6px; font-style:italic; }
+
+  @media (max-width:800px){
+    .gallery{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body data-petals="6">
+
+<header class="nav">
+  <a class="logo" href="index.html">anna<span>_</span>le</a>
+</header>
+
+<main class="page">
+
+  <div class="eyebrow">
+    <h1>color of love</h1>
+    <span class="path">~/anna/projects/color-of-love</span>
+  </div>
+  <div class="hero-sub">living motion painting on crochet, immersive environment</div>
+
+  <p class="statement">
+    <em>Color of Love</em> layers a living motion painting over a hand-crocheted painting,
+    staging two acts of mark-making inside a single immersive room. 
+  </p>
+  
+
+  <div class="featured-video">
+    <iframe class="frame" src="https://www.youtube.com/embed/qjKJbUj_kRg"
+            title="Color of Love — installation documentation" frameborder="0" allowfullscreen></iframe>
+    <div class="caption">installation documentation</div>
+  </div>
+
+  <!--
+    Gallery placeholder — add photos of the installation the same way
+    project2.html does, e.g.:
+
+    <div class="gallery">
+      <div>
+        <img src="color-of-love-01.png" alt="Color of Love, installation view">
+        <div class="work-meta">2022</div>
+        <h3>Color of Love</h3>
+      </div>
+    </div>
+  -->
+
+</main>
+
+<footer class="site-footer">© anna_le </footer>
+
+<script src="main.js" defer></script>
+</body>
+</html>

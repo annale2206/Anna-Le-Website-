@@ -1,184 +1,339 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>CV — Kasey Short</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>anna_le — cv</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .cv-header{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    flex-wrap:wrap; gap:16px;
+    margin-bottom:50px;
+    padding-bottom:24px;
+    border-bottom:2px dashed rgba(255,255,255,.15);
+  }
+  .cv-header h1{ margin:0 0 6px; font-size:1.7rem; }
+  .cv-header .role{ font-family:var(--mono); color:var(--sky); font-size:1.15rem; }
+  .cv-header a.email{
+    font-family:var(--mono); color:var(--pink); text-decoration:none;
+    cursor:none;
+  }
+  @media (max-width:820px){ .cv-header a.email{ cursor:auto; } }
+
+  .cv-list{ margin-top:18px; }
+  .cv-entry{
+    display:grid; grid-template-columns:120px 1fr; gap:22px;
+    padding:12px 0; border-bottom:1px dashed rgba(255,255,255,.1);
+  }
+  .cv-entry:first-child{ border-top:1px dashed rgba(255,255,255,.1); }
+  .cv-year{ font-family:var(--mono); color:var(--green-dim); font-size:1.05rem; white-space:nowrap; }
+  .cv-title{ color:var(--cream); }
+  .cv-venue{ font-family:var(--mono); color:var(--green-dim); font-size:.95rem; }
+  .cv-roles{ margin-top:6px; }
+  .cv-roles div{ font-family:var(--mono); font-size:.9rem; color:var(--green-dim); }
+  .cv-roles span{ color:var(--cream); }
+
+  .interests-line{ font-size:1.1rem; color:#dfeee1; max-width:70ch; }
+  .skills-line{ font-size:1.05rem; color:#dfeee1; max-width:75ch; line-height:1.7; }
+
+  @media (max-width:600px){
+    .cv-entry{ grid-template-columns:1fr; gap:4px; }
+  }
+</style>
 </head>
+<body data-petals="6">
 
-<body>
-  <img id="custom-cursor" src="mouse.png" alt="">
-
-<header class="site-header">
-  <h1>Kasey Short</h1>
-  <p>Artist</p>
+<header class="nav">
+  <a class="logo" href="index.html">anna<span>_</span>le</a>
 </header>
 
-<nav class="nav-bar">
-  <a href="index.html">ABOUT</a>
-  <a href="projects.html">PROJECTS</a>
-  <a href="cv.html">CV</a>
-</nav>
+<main class="page">
 
-<main class="cv-page">
-
-  <section class="cv-header">
-    <h2>Curriculum Vitae</h2>
-    <p>Dallas, TX · www.kaseyshort.com</p>
-  </section>
-
-  <section class="cv-section">
-    <h3>Education</h3>
-    <p><span>2015</span> M.F.A. Sculpture, University of Pennsylvania</p>
-    <p><span>2015</span> Time-Based and Interactive Media Certificate, University of Pennsylvania</p>
-    <p><span>2010</span> B.F.A. Studio Art, Texas State University</p>
-  </section>
-
-    <section class="cv-section">
-    <h3>Awards & Residencies</h3>
-    <p><span>2021</span> Dallas Chamber of Commerce Grant</p>
-    <p><span>2020</span> 500X Gallery Membership, Dallas, TX</p>
-    <p><span>2019</span> Support for Individual Artist and Creativity Grant, Houston Art Alliance</p>
-    <p><span>2018</span> AVL-Mundo Foundation, Rotterdam, Netherlands</p>
-    <p><span>2016</span> ACRE Projects Solo Exhibition Recipient Achievement, ACRE, Chicago, IL </p>
-    <p><span>2015</span> Charles Addams Fellow, University of Pennsylvania, Stuart Weitzman School of
-Design</p>
-    <p><span>2015</span> Social Impact Grant Recipient, Penn Praxis, Philadelphia, PA</p>
-    <p><span>2015</span> ACRE Residency Program, Steuben, WI</p>
-    <p><span>2014</span> Full-Fellowship Award, Vermont Studio Center</p>
-    <p><span>2013</span> Fellowship Award, East Austin Studio Tour</p>
-     <p><span>2012</span> Vermont Studio Center, Johnson, VT</p>
-      <p><span>2010</span> Jurors Merit Award, Texas State University, Juror: Nancy Whiteneck</p>
-  </section>
-
-  <section class="cv-section">
-  <h3>Installations & Exhibitions</h3>
-
-  <p><span>2025</span> Collaboration with eXMe Lab, New College of Interdisciplinary Arts and Sciences, Arizona State University, Tempe, AZ</p>
-  <p><span>2025</span> Take Me to the River, Lilliana Bloch Gallery, Dallas, TX</p>
-  <p><span>2024</span> Con-Struction, Site 131, Dallas, TX, with Alicia Eggert and Jeffrey Lee, curated by Joan Davidow and John Pomara</p>
-  <p><span>2023</span> The Tuna, the Hillbilly, the Whale, and the Subterranean, Dallas Contemporary Museum, Dallas, TX</p>
-  <p><span>2023</span> 519 Heyser Dr. Art Talk, with John Pomara and Eric Shaw</p>
-  <p><span>2021</span> Solo Exhibition, 500X Gallery, Dallas, TX</p>
-  <p><span>2021</span> Noise, Basketshop Gallery, Cincinnati, OH (Performance / Workshop)</p>
-  <p><span>2021</span> This is My Drawing, This is My Home, Fort Worth Community Art Center, Fort Worth, TX (Solo)</p>
-  <p><span>2020</span> Digestion Machine, 500X Gallery, Dallas, TX (Solo)</p>
-  <p><span>2020</span> Dallas Artwalk, 500X Gallery, Dallas, TX (Public Art)</p>
-  <p><span>2019</span> Monuments and Melodies, 516 Fabrication St., Dallas, TX (Solo)</p>
-  <p><span>2019</span> Member's Exhibition, 500X Gallery, Dallas, TX</p>
-  <p><span>2019</span> Ghosts and Trojans, Fancy Fancy Gallery, Austin, TX (Solo)</p>
-  <p><span>2019</span> Member's Exhibition, The MAC, Dallas, TX</p>
-  <p><span>2019</span> Sustainable Lifeguard Chair Chicken Coop, Art League Houston, Houston, TX</p>
-  <p><span>2019</span> Bodymobile, Flatland Gallery, Houston, TX (Photo / Video / Sculpture Installation)</p>
-  <p><span>2019</span> Sustainable Lifeguard Chair Chicken Coop, Houston, TX (Public Art)</p>
-  <p><span>2019</span> Untitled, Octavia Art Gallery, Houston, TX (Two-Person Exhibition)</p>
-  <p><span>2018</span> Back to the Future, Art Rotterdam Fair, Rotterdam, Netherlands, with Joep Van Lieshout and Carlijn Kingma, curated by Susanne Boersma</p>
-  <p><span>2018</span> Red Light Green Light, Blue Orange Contemporary, Houston, TX (Solo)</p>
-  <p><span>2017</span> Group Exhibition, ACRE Projects Gallery Space, Chicago, IL</p>
-  <p><span>2015</span> No Meat in Team, ICEBOX Exhibition Space, Philadelphia, PA</p>
-  <p><span>2015</span> Terra Terre a Terre / Van Nature, Hangar Art Center, Brussels, Belgium, curated by Agata Jastrzabek</p>
-  <p><span>2015</span> Heads Will Roll, Physical Lab Project Space, University of Pennsylvania, Philadelphia, PA</p>
-  <p><span>2015</span> A Frankford Gateway Prototype, North Kensington, Philadelphia, PA (Public Art)</p>
-  <p><span>2014</span> Untitled, Pennsylvania Academy of Fine Arts (PAFA), Philadelphia, PA</p>
-  <p><span>2014</span> Bath House, Fox Gallery, University of Pennsylvania, Philadelphia, PA</p>
-  <p><span>2014</span> Five Plus Hearts, Big Medium, Austin, TX (Solo)</p>
-  <p><span>2014</span> The Center Welcomes You, Firehouse Studios, Johnson, VT</p>
-  <p><span>2013</span> Texas Biennial, Blue Star Contemporary, San Antonio, TX, curated by Virginia Rutledge</p>
-  <p><span>2013</span> Painting Show, University of Pennsylvania, Philadelphia, PA</p>
-  <p><span>2013</span> Member's Exhibition, The MAC, Dallas, TX</p>
-  <p><span>2013</span> Jungle Boogie, Four Seasons Hotel Christmas Show, Austin, TX</p>
-  <p><span>2012</span> East Austin Studio Tour, Austin, TX</p>
-  <p><span>2012</span> Red Dot, Women & Their Work Gallery, Austin, TX</p>
-  <p><span>2012</span> Abstraction Show, ABB Gallery, Austin, TX</p>
-  <p><span>2012</span> AIBA Show, Austin, TX</p>
-  <p><span>2012</span> New Art Nuevo Biennial, UTSA Gallery, San Antonio, TX, curated by Kate Bonansinga</p>
-  <p><span>2012</span> Austin 5x7 Exhibition, Arthouse, Austin, TX</p>
-  <p><span>2012</span> The W Hotel Penthouse Group Show, Austin, TX</p>
-  <p><span>2011</span> Jomar Visions Gallery, Houston, TX</p>
-  <p><span>2011</span> Group Exhibition with McKay Otto and Jonathan Allen, Scott + Cooner Gallery, Austin, TX</p>
-  <p><span>2010</span> 5x7 Exhibition, Arthouse, Austin, TX</p>
-  <p><span>2010</span> Grand Opening, Sodatooth Contemporary, San Marcos, TX</p>
-  <p><span>2010</span> New Art! Art Nuevo Biennial, UTSA Gallery, San Antonio, TX, jurors: Malaquias Montoya and Valerie Cassel Oliver</p>
-</section>
-<section class="cv-section">
-  <h3>Selected Press & Publications</h3>
-  <p><span>2025</span> RAW – Research, Art, Writing Program, Bass School of Arts, Humanities, and Technology, The University of Texas at Dallas, Richardson, TX</p>
-  <p><span>2024</span> College Report 2024, Alumni Edition, Texas State University School of Art and Design</p>
-  <p><span>2024</span> Con-Struction, Site 131 Gallery, Essay by Courtenay Smith</p>
-  <p><span>2024</span> Glasstire Top 5, Dallas, TX</p>
-  <p><span>2024</span> Dallas Morning News, Arts & Entertainment – Visual Arts, by Kellen Bulger</p>
-  <p><span>2023</span> Patron Magazine, Art, Culture & Design – DC Empty is Full</p>
-  <p><span>2023</span> Kunspakte Art, AVL – Mundo Foundation, Rotterdam, Netherlands</p>
-  <p><span>2019</span> Glasstire, Blue Orange Contemporary, Houston, TX</p>
-  <p><span>2013</span> Texas Biennial Publication, Issue #13, San Antonio, TX</p>
-</section>
-
-
-<section class="cv-section">
-  <h3>Lectures, Workshops & Screenings</h3>
-  <p><span>2025</span> The Artificial Toolbox, RAW – Research, Art, Writing Program, University of Texas at Dallas, Richardson, TX</p>
-  <p><span>2024</span> Sentinel, Lecture, Site 131 Gallery, Dallas, TX</p>
-  <p><span>2023</span> Film Screenings, Dallas Contemporary, Dallas, TX</p>
-  <p><span>2021</span> The Nomanaut, Fort Worth Community Art Center, Fort Worth, TX</p>
-  <p><span>2021</span> Community Artist Lecture Series, Amon Carter Museum of American Art, Fort Worth, TX</p>
-</section>
-
-
-<section class="cv-section">
-  <h3>Professional Experience</h3>
-  <p><span>2024</span> Project Manager / Engineer, PGP Pro Services, Dallas, TX</p>
-  <p><span>2021</span> Resident Artist, Amon Carter Museum of American Art, Fort Worth, TX</p>
-  <p><span>2020</span> Interim Director, Octavia Art Gallery, Houston, TX</p>
-  <p><span>2018</span> Media and Lab Coordinator, University of Pennsylvania, Philadelphia, PA</p>
-  <p><span>2016</span> Exhibitions Designer, Penn Praxis, University of Pennsylvania, Philadelphia, PA</p>
-  <p><span>2014</span> Fabrication Director / Collaborative Coordinator, Social Impact Project, University of Pennsylvania, Philadelphia, PA</p>
-  <p><span>2014</span> Fabrication & Installation Assistant, University of Pennsylvania, Philadelphia, PA</p>
-</section>
-
-<section class="cv-section">
-    <h3>Teaching Experience</h3>
-    <p><span>2023</span> University of North Texas, New Media Area, Denton, TX</p>
-    <p><span>2018</span> University of North Texas, Foundations Program, Denton, TX</p>
-    <p><span>2022</span> Texas Woman's University, Drawing Foundation, Denton, TX</p>
-    <p><span>2018</span> Collin College, College of Fine Arts/Interactive Design, Plano, TX</p>
-    <p><span>2015</span> University of Pennsylvania, School of Design, Philadelphia, PA</p>
-    <p><span>2014</span> University of Pennsylvania, School of Design, Philadelphia, PA</p>
-    <p><span>2013</span> University of Pennsylvania, School of Design, Philadelphia, PA</p>
-    
-
-
-<div class="tools-marquee">
-  <div class="tools-track">
-    <span>TouchDesigner</span>
-    <span>Blender</span>
-    <span>Rhino</span>
-    <span>Unity</span>
-    <span>Arduino</span>
-    <span>Photoshop</span>
-    <span>Premiere Pro</span>
-    <span>After Effects</span>
-    <span>CNC Fabrication</span>
-    <span>Welding</span>
-    <span>Projection Mapping</span>
-    <span>Stable Diffusion</span>
-    <span>Runway</span>
-
-    <span>TouchDesigner</span>
-    <span>Blender</span>
-    <span>Rhino</span>
-    <span>Unity</span>
-    <span>Arduino</span>
-    <span>Photoshop</span>
-    <span>Premiere Pro</span>
-    <span>After Effects</span>
-    <span>CNC Fabrication</span>
-    <span>Welding</span>
-    <span>Projection Mapping</span>
-    <span>Stable Diffusion</span>
-    <span>Runway</span>
+  <div class="eyebrow">
+    <h1 style="font-size:1.5rem;">cv</h1>
+    <span class="path">~/anna/cv</span>
   </div>
-</div>
+
+  <div class="cv-header">
+    <div>
+      <h1>Duyên (Anna) Lê</h1>
+      <div class="role">PhD Student, Fine Arts — School of Art, Texas Tech University</div>
+    </div>
+    <a class="email" href="mailto:duyele@ttu.edu">duyele@ttu.edu</a>
+  </div>
+
+  <!-- research interests -->
+  <section class="section" id="research-interests">
+    <span class="tag">// research interests</span>
+    <h2>research interests</h2>
+    <p class="interests-line">
+      Artificial Intelligence and Human-Computer Interaction (HCI), Digital Identity, Persona
+      Studies, Performance, Embodiment, Interactive Installation, Media Theory, Social Media
+      Studies, and Contemporary Art.
+    </p>
+  </section>
+
+  <!-- education -->
+  <section class="section" id="education">
+    <span class="tag">// education</span>
+    <h2>education</h2>
+    <div class="cv-list">
+      <div class="cv-entry">
+        <div class="cv-year">2025 – 2030<br><span style="opacity:.6;">(expected)</span></div>
+        <div>
+          <div class="cv-title">Ph.D. in Fine Arts (Art Track)</div>
+          <div class="cv-venue">Texas Tech University, Lubbock, TX</div>
+        </div>
+      </div>
+      <div class="cv-entry">
+        <div class="cv-year">2022 – 2025</div>
+        <div>
+          <div class="cv-title">Master of Fine Arts (MFA), Interdisciplinary Studio Arts</div>
+          <div class="cv-venue">Washington State University, Pullman, WA</div>
+        </div>
+      </div>
+      <div class="cv-entry">
+        <div class="cv-year">2019 – 2022</div>
+        <div>
+          <div class="cv-title">Bachelor of Fine Arts (BFA), New Media Art</div>
+          <div class="cv-venue">University of North Texas, Denton, TX</div>
+        </div>
+      </div>
+      <div class="cv-entry">
+        <div class="cv-year">2015 – 2019</div>
+        <div>
+          <div class="cv-title">Associate of Arts (AA), Liberal Arts</div>
+          <div class="cv-venue">Dallas College Brookhaven Campus, Dallas, TX</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- fellowships, scholarships & awards -->
+  <section class="section" id="awards">
+    <span class="tag">// fellowships, scholarships &amp; awards</span>
+    <h2>fellowships, scholarships &amp; awards</h2>
+    <div class="cv-list">
+            <div class="cv-entry">
+        <div class="cv-year">2026 – 2027</div>
+        <div class="cv-title">TTU G Griffin Regents Art Scholarship , Texas Tech University</div>
+      </div>
+      <div class="cv-entry">
+        <div class="cv-year">2025 – 2026</div>
+        <div class="cv-title">School of Art Recruitment Scholarship, Texas Tech University</div>
+      </div>
+      <div class="cv-entry">
+        <div class="cv-year">2024</div>
+        <div class="cv-title">Claude Norine Nelson Endowed Graduate Fellowship in the Visual Arts, Washington State University</div>
+      </div>
+      <div class="cv-entry">
+        <div class="cv-year">2023</div>
+        <div class="cv-title">Claude Norine Nelson Endowed Graduate Fellowship in the Visual Arts, Washington State University</div>
+      </div>
+      <div class="cv-entry">
+        <div class="cv-year">2021 – 2022</div>
+        <div class="cv-title">CVAD Continuing Scholarship, University of North Texas</div>
+      </div>
+      <div class="cv-entry">
+        <div class="cv-year">2019 – 2021</div>
+        <div class="cv-title">Transfer Scholarship I, University of North Texas</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- solo exhibitions -->
+  <section class="section" id="solo-exhibitions">
+    <span class="tag">// solo exhibitions</span>
+    <h2>solo exhibitions</h2>
+    <div class="cv-list">
+      <div class="cv-entry">
+        <div class="cv-year">2025</div>
+        <div><div class="cv-title">Threads of Becoming</div><div class="cv-venue">Jordan Schnitzer Museum of Art, Pullman, WA</div></div>
+      </div>
+      <div class="cv-entry">
+        <div class="cv-year">2023</div>
+        <div><div class="cv-title">Us</div><div class="cv-venue">Gallery II, Pullman, WA</div></div>
+      </div>
+      <div class="cv-entry">
+        <div class="cv-year">2023</div>
+        <div><div class="cv-title">Dream Land</div><div class="cv-venue">CUB Gallery, Pullman, WA</div></div>
+      </div>
+      <div class="cv-entry">
+        <div class="cv-year">2022</div>
+        <div><div class="cv-title">Color of Love</div><div class="cv-venue">The Cave, Denton, TX</div></div>
+      </div>
+      <div class="cv-entry">
+        <div class="cv-year">2021</div>
+        <div><div class="cv-title">Dreaming</div><div class="cv-venue">Paul Voertman Gallery, Denton, TX</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- selected group exhibitions -->
+  <section class="section" id="group-exhibitions">
+    <span class="tag">// selected group exhibitions</span>
+    <h2>selected group exhibitions</h2>
+    <div class="cv-list">
+      <div class="cv-entry">
+        <div class="cv-year">2025</div>
+        <div><div class="cv-title">Where Do I Belong</div><div class="cv-venue">Locker Gallery, Pullman, WA</div></div>
+      </div>
+      <div class="cv-entry">
+        <div class="cv-year">2023</div>
+        <div><div class="cv-title">Hard Landing</div><div class="cv-venue">Gallery III, Pullman, WA</div></div>
+      </div>
+      <div class="cv-entry">
+        <div class="cv-year">2023</div>
+        <div><div class="cv-title">Embrace Equity</div><div class="cv-venue">Gallery III, Pullman, WA</div></div>
+      </div>
+      <div class="cv-entry">
+        <div class="cv-year">2023</div>
+        <div><div class="cv-title">WSU MFA Group Exhibition</div><div class="cv-venue">Aux-Lox Gallery, Pullman, WA</div></div>
+      </div>
+      <div class="cv-entry">
+        <div class="cv-year">2022</div>
+        <div><div class="cv-title">Motus Moralis</div><div class="cv-venue">CVAD Courtyard, Denton, TX</div></div>
+      </div>
+      <div class="cv-entry">
+        <div class="cv-year">2022</div>
+        <div><div class="cv-title">Rubbish Rodeo</div><div class="cv-venue">Golden Boy Coffee Co., Denton, TX</div></div>
+      </div>
+      <div class="cv-entry">
+        <div class="cv-year">2021</div>
+        <div><div class="cv-title">Hypothetical Entities</div><div class="cv-venue">Golden Boy Coffee Co., Denton, TX</div></div>
+      </div>
+      <div class="cv-entry">
+        <div class="cv-year">2021</div>
+        <div><div class="cv-title">Cryptic Triptych</div><div class="cv-venue">New Media Alcove, Denton, TX</div></div>
+      </div>
+      <div class="cv-entry">
+        <div class="cv-year">2021</div>
+        <div><div class="cv-title">Susurration</div><div class="cv-venue">Union Art Gallery, Denton, TX</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- collaborative projects -->
+  <section class="section" id="collaborations">
+    <span class="tag">// collaborative projects</span>
+    <h2>collaborative projects</h2>
+    <div class="cv-list">
+      <div class="cv-entry">
+        <div class="cv-year">2024</div>
+        <div>
+          <div class="cv-title">If This Drum Could Talk</div>
+          <div class="cv-venue">Elson S. Floyd Cultural Center, Pullman, WA</div>
+          <div class="cv-roles">
+            <div>Visual Artist: <span>Anna Le</span></div>
+            <div>Music: <span>Doc. D</span></div>
+            <div>Collaborators: <span>Squeak Meisel, Reza Safavi</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="cv-entry">
+        <div class="cv-year">2024</div>
+        <div>
+          <div class="cv-title">Sonic Bloom</div>
+          <div class="cv-venue">Locker Gallery, Pullman, WA</div>
+          <div class="cv-roles">
+            <div>Interactive Visuals: <span>Anna Le</span></div>
+            <div>Sound: <span>Kate Uhm</span></div>
+            <div>Performance: <span>Camille Comer</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="cv-entry">
+        <div class="cv-year">2022</div>
+        <div>
+          <div class="cv-title">Color Influences</div>
+          <div class="cv-venue">Paul Voertman Gallery, Denton, TX</div>
+          <div class="cv-roles">
+            <div>Video: <span>Anna Le</span></div>
+            <div>Fashion: <span>La'Jasha Champion</span></div>
+            <div>Music: <span>Jonathan Snead</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="cv-entry">
+        <div class="cv-year">2021</div>
+        <div>
+          <div class="cv-title">Lumia Musica</div>
+          <div class="cv-venue">Merrill Ellis Intermedia Theater, Denton, TX</div>
+          <div class="cv-roles">
+            <div>Interactive Visuals: <span>Anna Le</span></div>
+            <div>Music: <span>Jonathan Snead</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- academic positions -->
+  <section class="section" id="academic-positions">
+    <span class="tag">// academic positions</span>
+    <h2>academic positions</h2>
+
+    <div class="cv-list">
+      <div class="cv-entry">
+        <div class="cv-year">2025 – present</div>
+        <div>
+          <div class="cv-title">Teaching Assistant</div>
+          <div class="cv-venue">Texas Tech University, School of Art</div>
+          <div class="cv-roles">
+            <div>Global Art and Visual Culture <span>(Fall 2025)</span></div>
+            <div>2D Animation <span>(Fall 2025)</span></div>
+            <div>Technology in the Arts <span>(Spring 2026)</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="cv-entry">
+        <div class="cv-year">Spring 2026</div>
+        <div>
+          <div class="cv-title">Computer Lab Assistant</div>
+          <div class="cv-venue">Texas Tech University, School of Art</div>
+        </div>
+      </div>
+      <div class="cv-entry">
+        <div class="cv-year">2023 – 2025</div>
+        <div>
+          <div class="cv-title">Teaching Assistant</div>
+          <div class="cv-venue">Washington State University, Department of Fine Arts</div>
+          <div class="cv-roles">
+            <div>2D Design <span>(Fall 2023, Spring 2024, Fall 2024, Spring 2025)</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="cv-entry">
+        <div class="cv-year">2023 – 2025</div>
+        <div>
+          <div class="cv-title">Media Lab Assistant</div>
+          <div class="cv-venue">Washington State University, Department of Fine Arts</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- invited workshops & lectures -->
+  <section class="section" id="workshops">
+    <span class="tag">// invited workshops &amp; lectures</span>
+    <h2>invited workshops &amp; lectures</h2>
+    <div class="cv-list">
+      <div class="cv-entry">
+        <div class="cv-year">2025</div>
+        <div><div class="cv-title">Interactive Art Workshop</div><div class="cv-venue">ART 555, Washington State University</div></div>
+      </div>
+      <div class="cv-entry">
+        <div class="cv-year">2024</div>
+        <div><div class="cv-title">Performance Art Lecture</div><div class="cv-venue">Washington State University</div></div>
+      </div>
+    </div>
+  </section>
+
+  
 </main>
 
-  <script src="main.js"></script>
+<footer class="site-footer">© anna_le</footer>
+
+<script src="main.js" defer></script>
 </body>
 </html>
