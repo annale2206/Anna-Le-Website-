@@ -119,42 +119,9 @@
   }
 
   /* ---- mobile only: desktop is untouched above 700px.
-     The tree still shows (scaled to fit, centered), and a simple
-     plain-text list is added underneath for easy reading/tapping. ---- */
-  .mobile-list{ display:none; }
-
+     Just center the tree in the viewport instead of it sitting at top. ---- */
   @media (max-width:700px){
-    .mobile-list{
-      display:block;
-      width:100%;
-      max-width:420px;
-      margin:30px auto 0;
-    }
-    .mobile-list .ml-title{
-      font-family:var(--mono); color:var(--green-dim);
-      font-size:1rem; margin-bottom:10px; text-align:center;
-    }
-    .mobile-list .ml-row{ margin-bottom:4px; }
-    .mobile-list .ml-row > a{
-      display:block;
-      padding:14px 16px;
-      font-family:var(--display); font-size:1rem;
-      text-decoration:none;
-      color:var(--cream);
-      background:var(--bg-dot);
-      border-left:4px solid var(--ml-color, var(--green));
-    }
-    .mobile-list .ml-subs{
-      display:flex; flex-wrap:wrap; gap:8px;
-      padding:8px 4px 14px 20px;
-    }
-    .mobile-list .ml-subs a{
-      font-family:var(--mono); font-size:.9rem;
-      color:var(--ml-color, var(--green));
-      text-decoration:none;
-      padding:5px 9px;
-      border:1px solid var(--ml-color, var(--green));
-    }
+    body{ justify-content:center; min-height:100vh; }
   }
 </style>
 </head>
@@ -381,45 +348,6 @@
     <image href="image1.png" x="700" y="440" width="260" height="360" preserveAspectRatio="xMidYMax meet"/>
 
   </svg>
-</div>
-
-<div class="mobile-list">
-  <div class="ml-title">// or tap to navigate</div>
-
-  <div class="ml-row" style="--ml-color:var(--orange)">
-    <a href="about.html">about</a>
-  </div>
-
-  <div class="ml-row" style="--ml-color:var(--pink)">
-    <a href="project2.html">projects</a>
-    <div class="ml-subs">
-      <a href="https://manifestofiction2026.netlify.app/">manifesto fiction</a>
-      <a href="project2.html">Threads of Becoming</a>
-      <a href="project3.html">Us</a>
-      <a href="project4.html">Color of Love</a>
-    </div>
-  </div>
-
-  <div class="ml-row" style="--ml-color:var(--sky)">
-    <a href="persona.html">research</a>
-    <div class="ml-subs">
-      <a href="persona.html">persona</a>
-      <a href="cindy-sherman.html">Cindy Sherman</a>
-    </div>
-  </div>
-
-  <div class="ml-row" style="--ml-color:var(--green)">
-    <a href="interactive.html">art practice</a>
-    <div class="ml-subs">
-      <a href="interactive.html">interactive</a>
-      <a href="sculptures.html">sculptures</a>
-      <a href="collaboration.html">collaboration</a>
-    </div>
-  </div>
-
-  <div class="ml-row" style="--ml-color:var(--purple)">
-    <a href="cv.html">cv</a>
-  </div>
 </div>
 
 <h1 style="margin-top:20px;">anna<span style="color:var(--pink)">_</span>le</h1>
