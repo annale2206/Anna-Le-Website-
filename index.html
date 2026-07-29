@@ -242,10 +242,16 @@
     animation: bloom .6s cubic-bezier(.2,1.6,.4,1) forwards;
   }
   body.season-winter .flower{
-    animation-play-state:paused;
     color:#f4faff !important;
   }
-  body.season-winter .leaf{
+  /* the actual "frozen" pause only applies once .freeze-ready is added
+     (well after every entrance animation has had time to finish) —
+     never paired with .season-winter alone, so a flower/leaf can
+     never get paused before it's had a chance to become visible */
+  body.season-winter.freeze-ready .flower{
+    animation-play-state:paused;
+  }
+  body.season-winter.freeze-ready .leaf{
     animation-play-state:paused;
   }
   body.season-winter .pollen{ display:none; }
@@ -715,6 +721,13 @@
     refreshSeason();
     updateSeasonClock();
   }, 1000);
+
+  // the latest flower/leaf entrance animation-delay in the markup is
+  // under 4s — waiting 5s guarantees every one of them has finished
+  // blooming in before winter is ever allowed to pause anything
+  setTimeout(()=>{
+    document.body.classList.add('freeze-ready');
+  }, 5000);
 
   // ---- alive flowers: lean gently toward the cursor, and drift pollen ----
   (function initAliveFlowers(){
