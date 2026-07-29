@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>anna_le — 3d persona</title>
+<link rel="stylesheet" href="style.css">
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+<style>
+  .hero-sub{
+    font-family:var(--mono); color:var(--sky); font-size:1.15rem;
+    margin:-4px 0 30px;
+  }
+
+  .runway{
+    display:grid;
+    grid-template-columns:repeat(2, 1fr);
+    gap:70px;
+    margin-top:40px;
+  }
+
+  /* ---- model standing on the pedestal image ---- */
+  .pedestal-stage{
+    position:relative;
+    height:900px;
+  }
+  .pedestal-stage .pedestal-img{
+    position:absolute;
+    bottom:0; left:50%;
+    transform:translateX(-50%);
+    width:55%;
+    max-width:330px;
+    z-index:1;
+    filter:drop-shadow(0 10px 14px rgba(0,0,0,.5));
+  }
+  .pedestal-stage model-viewer{
+    position:absolute;
+    inset:0 0 190px 0;
+    width:100%;
+    height:calc(100% - 190px);
+    display:block;
+    background:transparent;
+    z-index:2;
+    animation:bob 4.5s ease-in-out infinite;
+  }
+  @keyframes bob{
+    0%,100%{ transform:translateY(0); }
+    50%{ transform:translateY(-8px); }
+  }
+
+  .look .caption{
+    text-align:center;
+    font-family:var(--mono); color:var(--green-dim); font-size:1rem;
+    margin-top:14px;
+  }
+
+  @media (max-width:800px){
+    .runway{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body data-petals="6">
+
+<header class="nav">
+  <a class="logo" href="index.html">anna<span>_</span>le</a>
+</header>
+
+<main class="page">
+
+  <div class="eyebrow">
+    <h1>3d persona</h1>
+    <span class="path">~/anna/projects/3d-persona</span>
+  </div>
+  <div class="hero-sub">a fashion show of 3D models</div>
+
+  <p class="statement" style="max-width:70ch; font-size:1.1rem;">
+  
+  </p>
+
+  <div class="runway">
+    <div class="look">
+      <div class="pedestal-stage">
+        <img class="pedestal-img" src="box.png" alt="">
+        <!-- Replace "model1.glb" with the real filename once it's in the project folder -->
+        <model-viewer
+          src="model1.glb"
+          alt="3D persona look 01"
+          camera-controls
+          auto-rotate
+          auto-rotate-delay="0"
+          rotation-per-second="18deg"
+          shadow-intensity="0"
+          exposure="1">
+        </model-viewer>
+      </div>
+      <div class="caption">look 01</div>
+    </div>
+
+    <div class="look">
+      <div class="pedestal-stage">
+        <img class="pedestal-img" src="box.png" alt="">
+        <model-viewer
+          src="model2.glb"
+          alt="3D persona look 02"
+          camera-controls
+          auto-rotate
+          auto-rotate-delay="0"
+          rotation-per-second="18deg"
+          shadow-intensity="0"
+          exposure="1">
+        </model-viewer>
+      </div>
+      <div class="caption">look 02</div>
+    </div>
+
+    <!--
+      Add more looks here as you export more models — copy one whole
+      ".look" block above, swap the src="modelN.glb" and the caption text.
+    -->
+  </div>
+
+</main>
+
+<footer class="site-footer">© anna_le — built from static, thread, and code</footer>
+
+<script src="main.js" defer></script>
+</body>
+</html>
