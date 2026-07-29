@@ -10,9 +10,9 @@
   :root{
     --bg:#131b24;
     --bg-dot:#1c2733;
-    --green:#2a732b;
+    --green:#9dff9e;
     --green-dim:#5fae6a;
-    --pink:#e1207d;
+    --pink:#ff3d9a;
     --purple:#8a5cf6;
     --purple-deep:#2a1750;
     --orange:#ff9f4d;
@@ -243,11 +243,10 @@
   }
   body.season-winter .flower{
     animation-play-state:paused;
-    filter:grayscale(1) brightness(3.4) contrast(.85) drop-shadow(0 0 4px rgba(210,235,255,.6));
+    color:#f4faff !important;
   }
   body.season-winter .leaf{
     animation-play-state:paused;
-    filter:saturate(.35) brightness(1.15) drop-shadow(0 0 3px rgba(210,235,255,.55));
   }
   body.season-winter .pollen{ display:none; }
 </style>
@@ -426,13 +425,13 @@
     </g></g>
 
     <!-- MAIN flowers — size reflects how much each branch holds -->
-    <use class="flower" href="#flower" x="36" y="366" width="28" height="28" style="color:var(--orange); animation-delay:2.6s"
-         data-href="about.html"/>
-    <use class="flower" href="#flower" x="236" y="126" width="68" height="68" style="color:var(--pink); animation-delay:2.65s"/>
-    <use class="flower" href="#flower" x="578" y="118" width="44" height="44" style="color:var(--sky); animation-delay:2.7s"/>
-    <use class="flower" href="#flower" x="902" y="132" width="56" height="56" style="color:var(--green); animation-delay:2.75s"/>
-    <use class="flower" href="#flower" x="1136" y="366" width="28" height="28" style="color:var(--purple); animation-delay:2.8s"
-         data-href="cv.html"/>
+    <g class="flower-wrap"><use class="flower" href="#flower" x="36" y="366" width="28" height="28" style="color:var(--orange); animation-delay:2.6s"
+         data-href="about.html"/></g>
+    <g class="flower-wrap"><use class="flower" href="#flower" x="236" y="126" width="68" height="68" style="color:var(--pink); animation-delay:2.65s"/></g>
+    <g class="flower-wrap"><use class="flower" href="#flower" x="578" y="118" width="44" height="44" style="color:var(--sky); animation-delay:2.7s"/></g>
+    <g class="flower-wrap"><use class="flower" href="#flower" x="902" y="132" width="56" height="56" style="color:var(--green); animation-delay:2.75s"/></g>
+    <g class="flower-wrap"><use class="flower" href="#flower" x="1136" y="366" width="28" height="28" style="color:var(--purple); animation-delay:2.8s"
+         data-href="cv.html"/></g>
 
     <!-- main branch labels (drawn after the flowers so text is never covered) -->
     <text class="label" x="50" y="430" fill="var(--orange)" text-anchor="middle" style="animation-delay:2.3s">about</text>
@@ -442,16 +441,16 @@
     <text class="label" x="1150" y="430" fill="var(--purple)" text-anchor="middle" style="animation-delay:2.5s">cv</text>
 
     <!-- PROJECTS sub-flowers -->
-    <use class="flower" href="#flower" x="153" y="73" width="32" height="32" style="color:var(--yellow); animation-delay:2.95s"
-         data-href="project1.html"/>
-    <use class="flower" href="#flower" x="223" y="23" width="32" height="32" style="color:var(--orange); animation-delay:3.05s"
-         data-href="project2.html"/>
-    <use class="flower" href="#flower" x="313" y="13" width="32" height="32" style="color:var(--teal); animation-delay:3.15s"
-         data-href="project3.html"/>
-    <use class="flower" href="#flower" x="373" y="63" width="32" height="32" style="color:var(--sky); animation-delay:3.25s"
-         data-href="project4.html"/>
-    <use class="flower" href="#flower" x="74" y="94" width="32" height="32" style="color:var(--purple); animation-delay:3.3s"
-         data-href="3d-persona.html"/>
+    <g class="flower-wrap"><use class="flower" href="#flower" x="153" y="73" width="32" height="32" style="color:var(--yellow); animation-delay:2.95s"
+         data-href="project1.html"/></g>
+    <g class="flower-wrap"><use class="flower" href="#flower" x="223" y="23" width="32" height="32" style="color:var(--orange); animation-delay:3.05s"
+         data-href="project2.html"/></g>
+    <g class="flower-wrap"><use class="flower" href="#flower" x="313" y="13" width="32" height="32" style="color:var(--teal); animation-delay:3.15s"
+         data-href="project3.html"/></g>
+    <g class="flower-wrap"><use class="flower" href="#flower" x="373" y="63" width="32" height="32" style="color:var(--sky); animation-delay:3.25s"
+         data-href="project4.html"/></g>
+    <g class="flower-wrap"><use class="flower" href="#flower" x="74" y="94" width="32" height="32" style="color:var(--purple); animation-delay:3.3s"
+         data-href="3d-persona.html"/></g>
 
     <!-- PROJECTS sub-flower labels -->
     <text class="label" x="169" y="115" fill="var(--yellow)" text-anchor="middle"
@@ -466,10 +465,10 @@
           transform="rotate(-6 50 140)" style="font-size:17px; animation-delay:3.6s">3d persona</text>
 
     <!-- RESEARCH sub-flowers -->
-    <use class="flower" href="#flower" x="483" y="43" width="32" height="32" style="color:var(--purple); animation-delay:2.95s"
-         data-href="persona.html"/>
-    <use class="flower" href="#flower" x="543" y="3" width="32" height="32" style="color:var(--teal); animation-delay:3.05s"
-         data-href="cindy-sherman.html"/>
+    <g class="flower-wrap"><use class="flower" href="#flower" x="483" y="43" width="32" height="32" style="color:var(--purple); animation-delay:2.95s"
+         data-href="persona.html"/></g>
+    <g class="flower-wrap"><use class="flower" href="#flower" x="543" y="3" width="32" height="32" style="color:var(--teal); animation-delay:3.05s"
+         data-href="cindy-sherman.html"/></g>
 
     <text class="label" x="499" y="80" fill="var(--purple)" text-anchor="middle"
           transform="rotate(-5 499 80)" style="font-size:17px; animation-delay:3.6s">persona</text>
@@ -477,12 +476,12 @@
           transform="rotate(4 559 -15)" style="font-size:17px; animation-delay:3.65s">Cindy Sherman</text>
 
     <!-- ART PRACTICE sub-flowers -->
-    <use class="flower" href="#flower" x="793" y="63" width="32" height="32" style="color:var(--pink); animation-delay:2.95s"
-         data-href="interactive.html"/>
-    <use class="flower" href="#flower" x="853" y="13" width="32" height="32" style="color:var(--yellow); animation-delay:3.05s"
-         data-href="sculptures.html"/>
-    <use class="flower" href="#flower" x="943" y="23" width="32" height="32" style="color:var(--teal); animation-delay:3.15s"
-         data-href="collaboration.html"/>
+    <g class="flower-wrap"><use class="flower" href="#flower" x="793" y="63" width="32" height="32" style="color:var(--pink); animation-delay:2.95s"
+         data-href="interactive.html"/></g>
+    <g class="flower-wrap"><use class="flower" href="#flower" x="853" y="13" width="32" height="32" style="color:var(--yellow); animation-delay:3.05s"
+         data-href="sculptures.html"/></g>
+    <g class="flower-wrap"><use class="flower" href="#flower" x="943" y="23" width="32" height="32" style="color:var(--teal); animation-delay:3.15s"
+         data-href="collaboration.html"/></g>
 
     <text class="label" x="809" y="100" fill="var(--pink)" text-anchor="middle"
           transform="rotate(5 809 100)" style="font-size:17px; animation-delay:3.7s">interactive</text>
