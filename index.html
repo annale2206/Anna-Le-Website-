@@ -24,6 +24,13 @@
     --mono:'VT323', monospace;
     --display:'Bungee', system-ui;
     --body:'Space Grotesk', system-ui;
+
+    /* seasonal slots — swapped by JS every hour, spring shown as default */
+    --leaf-1:#5fae6a;
+    --leaf-2:#7bc98a;
+    --leaf-3:#9dff9e;
+    --field-1:#1e3324;
+    --field-2:#274430;
   }
   *{box-sizing:border-box;}
   body{
@@ -41,6 +48,24 @@
     font-family:var(--display); font-size:1.3rem; color:var(--green);
     letter-spacing:.03em; margin:0 0 26px; z-index:2;
   }
+
+  .season-clock{
+    font-family:var(--mono); font-size:1.05rem; color:var(--green-dim);
+    letter-spacing:.03em; margin:0 0 14px; z-index:2;
+    text-align:center;
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+  }
+  .season-clock .season-name{ color:var(--green); text-transform:capitalize; }
+
+  .season-dial{ width:90px; height:90px; }
+  .season-dial .wedge{ opacity:.55; transition:opacity .3s ease; }
+  .season-dial .wedge.active{ opacity:1; }
+  .season-dial .hand{
+    stroke:var(--cream); stroke-width:2.5; stroke-linecap:round;
+    transform-origin:45px 45px;
+  }
+  .season-dial .hub{ fill:var(--cream); }
+  .season-dial .rim{ fill:none; stroke:var(--bg); stroke-width:2; }
 
   .stage{ position:relative; width:100%; max-width:1180px; z-index:2; }
   svg{ width:100%; height:auto; display:block; overflow:visible; }
@@ -96,11 +121,6 @@
     font-family:var(--mono); font-size:20px; letter-spacing:.05em;
     opacity:0; animation:fadein .6s ease forwards;
   }
-  .philosophy{
-    font-family:var(--mono); font-style:italic; font-size:13px;
-    fill:var(--green-dim); opacity:0;
-    animation:fadein .8s ease forwards;
-  }
   @keyframes fadein{ to{ opacity:1; } }
 
   .flower{
@@ -138,14 +158,104 @@
     100%{ transform:translateY(760px) rotate(360deg); }
   }
 
+  /* ---- music bird: perched on a real branch, part of the tree scene ---- */
+  .tree-bird{ cursor:pointer; outline:none; }
+  .tree-bird:focus-visible .bird-head-group{ filter:brightness(1.25); }
+
+  .tree-bird.playing .bird-head-group{
+    animation:bird-bob .6s ease-in-out infinite;
+    transform-origin:0px -47px;
+  }
+  @keyframes bird-bob{
+    0%,100%{ transform:rotate(0deg); }
+    50%{ transform:rotate(-6deg); }
+  }
+
+  .tree-bird .note{
+    font-family:var(--mono);
+    font-size:20px;
+    opacity:0;
+    pointer-events:none;
+  }
+  .tree-bird.playing .note{
+    animation:tree-note-float 2.2s ease-in infinite;
+  }
+  .tree-bird .n1{ fill:var(--green); animation-delay:0s !important; }
+  .tree-bird .n2{ fill:var(--pink); animation-delay:.7s !important; }
+  .tree-bird .n3{ fill:var(--yellow); animation-delay:1.4s !important; }
+  @keyframes tree-note-float{
+    0%{ opacity:0; transform:translateY(0) scale(.7); }
+    20%{ opacity:1; }
+    100%{ opacity:0; transform:translateY(-20px) scale(1.1); }
+  }
+
   /* ---- mobile only: desktop is untouched above 700px.
      Just center the tree in the viewport instead of it sitting at top. ---- */
   @media (max-width:700px){
     body{ justify-content:center; min-height:100vh; }
   }
+
+  /* ---- season-specific behavior, driven by a class on <body> ---- */
+
+  /* summer: the sun actually rises into place, leaves/grass turn more vividly green */
+  #sun-glow{
+    position:fixed; inset:0;
+    background:radial-gradient(circle at 50% 25%, rgba(255,214,120,.35) 0%, transparent 55%);
+    opacity:0; transition:opacity 1.5s ease;
+    pointer-events:none; z-index:1;
+  }
+  body.season-summer #sun-glow{ opacity:1; }
+
+  .sun-disc{
+    position:fixed; left:50%; top:18%;
+    width:70px; height:70px; margin-left:-35px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, #fff2b8, #ffd670 55%, #ff9f4d 100%);
+    box-shadow:0 0 60px 20px rgba(255,190,90,.45);
+    opacity:0;
+    transform:translateY(160px);
+    pointer-events:none; z-index:1;
+  }
+  body.season-summer .sun-disc{
+    animation: sunrise 3s cubic-bezier(.2,.8,.3,1) forwards;
+  }
+  @keyframes sunrise{
+    0%{ opacity:0; transform:translateY(160px); }
+    40%{ opacity:1; }
+    100%{ opacity:1; transform:translateY(0); }
+  }
+
+  body.season-summer .leaf{ filter:brightness(1.2) saturate(1.35); }
+  body.season-summer .blade{ filter:brightness(1.15) saturate(1.3); }
+
+  /* fall: everything simply turns yellow — no extra motion */
+  body.season-fall .flower{
+    filter: sepia(1) saturate(3.2) brightness(1.05);
+  }
+
+  /* spring: extra little flowers bloom on the ground */
+  .ground-bloom{
+    opacity:0;
+    transform-origin:center;
+  }
+  body.season-spring .ground-bloom{
+    animation: bloom .6s cubic-bezier(.2,1.6,.4,1) forwards;
+  }
+  body.season-winter .flower{
+    animation-play-state:paused;
+    filter:grayscale(1) brightness(3.4) contrast(.85) drop-shadow(0 0 4px rgba(210,235,255,.6));
+  }
+  body.season-winter .leaf{
+    animation-play-state:paused;
+    filter:saturate(.35) brightness(1.15) drop-shadow(0 0 3px rgba(210,235,255,.55));
+  }
+  body.season-winter .pollen{ display:none; }
 </style>
 </head>
 <body>
+
+<div id="sun-glow"></div>
+<div class="sun-disc" id="sun-disc"></div>
 
 <div class="stage">
   <svg viewBox="0 0 1200 800">
@@ -168,12 +278,24 @@
     </defs>
 
     <!-- green field -->
-    <path class="ground" d="M0,800 L0,760 C120,745 260,752 400,748 C520,745 500,760 600,758 C700,760 680,745 800,748 C940,752 1080,745 1200,760 L1200,800 Z" fill="#1e3324"/>
-    <path class="ground" d="M0,800 L0,775 C150,765 300,770 450,768 C540,767 560,772 600,772 C640,772 660,767 750,768 C900,770 1050,765 1200,775 L1200,800 Z" fill="#274430" style="animation-delay:.1s"/>
+    <path class="ground" d="M0,800 L0,760 C120,745 260,752 400,748 C520,745 500,760 600,758 C700,760 680,745 800,748 C940,752 1080,745 1200,760 L1200,800 Z" fill="var(--field-1)"/>
+    <path class="ground" d="M0,800 L0,775 C150,765 300,770 450,768 C540,767 560,772 600,772 C640,772 660,767 750,768 C900,770 1050,765 1200,775 L1200,800 Z" fill="var(--field-2)" style="animation-delay:.1s"/>
 
     <!-- ground -->
     <ellipse class="ground" cx="600" cy="789" rx="95" ry="13" fill="#232f28"/>
     <g id="grassLayer"></g>
+
+    <!-- spring-only: extra little flowers blooming on the ground -->
+    <use class="ground-bloom" href="#flower" x="70"  y="762" width="20" height="20" style="color:#ff9fd0; animation-delay:.1s"/>
+    <use class="ground-bloom" href="#flower" x="150" y="770" width="16" height="16" style="color:#ffe07a; animation-delay:.25s"/>
+    <use class="ground-bloom" href="#flower" x="260" y="758" width="22" height="22" style="color:#b39dff; animation-delay:.4s"/>
+    <use class="ground-bloom" href="#flower" x="360" y="774" width="18" height="18" style="color:#8fe3ff; animation-delay:.15s"/>
+    <use class="ground-bloom" href="#flower" x="480" y="760" width="20" height="20" style="color:#ff9fd0; animation-delay:.5s"/>
+    <use class="ground-bloom" href="#flower" x="620" y="772" width="18" height="18" style="color:#ffe07a; animation-delay:.3s"/>
+    <use class="ground-bloom" href="#flower" x="740" y="760" width="22" height="22" style="color:#b6ff9e; animation-delay:.2s"/>
+    <use class="ground-bloom" href="#flower" x="860" y="774" width="16" height="16" style="color:#b39dff; animation-delay:.45s"/>
+    <use class="ground-bloom" href="#flower" x="980" y="760" width="20" height="20" style="color:#8fe3ff; animation-delay:.35s"/>
+    <use class="ground-bloom" href="#flower" x="1090" y="770" width="18" height="18" style="color:#ff9fd0; animation-delay:.55s"/>
 
     <!-- trunk (tapered, filled, with root flare) -->
     <path class="trunk-fill" d="M563,785 C568,735 570,700 572,690
@@ -222,85 +344,85 @@
 
     <!-- leaves scattered along the branches -->
     <g transform="translate(440,440) rotate(-35) scale(1.1)"><g class="leaf" style="animation-delay:2s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--green-dim)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/>
     </g></g>
     <g transform="translate(395,395) rotate(20) scale(.85)"><g class="leaf" style="animation-delay:2.03s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="#7bc98a"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/>
     </g></g>
     <g transform="translate(380,330) rotate(18) scale(1)"><g class="leaf" style="animation-delay:2.05s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--green-dim)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/>
     </g></g>
     <g transform="translate(600,320) rotate(2) scale(1.15)"><g class="leaf" style="animation-delay:2.1s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--green-dim)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/>
     </g></g>
     <g transform="translate(555,375) rotate(-22) scale(.85)"><g class="leaf" style="animation-delay:2.12s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="#7bc98a"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/>
     </g></g>
     <g transform="translate(760,330) rotate(-18) scale(1)"><g class="leaf" style="animation-delay:2.15s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--green-dim)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/>
     </g></g>
     <g transform="translate(700,300) rotate(12) scale(.9)"><g class="leaf" style="animation-delay:2.18s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="#7bc98a"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/>
     </g></g>
     <g transform="translate(760,440) rotate(32) scale(1.1)"><g class="leaf" style="animation-delay:2.2s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--green-dim)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/>
     </g></g>
     <g transform="translate(825,395) rotate(-20) scale(.85)"><g class="leaf" style="animation-delay:2.22s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="#7bc98a"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/>
     </g></g>
     <!-- big leaves -->
     <g transform="translate(500,405) rotate(-25) scale(2.1)"><g class="leaf" style="animation-delay:2.3s">
-      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="var(--green)"/><line x1="0" y1="-12" x2="0" y2="13"/>
+      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="var(--leaf-3)"/><line x1="0" y1="-12" x2="0" y2="13"/>
     </g></g>
     <g transform="translate(430,375) rotate(15) scale(1.8)"><g class="leaf" style="animation-delay:2.33s">
-      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="#7bc98a"/><line x1="0" y1="-12" x2="0" y2="13"/>
+      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="13"/>
     </g></g>
     <g transform="translate(650,270) rotate(20) scale(2)"><g class="leaf" style="animation-delay:2.39s">
-      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="var(--green)"/><line x1="0" y1="-12" x2="0" y2="13"/>
+      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="var(--leaf-3)"/><line x1="0" y1="-12" x2="0" y2="13"/>
     </g></g>
     <g transform="translate(700,375) rotate(-18) scale(1.8)"><g class="leaf" style="animation-delay:2.42s">
-      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="#7bc98a"/><line x1="0" y1="-12" x2="0" y2="13"/>
+      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="13"/>
     </g></g>
     <g transform="translate(600,235) rotate(4) scale(2.2)"><g class="leaf" style="animation-delay:2.45s">
-      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="var(--green)"/><line x1="0" y1="-12" x2="0" y2="13"/>
+      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="var(--leaf-3)"/><line x1="0" y1="-12" x2="0" y2="13"/>
     </g></g>
     <g transform="translate(750,220) rotate(30) scale(1.6)"><g class="leaf" style="animation-delay:2.53s">
-      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="var(--green)"/><line x1="0" y1="-12" x2="0" y2="13"/>
+      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="var(--leaf-3)"/><line x1="0" y1="-12" x2="0" y2="13"/>
     </g></g>
     <g transform="translate(840,215) rotate(-15) scale(1.4)"><g class="leaf" style="animation-delay:2.56s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="#7bc98a"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/>
     </g></g>
     <g transform="translate(470,300) rotate(35) scale(1.5)"><g class="leaf" style="animation-delay:2.59s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--green-dim)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/>
     </g></g>
     <g transform="translate(735,300) rotate(-35) scale(1.5)"><g class="leaf" style="animation-delay:2.62s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--green-dim)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/>
     </g></g>
     <g transform="translate(340,420) rotate(10) scale(1.3)"><g class="leaf" style="animation-delay:2.65s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="#7bc98a"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/>
     </g></g>
     <g transform="translate(860,420) rotate(-10) scale(1.3)"><g class="leaf" style="animation-delay:2.68s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="#7bc98a"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/>
     </g></g>
 
     <!-- more leaves, spread around the sides / bottom of the crown -->
     <g transform="translate(160,380) rotate(-25) scale(1.4)"><g class="leaf" style="animation-delay:2.71s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--green)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-3)"/><line x1="0" y1="-12" x2="0" y2="12"/>
     </g></g>
     <g transform="translate(230,420) rotate(20) scale(1.2)"><g class="leaf" style="animation-delay:2.74s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="#7bc98a"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/>
     </g></g>
     <g transform="translate(1010,380) rotate(25) scale(1.4)"><g class="leaf" style="animation-delay:2.77s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--green)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-3)"/><line x1="0" y1="-12" x2="0" y2="12"/>
     </g></g>
     <g transform="translate(945,420) rotate(-20) scale(1.2)"><g class="leaf" style="animation-delay:2.8s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="#7bc98a"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/>
     </g></g>
     <g transform="translate(560,470) rotate(-8) scale(1.3)"><g class="leaf" style="animation-delay:2.83s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--green-dim)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/>
     </g></g>
     <g transform="translate(645,470) rotate(8) scale(1.3)"><g class="leaf" style="animation-delay:2.86s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--green-dim)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/>
     </g></g>
 
     <!-- MAIN flowers — size reflects how much each branch holds -->
@@ -372,10 +494,36 @@
     <!-- figure, seated on the grass beside the trunk -->
     <image href="image1.png" x="700" y="440" width="260" height="360" preserveAspectRatio="xMidYMax meet"/>
 
+    <!-- music bird, perched on the about branch -->
+    <g id="tree-bird" class="tree-bird" transform="translate(190,405)" role="button" tabindex="0" aria-label="toggle music">
+      <g class="bird-head-group">
+        <image href="bird.png" x="-58" y="-105" width="115" height="115" preserveAspectRatio="xMidYMax meet"/>
+      </g>
+      <text class="note n1" x="62" y="-68">♪</text>
+      <text class="note n2" x="22" y="-90">♫</text>
+      <text class="note n3" x="-16" y="-60">♪</text>
+    </g>
+
   </svg>
 </div>
 
+<div class="season-clock" id="season-clock">
+  <svg class="season-dial" viewBox="0 0 90 90">
+    <path class="wedge" id="wedge-spring" d="M45,45 L45,7 A38,38 0 0,1 83,45 Z" fill="#7bc98a"/>
+    <path class="wedge" id="wedge-summer" d="M45,45 L83,45 A38,38 0 0,1 45,83 Z" fill="#2fbf5f"/>
+    <path class="wedge" id="wedge-fall"   d="M45,45 L45,83 A38,38 0 0,1 7,45 Z" fill="#d9a441"/>
+    <path class="wedge" id="wedge-winter" d="M45,45 L7,45 A38,38 0 0,1 45,7 Z" fill="#cfeeff"/>
+    <circle class="rim" cx="45" cy="45" r="38"/>
+    <line class="hand" id="season-hand" x1="45" y1="45" x2="45" y2="12"/>
+    <circle class="hub" cx="45" cy="45" r="4"/>
+  </svg>
+  <div id="season-text"></div>
+</div>
+
 <h1 style="margin-top:20px;">anna<span style="color:var(--pink)">_</span>le</h1>
+
+<!-- background music -->
+<audio id="bg-music" loop></audio>
 
 <script>
   document.querySelectorAll('.flower').forEach(node=>{
@@ -385,48 +533,189 @@
     });
   });
 
-  const petalColors = ['#ff3d9a','#ff9f4d','#7fd4ff','#ffd23f','#9dff9e','#8a5cf6'];
-  const body = document.body;
-  for(let i=0;i<14;i++){
-    const p = document.createElement('div');
-    p.className = 'petal-fall';
-    p.textContent = '❁';
-    p.style.left = Math.random()*100 + 'vw';
-    p.style.color = petalColors[i % petalColors.length];
-    p.style.animationDuration = (8 + Math.random()*8) + 's';
-    p.style.animationDelay = (Math.random()*10) + 's';
-    p.style.fontSize = (10 + Math.random()*10) + 'px';
-    body.appendChild(p);
-  }
-
-  // generate a dense, naturalistic field of tapered grass blades
   const svgNS = 'http://www.w3.org/2000/svg';
   const grassLayer = document.getElementById('grassLayer');
-  const bladeColors = ['#5fae6a','#7bc98a','#3f7a52','#8fd99c'];
-  const bladeCount = 130;
-  for(let i=0;i<bladeCount;i++){
-    const x = 5 + Math.random()*1190;
-    const y = 756 + Math.sin(x/140) * 9 + (Math.random()*10 - 5);
-    const h = 20 + Math.random()*30;
-    const rot = -16 + Math.random()*32;
-    const bow = 2 + Math.random()*4;
-    const color = bladeColors[Math.floor(Math.random()*bladeColors.length)];
-    const delay = Math.random()*1.2;
+  const body = document.body;
 
-    const g = document.createElementNS(svgNS,'g');
-    g.setAttribute('transform', `translate(${x.toFixed(1)},${y.toFixed(1)}) rotate(${rot.toFixed(1)})`);
+  // ---- seasons: the tree cycles spring → summer → fall → winter,
+  // advancing every real hour (hour % 4). Only the "nature" layer
+  // changes — leaves, grass, ground, and the falling ambient
+  // particles. Branches, trunk, and flower/nav colors stay put. ----
+  const SEASONS = [
+    { name:'spring',
+      leaf1:'#5fae6a', leaf2:'#7bc98a', leaf3:'#9dff9e',
+      field1:'#1e3324', field2:'#274430',
+      grass:['#5fae6a','#7bc98a','#3f7a52','#8fd99c'],
+      glyph:'❁', particles:['#ff3d9a','#ff9f4d','#7fd4ff','#ffd23f','#9dff9e','#8a5cf6'],
+      particleCount:14, track:'spring.mp3'
+    },
+    { name:'summer',
+      leaf1:'#3f8f4f', leaf2:'#5fae6a', leaf3:'#2fbf5f',
+      field1:'#16281c', field2:'#1d3a26',
+      grass:['#2f7a3f','#3f8f4f','#276b36','#4fae5f'],
+      glyph:'❁', particles:['#ff3d9a','#ffd23f','#7fd4ff','#ff9f4d','#9dff9e','#43e0c9'],
+      particleCount:14, track:'summer.mp3'
+    },
+    { name:'fall',
+      leaf1:'#f2d356', leaf2:'#e0433f', leaf3:'#e8973f',
+      field1:'#3a2f1e', field2:'#4a3a22',
+      grass:['#a68a3f','#8a6b2f','#6b7a3f','#c9a441'],
+      glyph:'❁', particles:['#f2d356','#e0433f','#e8973f','#ffe07a','#c9433f'],
+      particleCount:20, track:'fall.mp3'
+    },
+    { name:'winter',
+      leaf1:'#d7e7ea', leaf2:'#eaf3f5', leaf3:'#c3d9de',
+      field1:'#1a232a', field2:'#232f38',
+      grass:['#8aa3a8','#a8bfc4','#6f8a90','#b8ced2'],
+      glyph:'❄', particles:['#ffffff','#cfeeff','#e8f6ff','#b8dfff'],
+      particleCount:40, track:'winter.mp3'
+    }
+  ];
 
-    const path = document.createElementNS(svgNS,'path');
-    const d = `M0,0 C${-bow},${-h*0.4} ${-bow*0.6},${-h*0.75} 0,${-h} `
-             + `C${bow*0.6},${-h*0.75} ${bow},${-h*0.4} 0,0 Z`;
-    path.setAttribute('d', d);
-    path.setAttribute('class','blade');
-    path.setAttribute('fill', color);
-    path.style.animationDelay = delay.toFixed(2)+'s';
-
-    g.appendChild(path);
-    grassLayer.appendChild(g);
+  function currentSeasonIndex(){
+    return new Date().getMinutes() % 4;
   }
+
+  function applySeason(season){
+    const root = document.documentElement.style;
+    root.setProperty('--leaf-1', season.leaf1);
+    root.setProperty('--leaf-2', season.leaf2);
+    root.setProperty('--leaf-3', season.leaf3);
+    root.setProperty('--field-1', season.field1);
+    root.setProperty('--field-2', season.field2);
+
+    // one class on <body> drives every season-specific visual behavior in CSS
+    document.body.classList.remove('season-spring','season-summer','season-fall','season-winter');
+    document.body.classList.add('season-' + season.name);
+
+    // spring: replay the blooming-open animation on every flower
+    // (nav flowers and the ground blossoms both use the same trick)
+    if(season.name === 'spring'){
+      document.querySelectorAll('.flower, .ground-bloom').forEach(el=>{
+        el.style.animation = 'none';
+        void el.offsetWidth; // force reflow so the animation restarts
+        el.style.animation = '';
+      });
+    }
+
+    // summer: replay the sunrise each time summer comes back around
+    if(season.name === 'summer'){
+      const sunEl = document.getElementById('sun-disc');
+      sunEl.style.animation = 'none';
+      void sunEl.offsetWidth;
+      sunEl.style.animation = '';
+    }
+  }
+
+  function spawnParticles(season){
+    document.querySelectorAll('.petal-fall').forEach(p => p.remove());
+    const count = season.particleCount || 14;
+    for(let i=0;i<count;i++){
+      const p = document.createElement('div');
+      p.className = 'petal-fall';
+      p.textContent = season.glyph;
+      p.style.left = Math.random()*100 + 'vw';
+      p.style.color = season.particles[i % season.particles.length];
+      p.style.animationDuration = (8 + Math.random()*8) + 's';
+      p.style.animationDelay = (Math.random()*10) + 's';
+      p.style.fontSize = (10 + Math.random()*10) + 'px';
+      body.appendChild(p);
+    }
+  }
+
+  function spawnGrass(season){
+    grassLayer.innerHTML = '';
+    const bladeCount = 130;
+    for(let i=0;i<bladeCount;i++){
+      const x = 5 + Math.random()*1190;
+      const y = 756 + Math.sin(x/140) * 9 + (Math.random()*10 - 5);
+      const h = 20 + Math.random()*30;
+      const rot = -16 + Math.random()*32;
+      const bow = 2 + Math.random()*4;
+      const color = season.grass[Math.floor(Math.random()*season.grass.length)];
+      const delay = Math.random()*1.2;
+
+      const g = document.createElementNS(svgNS,'g');
+      g.setAttribute('transform', `translate(${x.toFixed(1)},${y.toFixed(1)}) rotate(${rot.toFixed(1)})`);
+
+      const path = document.createElementNS(svgNS,'path');
+      const d = `M0,0 C${-bow},${-h*0.4} ${-bow*0.6},${-h*0.75} 0,${-h} `
+               + `C${bow*0.6},${-h*0.75} ${bow},${-h*0.4} 0,0 Z`;
+      path.setAttribute('d', d);
+      path.setAttribute('class','blade');
+      path.setAttribute('fill', color);
+      path.style.animationDelay = delay.toFixed(2)+'s';
+
+      g.appendChild(path);
+      grassLayer.appendChild(g);
+    }
+  }
+
+  let onSeasonChange = null; // set later, once the audio script has loaded
+
+  let activeSeasonIndex = -1;
+  function refreshSeason(){
+    const idx = currentSeasonIndex();
+    if(idx === activeSeasonIndex) return;
+    activeSeasonIndex = idx;
+    const season = SEASONS[idx];
+    applySeason(season);
+    spawnGrass(season);
+    spawnParticles(season);
+    if(onSeasonChange) onSeasonChange(season);
+  }
+
+  const seasonClockEl = document.getElementById('season-clock');
+  const seasonTextEl = document.getElementById('season-text');
+  const seasonHandEl = document.getElementById('season-hand');
+  const wedgeEls = {
+    0: document.getElementById('wedge-spring'),
+    1: document.getElementById('wedge-summer'),
+    2: document.getElementById('wedge-fall'),
+    3: document.getElementById('wedge-winter'),
+  };
+
+  function formatCountdown(ms){
+    const totalSec = Math.max(0, Math.ceil(ms / 1000));
+    return `${totalSec}s`;
+  }
+
+  function updateSeasonClock(){
+    const now = new Date();
+    const idx = currentSeasonIndex();
+    const season = SEASONS[idx];
+    const nextMinute = new Date(now);
+    nextMinute.setMinutes(now.getMinutes() + 1, 0, 0);
+    const msLeft = nextMinute - now;
+
+    const hh = now.getHours().toString().padStart(2,'0');
+    const mm = now.getMinutes().toString().padStart(2,'0');
+    const ss = now.getSeconds().toString().padStart(2,'0');
+
+    seasonTextEl.innerHTML =
+      `<span class="season-name">${season.name}</span> — ${hh}:${mm}:${ss} ` +
+      `· next season in ${formatCountdown(msLeft)}`;
+
+    // hand sweeps one full revolution every 4 minutes — its position
+    // always points into whichever wedge is currently active
+    const cycleSeconds = (now.getMinutes() % 4) * 60 + now.getSeconds();
+    const angle = (cycleSeconds / 240) * 360;
+    seasonHandEl.style.transform = `rotate(${angle.toFixed(1)}deg)`;
+
+    Object.entries(wedgeEls).forEach(([i, el])=>{
+      el.classList.toggle('active', Number(i) === idx);
+    });
+  }
+
+  refreshSeason();
+  updateSeasonClock();
+  // tick every second: keeps the visible clock live and catches the
+  // minute boundary immediately (refreshSeason no-ops unless it's
+  // actually a new season, so this is cheap)
+  setInterval(()=>{
+    refreshSeason();
+    updateSeasonClock();
+  }, 1000);
 
   // ---- alive flowers: lean gently toward the cursor, and drift pollen ----
   (function initAliveFlowers(){
@@ -491,6 +780,50 @@
       }
     });
   })();
+
+  const musicBtn = document.getElementById('tree-bird');
+  const bgMusic = document.getElementById('bg-music');
+  let musicPlaying = false;
+
+  function setPlayingUI(isPlaying){
+    musicPlaying = isPlaying;
+    musicBtn.classList.toggle('playing', isPlaying);
+  }
+
+  // swap the track whenever the season changes; if music was already
+  // playing, keep it going seamlessly on the new season's track
+  function updateTrackForSeason(season){
+    bgMusic.src = season.track;
+    if(musicPlaying){
+      bgMusic.play().catch(()=>{});
+    }
+  }
+  onSeasonChange = updateTrackForSeason;
+
+  // set the correct track for whichever season is active right now,
+  // then attempt autoplay (most browsers will block this until the
+  // visitor has interacted with the page, in which case it fails
+  // silently and the button stays in its normal click-to-play state)
+  bgMusic.src = SEASONS[activeSeasonIndex].track;
+  bgMusic.play()
+    .then(()=> setPlayingUI(true))
+    .catch(()=> setPlayingUI(false));
+
+  musicBtn.addEventListener('click', ()=>{
+    if(musicPlaying){
+      bgMusic.pause();
+      setPlayingUI(false);
+    } else {
+      bgMusic.play().then(()=> setPlayingUI(true)).catch(()=>{});
+    }
+  });
+
+  musicBtn.addEventListener('keydown', e=>{
+    if(e.key === 'Enter' || e.key === ' '){
+      e.preventDefault();
+      musicBtn.dispatchEvent(new Event('click'));
+    }
+  });
 </script>
 
 </body>
