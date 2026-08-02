@@ -25,7 +25,6 @@
     --display:'Bungee', system-ui;
     --body:'Space Grotesk', system-ui;
 
-    /* seasonal slots — swapped by JS every hour, spring shown as default */
     --leaf-1:#5fae6a;
     --leaf-2:#7bc98a;
     --leaf-3:#9dff9e;
@@ -58,8 +57,7 @@
   .season-clock .season-name{ color:var(--green); text-transform:capitalize; }
 
   .season-dial{ width:90px; height:90px; }
-  .season-dial .wedge{ opacity:.55; transition:opacity .3s ease; }
-  .season-dial .wedge.active{ opacity:1; }
+  .clock-flower{ transition:color .8s ease; transform-origin:center; }
   .season-dial .hand{
     stroke:var(--cream); stroke-width:2.5; stroke-linecap:round;
     transform-origin:45px 45px;
@@ -113,7 +111,6 @@
     animation:leafin .5s ease forwards;
     transform-origin:center;
   }
-  .leaf path{ fill:var(--green-dim); }
   .leaf line{ stroke:rgba(0,0,0,.3); stroke-width:1; }
   @keyframes leafin{ from{opacity:0; transform:scale(.3);} to{opacity:.9; transform:scale(1);} }
 
@@ -158,7 +155,6 @@
     100%{ transform:translateY(760px) rotate(360deg); }
   }
 
-  /* ---- music bird: perched on a real branch, part of the tree scene ---- */
   .tree-bird{ cursor:pointer; outline:none; }
   .tree-bird:focus-visible .bird-head-group{ filter:brightness(1.25); }
 
@@ -189,15 +185,12 @@
     100%{ opacity:0; transform:translateY(-20px) scale(1.1); }
   }
 
-  /* ---- mobile only: desktop is untouched above 700px.
-     Just center the tree in the viewport instead of it sitting at top. ---- */
   @media (max-width:700px){
     body{ justify-content:center; min-height:100vh; }
   }
 
   /* ---- season-specific behavior, driven by a class on <body> ---- */
 
-  /* summer: the sun actually rises into place, leaves/grass turn more vividly green */
   #sun-glow{
     position:fixed; inset:0;
     background:radial-gradient(circle at 50% 25%, rgba(255,214,120,.35) 0%, transparent 55%);
@@ -228,12 +221,11 @@
   body.season-summer .leaf{ filter:brightness(1.2) saturate(1.35); }
   body.season-summer .blade{ filter:brightness(1.15) saturate(1.3); }
 
-  /* fall: everything simply turns yellow — no extra motion */
+  /* fall: leaves on the branch turn yellow — no extra motion on the tree itself */
   body.season-fall .flower{
     color:#f2d356 !important;
   }
 
-  /* spring: extra little flowers bloom on the ground */
   .ground-bloom{
     opacity:0;
     transform-origin:center;
@@ -241,17 +233,44 @@
   body.season-spring .ground-bloom{
     animation: bloom .6s cubic-bezier(.2,1.6,.4,1) forwards;
   }
+
+  /* winter: flowers turn white; leaves become little snowflakes in place;
+     a snow-line settles along the top of the ground */
   body.season-winter .flower{
     color:#f4faff !important;
   }
-  /* the actual "frozen" pause only applies once .freeze-ready is added
-     (well after every entrance animation has had time to finish) —
-     never paired with .season-winter alone, so a flower/leaf can
-     never get paused before it's had a chance to become visible */
-  body.season-winter.freeze-ready .flower{
-    animation-play-state:paused;
+  body.season-winter .leaf path,
+  body.season-winter .leaf line{
+    opacity:0;
   }
-  body.season-winter.freeze-ready .leaf{
+  body.season-winter .leaf .snowflake-mark{
+    opacity:1;
+  }
+  .snowflake-mark{
+    opacity:0;
+    fill:#eaf7ff;
+    font-size:16px;
+    font-family:var(--mono);
+  }
+
+  .snow-mound{
+    opacity:0;
+    transition:opacity 1.2s ease;
+  }
+  body.season-winter .snow-mound{ opacity:.85; }
+
+  .snow-sparkle{
+    opacity:0;
+  }
+  body.season-winter .snow-sparkle{
+    animation: sparkle-twinkle 3s ease-in-out infinite;
+  }
+  @keyframes sparkle-twinkle{
+    0%,100%{ opacity:0; }
+    50%{ opacity:.9; }
+  }
+
+  body.season-winter.freeze-ready .flower{
     animation-play-state:paused;
   }
   body.season-winter .pollen{ display:none; }
@@ -285,6 +304,28 @@
     <!-- green field -->
     <path class="ground" d="M0,800 L0,760 C120,745 260,752 400,748 C520,745 500,760 600,758 C700,760 680,745 800,748 C940,752 1080,745 1200,760 L1200,800 Z" fill="var(--field-1)"/>
     <path class="ground" d="M0,800 L0,775 C150,765 300,770 450,768 C540,767 560,772 600,772 C640,772 660,767 750,768 C900,770 1050,765 1200,775 L1200,800 Z" fill="var(--field-2)" style="animation-delay:.1s"/>
+
+    <!-- winter-only: uneven snow drifts settled along the top of the field -->
+    <g id="snow-drifts">
+      <ellipse class="snow-mound" cx="90"   cy="756" rx="55" ry="14" fill="#f6fbfd"/>
+      <ellipse class="snow-mound" cx="230"  cy="750" rx="70" ry="17" fill="#eef6f9"/>
+      <ellipse class="snow-mound" cx="390"  cy="754" rx="60" ry="13" fill="#f6fbfd"/>
+      <ellipse class="snow-mound" cx="540"  cy="748" rx="65" ry="16" fill="#eef6f9"/>
+      <ellipse class="snow-mound" cx="600"  cy="758" rx="50" ry="12" fill="#f6fbfd"/>
+      <ellipse class="snow-mound" cx="700"  cy="750" rx="70" ry="17" fill="#eef6f9"/>
+      <ellipse class="snow-mound" cx="850"  cy="754" rx="60" ry="13" fill="#f6fbfd"/>
+      <ellipse class="snow-mound" cx="1000" cy="748" rx="65" ry="16" fill="#eef6f9"/>
+      <ellipse class="snow-mound" cx="1130" cy="756" rx="55" ry="14" fill="#f6fbfd"/>
+    </g>
+
+    <!-- winter-only: little glinting sparkles scattered on the snow -->
+    <circle class="snow-sparkle" cx="140" cy="765" r="2" fill="#ffffff" style="animation-delay:.2s"/>
+    <circle class="snow-sparkle" cx="310" cy="770" r="1.6" fill="#ffffff" style="animation-delay:1.1s"/>
+    <circle class="snow-sparkle" cx="470" cy="762" r="2.2" fill="#ffffff" style="animation-delay:.6s"/>
+    <circle class="snow-sparkle" cx="650" cy="772" r="1.8" fill="#ffffff" style="animation-delay:1.6s"/>
+    <circle class="snow-sparkle" cx="820" cy="764" r="2" fill="#ffffff" style="animation-delay:.9s"/>
+    <circle class="snow-sparkle" cx="970" cy="770" r="1.7" fill="#ffffff" style="animation-delay:2.1s"/>
+    <circle class="snow-sparkle" cx="1100" cy="763" r="2.1" fill="#ffffff" style="animation-delay:1.4s"/>
 
     <!-- ground -->
     <ellipse class="ground" cx="600" cy="789" rx="95" ry="13" fill="#232f28"/>
@@ -349,95 +390,95 @@
 
     <!-- leaves scattered along the branches -->
     <g transform="translate(440,440) rotate(-35) scale(1.1)"><g class="leaf" style="animation-delay:2s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
     <g transform="translate(395,395) rotate(20) scale(.85)"><g class="leaf" style="animation-delay:2.03s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
     <g transform="translate(380,330) rotate(18) scale(1)"><g class="leaf" style="animation-delay:2.05s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
     <g transform="translate(600,320) rotate(2) scale(1.15)"><g class="leaf" style="animation-delay:2.1s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
     <g transform="translate(555,375) rotate(-22) scale(.85)"><g class="leaf" style="animation-delay:2.12s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
     <g transform="translate(760,330) rotate(-18) scale(1)"><g class="leaf" style="animation-delay:2.15s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
     <g transform="translate(700,300) rotate(12) scale(.9)"><g class="leaf" style="animation-delay:2.18s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
     <g transform="translate(760,440) rotate(32) scale(1.1)"><g class="leaf" style="animation-delay:2.2s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
     <g transform="translate(825,395) rotate(-20) scale(.85)"><g class="leaf" style="animation-delay:2.22s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
     <!-- big leaves -->
     <g transform="translate(500,405) rotate(-25) scale(2.1)"><g class="leaf" style="animation-delay:2.3s">
-      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="var(--leaf-3)"/><line x1="0" y1="-12" x2="0" y2="13"/>
+      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="var(--leaf-3)"/><line x1="0" y1="-12" x2="0" y2="13"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
     <g transform="translate(430,375) rotate(15) scale(1.8)"><g class="leaf" style="animation-delay:2.33s">
-      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="13"/>
+      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="13"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
     <g transform="translate(650,270) rotate(20) scale(2)"><g class="leaf" style="animation-delay:2.39s">
-      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="var(--leaf-3)"/><line x1="0" y1="-12" x2="0" y2="13"/>
+      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="var(--leaf-3)"/><line x1="0" y1="-12" x2="0" y2="13"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
     <g transform="translate(700,375) rotate(-18) scale(1.8)"><g class="leaf" style="animation-delay:2.42s">
-      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="13"/>
+      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="13"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
     <g transform="translate(600,235) rotate(4) scale(2.2)"><g class="leaf" style="animation-delay:2.45s">
-      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="var(--leaf-3)"/><line x1="0" y1="-12" x2="0" y2="13"/>
+      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="var(--leaf-3)"/><line x1="0" y1="-12" x2="0" y2="13"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
     <g transform="translate(750,220) rotate(30) scale(1.6)"><g class="leaf" style="animation-delay:2.53s">
-      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="var(--leaf-3)"/><line x1="0" y1="-12" x2="0" y2="13"/>
+      <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="var(--leaf-3)"/><line x1="0" y1="-12" x2="0" y2="13"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
     <g transform="translate(840,215) rotate(-15) scale(1.4)"><g class="leaf" style="animation-delay:2.56s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
     <g transform="translate(470,300) rotate(35) scale(1.5)"><g class="leaf" style="animation-delay:2.59s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
     <g transform="translate(735,300) rotate(-35) scale(1.5)"><g class="leaf" style="animation-delay:2.62s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
     <g transform="translate(340,420) rotate(10) scale(1.3)"><g class="leaf" style="animation-delay:2.65s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
     <g transform="translate(860,420) rotate(-10) scale(1.3)"><g class="leaf" style="animation-delay:2.68s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
 
     <!-- more leaves, spread around the sides / bottom of the crown -->
     <g transform="translate(160,380) rotate(-25) scale(1.4)"><g class="leaf" style="animation-delay:2.71s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-3)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-3)"/><line x1="0" y1="-12" x2="0" y2="12"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
     <g transform="translate(230,420) rotate(20) scale(1.2)"><g class="leaf" style="animation-delay:2.74s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
     <g transform="translate(1010,380) rotate(25) scale(1.4)"><g class="leaf" style="animation-delay:2.77s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-3)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-3)"/><line x1="0" y1="-12" x2="0" y2="12"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
     <g transform="translate(945,420) rotate(-20) scale(1.2)"><g class="leaf" style="animation-delay:2.8s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
     <g transform="translate(560,470) rotate(-8) scale(1.3)"><g class="leaf" style="animation-delay:2.83s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
     <g transform="translate(645,470) rotate(8) scale(1.3)"><g class="leaf" style="animation-delay:2.86s">
-      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/>
+      <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
 
     <!-- MAIN flowers — size reflects how much each branch holds -->
-    <g class="flower-wrap"><use class="flower" href="#flower" x="36" y="366" width="28" height="28" style="color:var(--orange); animation-delay:2.6s"
-         data-href="about.html"/></g>
-    <g class="flower-wrap"><use class="flower" href="#flower" x="236" y="126" width="68" height="68" style="color:var(--pink); animation-delay:2.65s"/></g>
-    <g class="flower-wrap"><use class="flower" href="#flower" x="578" y="118" width="44" height="44" style="color:var(--sky); animation-delay:2.7s"/></g>
-    <g class="flower-wrap"><use class="flower" href="#flower" x="902" y="132" width="56" height="56" style="color:var(--green); animation-delay:2.75s"/></g>
-    <g class="flower-wrap"><use class="flower" href="#flower" x="1136" y="366" width="28" height="28" style="color:var(--purple); animation-delay:2.8s"
-         data-href="cv.html"/></g>
+    <use class="flower" href="#flower" x="36" y="366" width="28" height="28" style="color:var(--orange); animation-delay:2.6s"
+         data-href="about.html"/>
+    <use class="flower" href="#flower" x="236" y="126" width="68" height="68" style="color:var(--pink); animation-delay:2.65s"/>
+    <use class="flower" href="#flower" x="578" y="118" width="44" height="44" style="color:var(--sky); animation-delay:2.7s"/>
+    <use class="flower" href="#flower" x="902" y="132" width="56" height="56" style="color:var(--green); animation-delay:2.75s"/>
+    <use class="flower" href="#flower" x="1136" y="366" width="28" height="28" style="color:var(--purple); animation-delay:2.8s"
+         data-href="cv.html"/>
 
     <!-- main branch labels (drawn after the flowers so text is never covered) -->
     <text class="label" x="50" y="430" fill="var(--orange)" text-anchor="middle" style="animation-delay:2.3s">about</text>
@@ -447,16 +488,16 @@
     <text class="label" x="1150" y="430" fill="var(--purple)" text-anchor="middle" style="animation-delay:2.5s">cv</text>
 
     <!-- PROJECTS sub-flowers -->
-    <g class="flower-wrap"><use class="flower" href="#flower" x="153" y="73" width="32" height="32" style="color:var(--yellow); animation-delay:2.95s"
-         data-href="project1.html"/></g>
-    <g class="flower-wrap"><use class="flower" href="#flower" x="223" y="23" width="32" height="32" style="color:var(--orange); animation-delay:3.05s"
-         data-href="project2.html"/></g>
-    <g class="flower-wrap"><use class="flower" href="#flower" x="313" y="13" width="32" height="32" style="color:var(--teal); animation-delay:3.15s"
-         data-href="project3.html"/></g>
-    <g class="flower-wrap"><use class="flower" href="#flower" x="373" y="63" width="32" height="32" style="color:var(--sky); animation-delay:3.25s"
-         data-href="project4.html"/></g>
-    <g class="flower-wrap"><use class="flower" href="#flower" x="74" y="94" width="32" height="32" style="color:var(--purple); animation-delay:3.3s"
-         data-href="3d-persona.html"/></g>
+    <use class="flower" href="#flower" x="153" y="73" width="32" height="32" style="color:var(--yellow); animation-delay:2.95s"
+         data-href="project1.html"/>
+    <use class="flower" href="#flower" x="223" y="23" width="32" height="32" style="color:var(--orange); animation-delay:3.05s"
+         data-href="project2.html"/>
+    <use class="flower" href="#flower" x="313" y="13" width="32" height="32" style="color:var(--teal); animation-delay:3.15s"
+         data-href="project3.html"/>
+    <use class="flower" href="#flower" x="373" y="63" width="32" height="32" style="color:var(--sky); animation-delay:3.25s"
+         data-href="project4.html"/>
+    <use class="flower" href="#flower" x="74" y="94" width="32" height="32" style="color:var(--purple); animation-delay:3.3s"
+         data-href="3d-persona.html"/>
 
     <!-- PROJECTS sub-flower labels -->
     <text class="label" x="169" y="115" fill="var(--yellow)" text-anchor="middle"
@@ -471,10 +512,10 @@
           transform="rotate(-6 50 140)" style="font-size:17px; animation-delay:3.6s">3d persona</text>
 
     <!-- RESEARCH sub-flowers -->
-    <g class="flower-wrap"><use class="flower" href="#flower" x="483" y="43" width="32" height="32" style="color:var(--purple); animation-delay:2.95s"
-         data-href="persona.html"/></g>
-    <g class="flower-wrap"><use class="flower" href="#flower" x="543" y="3" width="32" height="32" style="color:var(--teal); animation-delay:3.05s"
-         data-href="cindy-sherman.html"/></g>
+    <use class="flower" href="#flower" x="483" y="43" width="32" height="32" style="color:var(--purple); animation-delay:2.95s"
+         data-href="persona.html"/>
+    <use class="flower" href="#flower" x="543" y="3" width="32" height="32" style="color:var(--teal); animation-delay:3.05s"
+         data-href="cindy-sherman.html"/>
 
     <text class="label" x="499" y="80" fill="var(--purple)" text-anchor="middle"
           transform="rotate(-5 499 80)" style="font-size:17px; animation-delay:3.6s">persona</text>
@@ -482,12 +523,12 @@
           transform="rotate(4 559 -15)" style="font-size:17px; animation-delay:3.65s">Cindy Sherman</text>
 
     <!-- ART PRACTICE sub-flowers -->
-    <g class="flower-wrap"><use class="flower" href="#flower" x="793" y="63" width="32" height="32" style="color:var(--pink); animation-delay:2.95s"
-         data-href="interactive.html"/></g>
-    <g class="flower-wrap"><use class="flower" href="#flower" x="853" y="13" width="32" height="32" style="color:var(--yellow); animation-delay:3.05s"
-         data-href="sculptures.html"/></g>
-    <g class="flower-wrap"><use class="flower" href="#flower" x="943" y="23" width="32" height="32" style="color:var(--teal); animation-delay:3.15s"
-         data-href="collaboration.html"/></g>
+    <use class="flower" href="#flower" x="793" y="63" width="32" height="32" style="color:var(--pink); animation-delay:2.95s"
+         data-href="interactive.html"/>
+    <use class="flower" href="#flower" x="853" y="13" width="32" height="32" style="color:var(--yellow); animation-delay:3.05s"
+         data-href="sculptures.html"/>
+    <use class="flower" href="#flower" x="943" y="23" width="32" height="32" style="color:var(--teal); animation-delay:3.15s"
+         data-href="collaboration.html"/>
 
     <text class="label" x="809" y="100" fill="var(--pink)" text-anchor="middle"
           transform="rotate(5 809 100)" style="font-size:17px; animation-delay:3.7s">interactive</text>
@@ -514,10 +555,7 @@
 
 <div class="season-clock" id="season-clock">
   <svg class="season-dial" viewBox="0 0 90 90">
-    <path class="wedge" id="wedge-spring" d="M45,45 L45,7 A38,38 0 0,1 83,45 Z" fill="#7bc98a"/>
-    <path class="wedge" id="wedge-summer" d="M45,45 L83,45 A38,38 0 0,1 45,83 Z" fill="#2fbf5f"/>
-    <path class="wedge" id="wedge-fall"   d="M45,45 L45,83 A38,38 0 0,1 7,45 Z" fill="#d9a441"/>
-    <path class="wedge" id="wedge-winter" d="M45,45 L7,45 A38,38 0 0,1 45,7 Z" fill="#cfeeff"/>
+    <use id="clock-flower" class="clock-flower" href="#flower" x="17" y="17" width="56" height="56" style="color:#ff9fd0"/>
     <circle class="rim" cx="45" cy="45" r="38"/>
     <line class="hand" id="season-hand" x1="45" y1="45" x2="45" y2="12"/>
     <circle class="hub" cx="45" cy="45" r="4"/>
@@ -542,38 +580,34 @@
   const grassLayer = document.getElementById('grassLayer');
   const body = document.body;
 
-  // ---- seasons: the tree cycles spring → summer → fall → winter,
-  // advancing every real hour (hour % 4). Only the "nature" layer
-  // changes — leaves, grass, ground, and the falling ambient
-  // particles. Branches, trunk, and flower/nav colors stay put. ----
   const SEASONS = [
     { name:'spring',
       leaf1:'#5fae6a', leaf2:'#7bc98a', leaf3:'#9dff9e',
       field1:'#1e3324', field2:'#274430',
       grass:['#5fae6a','#7bc98a','#3f7a52','#8fd99c'],
       glyph:'❁', particles:['#ff3d9a','#ff9f4d','#7fd4ff','#ffd23f','#9dff9e','#8a5cf6'],
-      particleCount:14, track:'spring.mp3'
+      particleCount:14, track:'spring.mp3', particleShape:'glyph', clockColor:'#ff9fd0'
     },
     { name:'summer',
       leaf1:'#3f8f4f', leaf2:'#5fae6a', leaf3:'#2fbf5f',
       field1:'#16281c', field2:'#1d3a26',
       grass:['#2f7a3f','#3f8f4f','#276b36','#4fae5f'],
       glyph:'❁', particles:['#ff3d9a','#ffd23f','#7fd4ff','#ff9f4d','#9dff9e','#43e0c9'],
-      particleCount:14, track:'summer.mp3'
+      particleCount:14, track:'summer.mp3', particleShape:'glyph', clockColor:'#4fd97a'
     },
     { name:'fall',
-      leaf1:'#f2d356', leaf2:'#e0433f', leaf3:'#e8973f',
+      leaf1:'#f2d356', leaf2:'#e8c247', leaf3:'#d9a441',
       field1:'#3a2f1e', field2:'#4a3a22',
       grass:['#a68a3f','#8a6b2f','#6b7a3f','#c9a441'],
-      glyph:'❁', particles:['#f2d356','#e0433f','#e8973f','#ffe07a','#c9433f'],
-      particleCount:20, track:'fall.mp3'
+      particles:['#f2d356','#e0433f','#e8973f','#ffe07a','#c9433f'],
+      particleCount:22, track:'fall.mp3', particleShape:'leaf', clockColor:'#ffd23f'
     },
     { name:'winter',
       leaf1:'#d7e7ea', leaf2:'#eaf3f5', leaf3:'#c3d9de',
-      field1:'#1a232a', field2:'#232f38',
+      field1:'#c3dbe2', field2:'#eaf6f9',
       grass:['#8aa3a8','#a8bfc4','#6f8a90','#b8ced2'],
       glyph:'❄', particles:['#ffffff','#cfeeff','#e8f6ff','#b8dfff'],
-      particleCount:40, track:'winter.mp3'
+      particleCount:60, track:'winter.mp3', particleShape:'glyph', clockColor:'#f4faff'
     }
   ];
 
@@ -589,21 +623,17 @@
     root.setProperty('--field-1', season.field1);
     root.setProperty('--field-2', season.field2);
 
-    // one class on <body> drives every season-specific visual behavior in CSS
     document.body.classList.remove('season-spring','season-summer','season-fall','season-winter');
     document.body.classList.add('season-' + season.name);
 
-    // spring: replay the blooming-open animation on every flower
-    // (nav flowers and the ground blossoms both use the same trick)
     if(season.name === 'spring'){
       document.querySelectorAll('.flower, .ground-bloom').forEach(el=>{
         el.style.animation = 'none';
-        void el.offsetWidth; // force reflow so the animation restarts
+        void el.offsetWidth;
         el.style.animation = '';
       });
     }
 
-    // summer: replay the sunrise each time summer comes back around
     if(season.name === 'summer'){
       const sunEl = document.getElementById('sun-disc');
       sunEl.style.animation = 'none';
@@ -618,12 +648,22 @@
     for(let i=0;i<count;i++){
       const p = document.createElement('div');
       p.className = 'petal-fall';
-      p.textContent = season.glyph;
+      const color = season.particles[i % season.particles.length];
+
+      if(season.particleShape === 'leaf'){
+        p.style.width = (10 + Math.random()*6) + 'px';
+        p.style.height = (10 + Math.random()*6) + 'px';
+        p.style.background = color;
+        p.style.borderRadius = '0 100% 0 100%';
+      } else {
+        p.textContent = season.glyph;
+        p.style.color = color;
+        p.style.fontSize = (10 + Math.random()*10) + 'px';
+      }
+
       p.style.left = Math.random()*100 + 'vw';
-      p.style.color = season.particles[i % season.particles.length];
       p.style.animationDuration = (8 + Math.random()*8) + 's';
       p.style.animationDelay = (Math.random()*10) + 's';
-      p.style.fontSize = (10 + Math.random()*10) + 'px';
       body.appendChild(p);
     }
   }
@@ -656,7 +696,7 @@
     }
   }
 
-  let onSeasonChange = null; // set later, once the audio script has loaded
+  let onSeasonChange = null;
 
   let activeSeasonIndex = -1;
   function refreshSeason(){
@@ -673,12 +713,7 @@
   const seasonClockEl = document.getElementById('season-clock');
   const seasonTextEl = document.getElementById('season-text');
   const seasonHandEl = document.getElementById('season-hand');
-  const wedgeEls = {
-    0: document.getElementById('wedge-spring'),
-    1: document.getElementById('wedge-summer'),
-    2: document.getElementById('wedge-fall'),
-    3: document.getElementById('wedge-winter'),
-  };
+  const clockFlowerEl = document.getElementById('clock-flower');
 
   function formatCountdown(ms){
     const totalSec = Math.max(0, Math.ceil(ms / 1000));
@@ -701,35 +736,24 @@
       `<span class="season-name">${season.name}</span> — ${hh}:${mm}:${ss} ` +
       `· next season in ${formatCountdown(msLeft)}`;
 
-    // hand sweeps one full revolution every 4 minutes — its position
-    // always points into whichever wedge is currently active
     const cycleSeconds = (now.getMinutes() % 4) * 60 + now.getSeconds();
     const angle = (cycleSeconds / 240) * 360;
     seasonHandEl.style.transform = `rotate(${angle.toFixed(1)}deg)`;
 
-    Object.entries(wedgeEls).forEach(([i, el])=>{
-      el.classList.toggle('active', Number(i) === idx);
-    });
+    clockFlowerEl.style.color = season.clockColor;
   }
 
   refreshSeason();
   updateSeasonClock();
-  // tick every second: keeps the visible clock live and catches the
-  // minute boundary immediately (refreshSeason no-ops unless it's
-  // actually a new season, so this is cheap)
   setInterval(()=>{
     refreshSeason();
     updateSeasonClock();
   }, 1000);
 
-  // the latest flower/leaf entrance animation-delay in the markup is
-  // under 4s — waiting 5s guarantees every one of them has finished
-  // blooming in before winter is ever allowed to pause anything
   setTimeout(()=>{
     document.body.classList.add('freeze-ready');
   }, 5000);
 
-  // ---- alive flowers: lean gently toward the cursor, and drift pollen ----
   (function initAliveFlowers(){
     const svgEl = document.querySelector('.stage svg');
     if(!svgEl) return;
@@ -774,7 +798,6 @@
       centers.forEach(c=> c.el.style.transform = '');
     });
 
-    // drifting pollen near each flower
     centers.forEach(c=>{
       const color = c.el.style.color || 'var(--cream)';
       for(let i=0;i<2;i++){
@@ -802,8 +825,6 @@
     musicBtn.classList.toggle('playing', isPlaying);
   }
 
-  // swap the track whenever the season changes; if music was already
-  // playing, keep it going seamlessly on the new season's track
   function updateTrackForSeason(season){
     bgMusic.src = season.track;
     if(musicPlaying){
@@ -812,10 +833,6 @@
   }
   onSeasonChange = updateTrackForSeason;
 
-  // set the correct track for whichever season is active right now,
-  // then attempt autoplay (most browsers will block this until the
-  // visitor has interacted with the page, in which case it fails
-  // silently and the button stays in its normal click-to-play state)
   bgMusic.src = SEASONS[activeSeasonIndex].track;
   bgMusic.play()
     .then(()=> setPlayingUI(true))
