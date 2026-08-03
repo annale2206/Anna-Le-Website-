@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>anna_le — persona / persona-performance-studies</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .hero-sub{
+    font-family:var(--mono); color:var(--sky); font-size:1.05rem;
+    margin:-4px 0 30px;
+  }
+  .hero-sub a{ color:var(--green-dim); }
+
+  .cluster-note{
+    font-family:var(--mono); font-size:.95rem; color:var(--green-dim);
+    margin:0 0 30px; max-width:65ch;
+  }
+
+  .reading-list{ display:flex; flex-direction:column; gap:18px; margin-top:10px; }
+  .reading{
+    display:grid;
+    grid-template-columns:220px 1fr;
+    gap:20px;
+    padding-bottom:18px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+  }
+  .reading .who{
+    font-family:var(--mono); font-size:1rem; color:var(--cream);
+  }
+  .reading .who .yr{ color:var(--green-dim); }
+  .reading .what{ font-size:1.02rem; color:#dfeee1; line-height:1.6; }
+  .reading .what .title{ font-style:italic; color:var(--sky); }
+
+  @media (max-width:700px){
+    .reading{ grid-template-columns:1fr; gap:6px; }
+  }
+
+  .archive-tag{
+    display:inline-block;
+    font-family:var(--mono); font-size:.85rem;
+    color:#2a1750; background:var(--yellow);
+    padding:2px 8px; margin-left:10px; vertical-align:middle;
+  }
+</style>
+</head>
+<body data-petals="6">
+
+<header class="nav">
+  <a class="logo" href="index.html">anna<span>_</span>le</a>
+</header>
+
+<main class="page">
+
+  <div class="eyebrow">
+    <h1>performance studies</h1>
+    <span class="path">~/anna/research/persona/persona-performance-studies</span>
+  </div>
+  <div class="hero-sub">← back to <a href="persona.html">persona</a></div>
+
+<p class="cluster-note">a methodology, not just a subject — useful for theorizing AI-generated persona as an event rather than a static object</p>
+    <div class="reading-list">
+      <div class="reading">
+        <div class="who">Diana Taylor <span class="yr">(2003)</span></div>
+        <div class="what"><span class="title">The Archive and the Repertoire</span> — embodied performance transmits memory alongside written archives. Maps productively onto datasets (archive) vs. repeated gestures/livestreams (repertoire).</div>
+      </div>
+      <div class="reading">
+        <div class="who">David Zerbib</div>
+        <div class="what">The "performative turn" — performance as an event that transforms meaning, not simply representation.</div>
+      </div>
+      <div class="reading">
+        <div class="who">Carol Martin</div>
+        <div class="what">Documentary performance — contemporary practice blurring fiction, testimony, archive, and technology.</div>
+      </div>
+    </div>
+  
+
+</main>
+
+
+<script src="main.js" defer></script>
+</body>
+</html>

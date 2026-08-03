@@ -221,7 +221,6 @@
   body.season-summer .leaf{ filter:brightness(1.2) saturate(1.35); }
   body.season-summer .blade{ filter:brightness(1.15) saturate(1.3); }
 
-  /* fall: leaves on the branch turn yellow — no extra motion on the tree itself */
   body.season-fall .flower{
     color:#f2d356 !important;
   }
@@ -234,8 +233,6 @@
     animation: bloom .6s cubic-bezier(.2,1.6,.4,1) forwards;
   }
 
-  /* winter: flowers turn white; leaves become little snowflakes in place;
-     a snow-line settles along the top of the ground */
   body.season-winter .flower{
     color:#f4faff !important;
   }
@@ -305,7 +302,6 @@
     <path class="ground" d="M0,800 L0,760 C120,745 260,752 400,748 C520,745 500,760 600,758 C700,760 680,745 800,748 C940,752 1080,745 1200,760 L1200,800 Z" fill="var(--field-1)"/>
     <path class="ground" d="M0,800 L0,775 C150,765 300,770 450,768 C540,767 560,772 600,772 C640,772 660,767 750,768 C900,770 1050,765 1200,775 L1200,800 Z" fill="var(--field-2)" style="animation-delay:.1s"/>
 
-    <!-- winter-only: uneven snow drifts settled along the top of the field -->
     <g id="snow-drifts">
       <ellipse class="snow-mound" cx="90"   cy="756" rx="55" ry="14" fill="#f6fbfd"/>
       <ellipse class="snow-mound" cx="230"  cy="750" rx="70" ry="17" fill="#eef6f9"/>
@@ -318,7 +314,6 @@
       <ellipse class="snow-mound" cx="1130" cy="756" rx="55" ry="14" fill="#f6fbfd"/>
     </g>
 
-    <!-- winter-only: little glinting sparkles scattered on the snow -->
     <circle class="snow-sparkle" cx="140" cy="765" r="2" fill="#ffffff" style="animation-delay:.2s"/>
     <circle class="snow-sparkle" cx="310" cy="770" r="1.6" fill="#ffffff" style="animation-delay:1.1s"/>
     <circle class="snow-sparkle" cx="470" cy="762" r="2.2" fill="#ffffff" style="animation-delay:.6s"/>
@@ -327,11 +322,9 @@
     <circle class="snow-sparkle" cx="970" cy="770" r="1.7" fill="#ffffff" style="animation-delay:2.1s"/>
     <circle class="snow-sparkle" cx="1100" cy="763" r="2.1" fill="#ffffff" style="animation-delay:1.4s"/>
 
-    <!-- ground -->
     <ellipse class="ground" cx="600" cy="789" rx="95" ry="13" fill="#232f28"/>
     <g id="grassLayer"></g>
 
-    <!-- spring-only: extra little flowers blooming on the ground -->
     <use class="ground-bloom" href="#flower" x="70"  y="762" width="20" height="20" style="color:#ff9fd0; animation-delay:.1s"/>
     <use class="ground-bloom" href="#flower" x="150" y="770" width="16" height="16" style="color:#ffe07a; animation-delay:.25s"/>
     <use class="ground-bloom" href="#flower" x="260" y="758" width="22" height="22" style="color:#b39dff; animation-delay:.4s"/>
@@ -343,7 +336,6 @@
     <use class="ground-bloom" href="#flower" x="980" y="760" width="20" height="20" style="color:#8fe3ff; animation-delay:.35s"/>
     <use class="ground-bloom" href="#flower" x="1090" y="770" width="18" height="18" style="color:#ff9fd0; animation-delay:.55s"/>
 
-    <!-- trunk (tapered, filled, with root flare) -->
     <path class="trunk-fill" d="M563,785 C568,735 570,700 572,690
       C574,660 568,635 565,620
       C562,595 585,565 590,540
@@ -356,7 +348,6 @@
     <path class="grain" d="M579,772 C582,700 578,650 588,545" pathLength="1"/>
     <path class="grain" d="M615,772 C610,700 614,650 604,545" pathLength="1"/>
 
-    <!-- 5 main branches, fanning up from the fork — thickness reflects how much each branch holds -->
     <path class="branch b2" d="M600,520 C540,490 465,465 382.5,437.5" pathLength="1" style="stroke-width:6"/>
     <path class="branch b2 b2-tip" d="M382.5,437.5 C300,420 180,400 50,380" pathLength="1" style="stroke-width:2.5; animation-delay:.15s"/>
 
@@ -372,23 +363,19 @@
     <path class="branch b2" d="M600,520 C660,490 735,465 817.5,437.5" pathLength="1" style="stroke-width:6; animation-delay:.95s"/>
     <path class="branch b2 b2-tip" d="M817.5,437.5 C900,420 1020,400 1150,380" pathLength="1" style="stroke-width:2.5; animation-delay:1.1s"/>
 
-    <!-- PROJECTS sub-branches -->
     <path class="branch b3" d="M270,160 C240,130 210,105 170,90" pathLength="1" style="animation-delay:1.6s"/>
     <path class="branch b3" d="M270,160 C260,120 250,75 240,40" pathLength="1" style="animation-delay:1.7s"/>
     <path class="branch b3" d="M270,160 C290,115 310,65 330,30" pathLength="1" style="animation-delay:1.8s"/>
     <path class="branch b3" d="M270,160 C330,130 370,100 390,80" pathLength="1" style="animation-delay:1.9s"/>
     <path class="branch b3" d="M270,160 C220,145 160,130 90,110" pathLength="1" style="animation-delay:1.95s"/>
 
-    <!-- RESEARCH sub-branches -->
     <path class="branch b3" d="M600,140 C560,110 530,80 500,60" pathLength="1" style="animation-delay:1.6s"/>
     <path class="branch b3" d="M600,140 C580,100 570,55 560,20" pathLength="1" style="animation-delay:1.7s"/>
 
-    <!-- ART PRACTICE sub-branches -->
     <path class="branch b3" d="M930,160 C870,130 830,100 810,80" pathLength="1" style="animation-delay:1.6s"/>
     <path class="branch b3" d="M930,160 C910,115 890,65 870,30" pathLength="1" style="animation-delay:1.7s"/>
     <path class="branch b3" d="M930,160 C940,120 950,75 960,40" pathLength="1" style="animation-delay:1.8s"/>
 
-    <!-- leaves scattered along the branches -->
     <g transform="translate(440,440) rotate(-35) scale(1.1)"><g class="leaf" style="animation-delay:2s">
       <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
@@ -416,7 +403,6 @@
     <g transform="translate(825,395) rotate(-20) scale(.85)"><g class="leaf" style="animation-delay:2.22s">
       <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
-    <!-- big leaves -->
     <g transform="translate(500,405) rotate(-25) scale(2.1)"><g class="leaf" style="animation-delay:2.3s">
       <path d="M0,-14 C7,-7 7,8 0,16 C-7,8 -7,-7 0,-14 Z" fill="var(--leaf-3)"/><line x1="0" y1="-12" x2="0" y2="13"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
@@ -451,7 +437,6 @@
       <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-2)"/><line x1="0" y1="-12" x2="0" y2="12"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
 
-    <!-- more leaves, spread around the sides / bottom of the crown -->
     <g transform="translate(160,380) rotate(-25) scale(1.4)"><g class="leaf" style="animation-delay:2.71s">
       <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-3)"/><line x1="0" y1="-12" x2="0" y2="12"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
@@ -471,7 +456,6 @@
       <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
 
-    <!-- MAIN flowers — size reflects how much each branch holds -->
     <use class="flower" href="#flower" x="36" y="366" width="28" height="28" style="color:var(--orange); animation-delay:2.6s"
          data-href="about.html"/>
     <use class="flower" href="#flower" x="236" y="126" width="68" height="68" style="color:var(--pink); animation-delay:2.65s"/>
@@ -480,14 +464,12 @@
     <use class="flower" href="#flower" x="1136" y="366" width="28" height="28" style="color:var(--purple); animation-delay:2.8s"
          data-href="cv.html"/>
 
-    <!-- main branch labels (drawn after the flowers so text is never covered) -->
     <text class="label" x="50" y="430" fill="var(--orange)" text-anchor="middle" style="animation-delay:2.3s">about</text>
     <text class="label" x="175" y="185" fill="var(--pink)" style="animation-delay:2.35s">projects</text>
     <text class="label" x="500" y="175" fill="var(--sky)" style="animation-delay:2.4s">research</text>
     <text class="label" x="930" y="210" fill="var(--green)" text-anchor="middle" style="animation-delay:2.45s">art practice</text>
     <text class="label" x="1150" y="430" fill="var(--purple)" text-anchor="middle" style="animation-delay:2.5s">cv</text>
 
-    <!-- PROJECTS sub-flowers -->
     <use class="flower" href="#flower" x="153" y="73" width="32" height="32" style="color:var(--yellow); animation-delay:2.95s"
          data-href="project1.html"/>
     <use class="flower" href="#flower" x="223" y="23" width="32" height="32" style="color:var(--orange); animation-delay:3.05s"
@@ -499,7 +481,6 @@
     <use class="flower" href="#flower" x="74" y="94" width="32" height="32" style="color:var(--purple); animation-delay:3.3s"
          data-href="3d-persona.html"/>
 
-    <!-- PROJECTS sub-flower labels -->
     <text class="label" x="169" y="115" fill="var(--yellow)" text-anchor="middle"
           transform="rotate(-6 169 115)" style="font-size:17px; animation-delay:3.4s">manifesto fiction</text>
     <text class="label" x="239" y="-2" fill="var(--orange)" text-anchor="middle"
@@ -511,7 +492,6 @@
     <text class="label" x="50" y="140" fill="var(--purple)" text-anchor="middle"
           transform="rotate(-6 50 140)" style="font-size:17px; animation-delay:3.6s">3d persona</text>
 
-    <!-- RESEARCH sub-flowers -->
     <use class="flower" href="#flower" x="483" y="43" width="32" height="32" style="color:var(--purple); animation-delay:2.95s"
          data-href="persona.html"/>
     <use class="flower" href="#flower" x="543" y="3" width="32" height="32" style="color:var(--teal); animation-delay:3.05s"
@@ -522,7 +502,6 @@
     <text class="label" x="559" y="-15" fill="var(--teal)" text-anchor="middle"
           transform="rotate(4 559 -15)" style="font-size:17px; animation-delay:3.65s">Cindy Sherman</text>
 
-    <!-- ART PRACTICE sub-flowers -->
     <use class="flower" href="#flower" x="793" y="63" width="32" height="32" style="color:var(--pink); animation-delay:2.95s"
          data-href="interactive.html"/>
     <use class="flower" href="#flower" x="853" y="13" width="32" height="32" style="color:var(--yellow); animation-delay:3.05s"
@@ -537,10 +516,9 @@
     <text class="label" x="959" y="0" fill="var(--teal)" text-anchor="middle"
           transform="rotate(6 959 0)" style="font-size:17px; animation-delay:3.8s">collaboration</text>
 
-    <!-- figure, seated on the grass beside the trunk -->
-    <image href="image1.png" x="700" y="440" width="260" height="360" preserveAspectRatio="xMidYMax meet"/>
+    <!-- figure, seated on the grass beside the trunk — swaps per season -->
+    <image id="tree-figure" href="spring.png" x="700" y="440" width="260" height="360" preserveAspectRatio="xMidYMax meet"/>
 
-    <!-- music bird, perched on the about branch -->
     <g id="tree-bird" class="tree-bird" transform="translate(190,405)" role="button" tabindex="0" aria-label="toggle music">
       <g class="bird-head-group">
         <image href="bird.png" x="-58" y="-105" width="115" height="115" preserveAspectRatio="xMidYMax meet"/>
@@ -586,28 +564,32 @@
       field1:'#1e3324', field2:'#274430',
       grass:['#5fae6a','#7bc98a','#3f7a52','#8fd99c'],
       glyph:'❁', particles:['#ff3d9a','#ff9f4d','#7fd4ff','#ffd23f','#9dff9e','#8a5cf6'],
-      particleCount:14, track:'spring.mp3', particleShape:'glyph', clockColor:'#ff9fd0'
+      particleCount:14, track:'spring.mp3', particleShape:'glyph', clockColor:'#ff9fd0',
+      figureImg:'spring.png'
     },
     { name:'summer',
       leaf1:'#3f8f4f', leaf2:'#5fae6a', leaf3:'#2fbf5f',
       field1:'#16281c', field2:'#1d3a26',
       grass:['#2f7a3f','#3f8f4f','#276b36','#4fae5f'],
       glyph:'❁', particles:['#ff3d9a','#ffd23f','#7fd4ff','#ff9f4d','#9dff9e','#43e0c9'],
-      particleCount:14, track:'summer.mp3', particleShape:'glyph', clockColor:'#4fd97a'
+      particleCount:14, track:'summer.mp3', particleShape:'glyph', clockColor:'#4fd97a',
+      figureImg:'summer.png'
     },
     { name:'fall',
       leaf1:'#f2d356', leaf2:'#e8c247', leaf3:'#d9a441',
       field1:'#3a2f1e', field2:'#4a3a22',
       grass:['#a68a3f','#8a6b2f','#6b7a3f','#c9a441'],
       particles:['#f2d356','#e0433f','#e8973f','#ffe07a','#c9433f'],
-      particleCount:22, track:'fall.mp3', particleShape:'leaf', clockColor:'#ffd23f'
+      particleCount:22, track:'fall.mp3', particleShape:'leaf', clockColor:'#ffd23f',
+      figureImg:'fall.png'
     },
     { name:'winter',
       leaf1:'#d7e7ea', leaf2:'#eaf3f5', leaf3:'#c3d9de',
       field1:'#c3dbe2', field2:'#eaf6f9',
       grass:['#8aa3a8','#a8bfc4','#6f8a90','#b8ced2'],
       glyph:'❄', particles:['#ffffff','#cfeeff','#e8f6ff','#b8dfff'],
-      particleCount:60, track:'winter.mp3', particleShape:'glyph', clockColor:'#f4faff'
+      particleCount:60, track:'winter.mp3', particleShape:'glyph', clockColor:'#f4faff',
+      figureImg:'winter.png'
     }
   ];
 
@@ -625,6 +607,11 @@
 
     document.body.classList.remove('season-spring','season-summer','season-fall','season-winter');
     document.body.classList.add('season-' + season.name);
+
+    const figureEl = document.getElementById('tree-figure');
+    if(figureEl && season.figureImg){
+      figureEl.setAttribute('href', season.figureImg);
+    }
 
     if(season.name === 'spring'){
       document.querySelectorAll('.flower, .ground-bloom').forEach(el=>{

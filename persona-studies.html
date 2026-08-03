@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>anna_le — persona / persona-studies</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .hero-sub{
+    font-family:var(--mono); color:var(--sky); font-size:1.05rem;
+    margin:-4px 0 30px;
+  }
+  .hero-sub a{ color:var(--green-dim); }
+
+  .cluster-note{
+    font-family:var(--mono); font-size:.95rem; color:var(--green-dim);
+    margin:0 0 30px; max-width:65ch;
+  }
+
+  .reading-list{ display:flex; flex-direction:column; gap:18px; margin-top:10px; }
+  .reading{
+    display:grid;
+    grid-template-columns:220px 1fr;
+    gap:20px;
+    padding-bottom:18px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+  }
+  .reading .who{
+    font-family:var(--mono); font-size:1rem; color:var(--cream);
+  }
+  .reading .who .yr{ color:var(--green-dim); }
+  .reading .what{ font-size:1.02rem; color:#dfeee1; line-height:1.6; }
+  .reading .what .title{ font-style:italic; color:var(--sky); }
+
+  @media (max-width:700px){
+    .reading{ grid-template-columns:1fr; gap:6px; }
+  }
+
+  .archive-tag{
+    display:inline-block;
+    font-family:var(--mono); font-size:.85rem;
+    color:#2a1750; background:var(--yellow);
+    padding:2px 8px; margin-left:10px; vertical-align:middle;
+  }
+</style>
+</head>
+<body data-petals="6">
+
+<header class="nav">
+  <a class="logo" href="index.html">anna<span>_</span>le</a>
+</header>
+
+<main class="page">
+
+  <div class="eyebrow">
+    <h1>persona studies</h1>
+    <span class="path">~/anna/research/persona/persona-studies</span>
+  </div>
+  <div class="hero-sub">← back to <a href="persona.html">persona</a></div>
+
+<p class="cluster-note">the direct theoretical center of this research</p>
+    <div class="reading-list">
+      <div class="reading">
+        <div class="who">Marshall &amp; Barbour <span class="yr">(2015)</span></div>
+        <div class="what"><span class="title">Making Intellectual Room for Persona Studies</span> — persona as a strategic public identity produced through communication, not an authentic inner self.</div>
+      </div>
+      <div class="reading">
+        <div class="who">Marshall, Barbour &amp; Moore <span class="yr">(2017)</span></div>
+        <div class="what">Five Dimensions of Online Persona — public, mediatised, performative, collective, intentional value. The most-used analytical model in the field.</div>
+      </div>
+      <div class="reading">
+        <div class="who">Moore &amp; Connell <span class="yr">(2025)</span></div>
+        <div class="what">Podcast persona — extends persona beyond humans toward media objects constructed through audiences, platforms, and producers.</div>
+      </div>
+      <div class="reading">
+        <div class="who">Katja Lee <span class="yr">(2019)</span></div>
+        <div class="what">Celebrity profiling as life writing — the journalist's persona and the subject's persona are co-produced simultaneously.</div>
+      </div>
+    </div>
+  
+
+</main>
+
+
+<script src="main.js" defer></script>
+</body>
+</html>

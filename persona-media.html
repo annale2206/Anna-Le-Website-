@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>anna_le — persona / persona-media</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .hero-sub{
+    font-family:var(--mono); color:var(--sky); font-size:1.05rem;
+    margin:-4px 0 30px;
+  }
+  .hero-sub a{ color:var(--green-dim); }
+
+  .cluster-note{
+    font-family:var(--mono); font-size:.95rem; color:var(--green-dim);
+    margin:0 0 30px; max-width:65ch;
+  }
+
+  .reading-list{ display:flex; flex-direction:column; gap:18px; margin-top:10px; }
+  .reading{
+    display:grid;
+    grid-template-columns:220px 1fr;
+    gap:20px;
+    padding-bottom:18px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+  }
+  .reading .who{
+    font-family:var(--mono); font-size:1rem; color:var(--cream);
+  }
+  .reading .who .yr{ color:var(--green-dim); }
+  .reading .what{ font-size:1.02rem; color:#dfeee1; line-height:1.6; }
+  .reading .what .title{ font-style:italic; color:var(--sky); }
+
+  @media (max-width:700px){
+    .reading{ grid-template-columns:1fr; gap:6px; }
+  }
+
+  .archive-tag{
+    display:inline-block;
+    font-family:var(--mono); font-size:.85rem;
+    color:#2a1750; background:var(--yellow);
+    padding:2px 8px; margin-left:10px; vertical-align:middle;
+  }
+</style>
+</head>
+<body data-petals="6">
+
+<header class="nav">
+  <a class="logo" href="index.html">anna<span>_</span>le</a>
+</header>
+
+<main class="page">
+
+  <div class="eyebrow">
+    <h1>media studies</h1>
+    <span class="path">~/anna/research/persona/persona-media</span>
+  </div>
+  <div class="hero-sub">← back to <a href="persona.html">persona</a></div>
+
+<p class="cluster-note">persona as labor, brand, and entrepreneurial self</p>
+    <div class="reading-list">
+      <div class="reading">
+        <div class="who">Alice Marwick <span class="yr">(2013)</span></div>
+        <div class="what">Social media producing entrepreneurial selfhood — visibility, branding, and celebrity as everyday practice.</div>
+      </div>
+      <div class="reading">
+        <div class="who">Brooke Erin Duffy <span class="yr">(2017)</span></div>
+        <div class="what"><span class="title">(Not) Getting Paid to Do What You Love</span> — "aspirational labor": creators performing unpaid work hoping visibility converts to paid careers.</div>
+      </div>
+      <div class="reading">
+        <div class="who">Sarah Banet-Weiser <span class="yr">(2012)</span></div>
+        <div class="what">Authenticity itself as a brand under neoliberal capitalism; visibility, creativity, and self-branding merging into one cultural logic.</div>
+      </div>
+      <div class="reading">
+        <div class="who">Crystal Abidin <span class="yr">(2016)</span></div>
+        <div class="what">"Visibility labour" — influencers encouraging followers to produce free promotional content within attention economies.</div>
+      </div>
+      <div class="reading">
+        <div class="who">Theresa Senft <span class="yr">(2008)</span></div>
+        <div class="what"><span class="title">Camgirls</span> — webcam performance as the historical origin of online microcelebrity, before social media existed.</div>
+      </div>
+    </div>
+  
+
+</main>
+
+
+<script src="main.js" defer></script>
+</body>
+</html>
