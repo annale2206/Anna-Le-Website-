@@ -11,18 +11,74 @@
   }
   .hero-sub a{ color:var(--green-dim); }
 
-  .statement{ max-width:70ch; font-size:1.1rem; }
-
-  .status{
-    display:inline-block;
-    margin-top:20px;
-    padding:14px 20px;
-    border:2px dashed var(--green-dim);
-    font-family:var(--mono);
-    color:var(--green-dim);
-    font-size:1.05rem;
-    letter-spacing:.03em;
+  .cluster-note{
+    font-family:var(--mono); font-size:.95rem; color:var(--green-dim);
+    margin:0 0 30px; max-width:65ch;
   }
+
+  .reading-list{ display:flex; flex-direction:column; gap:18px; margin-top:10px; }
+  .reading{
+    display:grid;
+    grid-template-columns:220px 1fr;
+    gap:20px;
+    padding-bottom:18px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+  }
+  .reading .who{
+    font-family:var(--mono); font-size:1rem; color:var(--cream);
+  }
+  .reading .who .yr{ color:var(--green-dim); }
+  .reading .what{ font-size:1.02rem; color:#dfeee1; line-height:1.6; }
+  .reading .what .title{ font-style:italic; color:var(--sky); }
+
+  @media (max-width:700px){
+    .reading{ grid-template-columns:1fr; gap:6px; }
+  }
+
+  .network-map{ width:100%; max-width:700px; margin:10px auto 40px; }
+  .network-map svg{ width:100%; height:auto; display:block; overflow:visible; }
+  .net-line{
+    fill:none; stroke-width:2;
+    stroke-dasharray:1; stroke-dashoffset:1;
+    animation:netgrow 1s ease forwards;
+    opacity:.6;
+  }
+  @keyframes netgrow{ to{ stroke-dashoffset:0; } }
+  .net-hub{ opacity:0; animation:netfade .6s ease forwards; }
+  .net-node{ opacity:0; animation:netfade .6s ease forwards; }
+  @keyframes netfade{ to{ opacity:1; } }
+  .net-node-bg{ filter:drop-shadow(2px 3px 2px rgba(0,0,0,.35)); }
+  .net-node-title{ font-family:var(--mono); font-size:12px; font-weight:bold; }
+  .net-node-body{ font-family:var(--mono); font-size:9.5px; fill:#9fb3ac; }
+  .net-node-ink{ font-family:var(--mono); font-size:11.5px; font-weight:bold; fill:#2a1e14; }
+  .net-node-ink-dim{ font-family:var(--mono); font-size:9px; fill:#5a4a38; }
+  .net-hub-ink{ font-family:var(--mono); font-size:13px; fill:#2a1e14; font-weight:bold; }
+
+  .note-panel{
+    position:relative;
+    background:url('note.png') no-repeat center/100% 100%;
+    padding:36px 46px;
+    margin:20px 0 30px;
+  }
+  .note-panel h1{ color:#2a1e14 !important; }
+  .note-panel .path{ color:#6a5638 !important; }
+  .note-panel .hero-sub{ color:#3a2f1e !important; }
+  .note-panel .hero-sub a{ color:#7a3a1e !important; }
+  .note-panel .cluster-note{ color:#5a4a38 !important; }
+
+  .reading{
+    position:relative;
+    background:url('note.png') no-repeat center/100% 100%;
+    padding:26px 30px 30px;
+    margin-bottom:14px;
+    border-bottom:none !important;
+  }
+  .reading .who{ color:#2a1e14 !important; }
+  .reading .who .yr{ color:#6a5638 !important; }
+  .reading .what{ color:#3a2f1e !important; }
+  .reading .what .title{ color:#7a3a1e !important; }
+  .reading:nth-child(odd){ transform:rotate(-1deg); }
+  .reading:nth-child(even){ transform:rotate(1deg); }
 </style>
 </head>
 <body data-petals="6">
@@ -33,22 +89,142 @@
 
 <main class="page">
 
-  <div class="eyebrow">
+  <div class="note-panel"><div class="eyebrow">
     <h1>art and technology</h1>
     <span class="path">~/anna/research/persona/persona-art-technology</span>
   </div>
   <div class="hero-sub">← back to <a href="persona.html">persona</a></div>
 
-  <p class="statement">
-    Readings on how art practice itself becomes a way of researching and
-    intervening in algorithmic systems — not just illustrating theory, but
-    doing its own kind of knowing.
-  </p>
+  <p class="cluster-note">research-creation — how can artistic practice produce knowledge?</p></div>
 
-  <div class="status">// in process — check back soon</div>
+  <div class="network-map">
+    <svg viewBox="0 0 700 610">
+      <line class="net-line" x1="350" y1="290" x2="350" y2="65" stroke="var(--green)" style="animation-delay:0.30s"/>
+      <line class="net-line" x1="350" y1="290" x2="495" y2="118" stroke="var(--green)" style="animation-delay:0.42s"/>
+      <line class="net-line" x1="350" y1="290" x2="572" y2="251" stroke="var(--green)" style="animation-delay:0.54s"/>
+      <line class="net-line" x1="350" y1="290" x2="545" y2="402" stroke="var(--green)" style="animation-delay:0.66s"/>
+      <line class="net-line" x1="350" y1="290" x2="427" y2="501" stroke="var(--green)" style="animation-delay:0.78s"/>
+      <line class="net-line" x1="350" y1="290" x2="273" y2="501" stroke="var(--green)" style="animation-delay:0.90s"/>
+      <line class="net-line" x1="350" y1="290" x2="155" y2="402" stroke="var(--green)" style="animation-delay:1.02s"/>
+      <line class="net-line" x1="350" y1="290" x2="128" y2="251" stroke="var(--green)" style="animation-delay:1.14s"/>
+      <line class="net-line" x1="350" y1="290" x2="205" y2="118" stroke="var(--green)" style="animation-delay:1.26s"/>
+      <image class="net-hub" href="note.png" x="280" y="220" width="140" height="140" preserveAspectRatio="none" style="animation-delay:.1s"/>
+      <text class="net-hub net-hub-ink" x="350" y="286" text-anchor="middle" style="animation-delay:.1s">art &amp;</text>
+      <text class="net-hub net-hub-ink" x="350" y="304" text-anchor="middle" style="animation-delay:.1s">technology</text>
+      <g class="net-node" style="animation-delay:0.50s">
+        <g transform="rotate(-3 350 65)">
+          <image class="net-node-bg" href="note.png" x="264" y="34" width="172" height="62" preserveAspectRatio="none"/>
+          <text class="net-node-title net-node-ink" x="350" y="55" text-anchor="middle">Claire Bishop</text>
+          <text class="net-node-body net-node-ink-dim" x="350" y="69" text-anchor="middle">Artificial Hells</text>
+          <text class="net-node-body net-node-ink-dim" x="350" y="81" text-anchor="middle">participatory art &amp; spectatorship</text>
+        </g>
+      </g>
+      <g class="net-node" style="animation-delay:0.62s">
+        <g transform="rotate(3 495 118)">
+          <image class="net-node-bg" href="note.png" x="409" y="87" width="172" height="62" preserveAspectRatio="none"/>
+          <text class="net-node-title net-node-ink" x="495" y="108" text-anchor="middle">Claire Bishop</text>
+          <text class="net-node-body net-node-ink-dim" x="495" y="122" text-anchor="middle">Installation Art</text>
+          <text class="net-node-body net-node-ink-dim" x="495" y="134" text-anchor="middle">installation history &amp; theory</text>
+        </g>
+      </g>
+      <g class="net-node" style="animation-delay:0.74s">
+        <g transform="rotate(-2 572 251)">
+          <image class="net-node-bg" href="note.png" x="486" y="220" width="172" height="62" preserveAspectRatio="none"/>
+          <text class="net-node-title net-node-ink" x="572" y="241" text-anchor="middle">Grant Kester</text>
+          <text class="net-node-body net-node-ink-dim" x="572" y="255" text-anchor="middle">Conversation Pieces</text>
+          <text class="net-node-body net-node-ink-dim" x="572" y="267" text-anchor="middle">dialogical aesthetics</text>
+        </g>
+      </g>
+      <g class="net-node" style="animation-delay:0.86s">
+        <g transform="rotate(4 545 402)">
+          <image class="net-node-bg" href="note.png" x="459" y="371" width="172" height="62" preserveAspectRatio="none"/>
+          <text class="net-node-title net-node-ink" x="545" y="392" text-anchor="middle">Jussi Parikka</text>
+          <text class="net-node-body net-node-ink-dim" x="545" y="406" text-anchor="middle">What Is Media Archaeology?</text>
+          <text class="net-node-body net-node-ink-dim" x="545" y="418" text-anchor="middle">media archaeology</text>
+        </g>
+      </g>
+      <g class="net-node" style="animation-delay:0.98s">
+        <g transform="rotate(-4 427 501)">
+          <image class="net-node-bg" href="note.png" x="341" y="470" width="172" height="62" preserveAspectRatio="none"/>
+          <text class="net-node-title net-node-ink" x="427" y="491" text-anchor="middle">Jussi Parikka</text>
+          <text class="net-node-body net-node-ink-dim" x="427" y="505" text-anchor="middle">A Geology of Media</text>
+          <text class="net-node-body net-node-ink-dim" x="427" y="517" text-anchor="middle">material media histories</text>
+        </g>
+      </g>
+      <g class="net-node" style="animation-delay:1.10s">
+        <g transform="rotate(2 273 501)">
+          <image class="net-node-bg" href="note.png" x="187" y="470" width="172" height="62" preserveAspectRatio="none"/>
+          <text class="net-node-title net-node-ink" x="273" y="491" text-anchor="middle">Mark B. N. Hansen</text>
+          <text class="net-node-body net-node-ink-dim" x="273" y="505" text-anchor="middle">Feed-Forward</text>
+          <text class="net-node-body net-node-ink-dim" x="273" y="517" text-anchor="middle">perception in computational environments</text>
+        </g>
+      </g>
+      <g class="net-node" style="animation-delay:1.22s">
+        <g transform="rotate(-3 155 402)">
+          <image class="net-node-bg" href="note.png" x="69" y="371" width="172" height="62" preserveAspectRatio="none"/>
+          <text class="net-node-title net-node-ink" x="155" y="392" text-anchor="middle">Erkki Huhtamo</text>
+          <text class="net-node-body net-node-ink-dim" x="155" y="406" text-anchor="middle">Media Archaeology (essays)</text>
+          <text class="net-node-body net-node-ink-dim" x="155" y="418" text-anchor="middle">histories of media forms</text>
+        </g>
+      </g>
+      <g class="net-node" style="animation-delay:1.34s">
+        <g transform="rotate(3 128 251)">
+          <image class="net-node-bg" href="note.png" x="42" y="220" width="172" height="62" preserveAspectRatio="none"/>
+          <text class="net-node-title net-node-ink" x="128" y="241" text-anchor="middle">Erin Manning</text>
+          <text class="net-node-body net-node-ink-dim" x="128" y="255" text-anchor="middle">Always More Than One</text>
+          <text class="net-node-body net-node-ink-dim" x="128" y="267" text-anchor="middle">process philosophy &amp; movement</text>
+        </g>
+      </g>
+      <g class="net-node" style="animation-delay:1.46s">
+        <g transform="rotate(-2 205 118)">
+          <image class="net-node-bg" href="note.png" x="119" y="87" width="172" height="62" preserveAspectRatio="none"/>
+          <text class="net-node-title net-node-ink" x="205" y="108" text-anchor="middle">Eduardo Kac</text>
+          <text class="net-node-body net-node-ink-dim" x="205" y="122" text-anchor="middle">telepresence &amp; bio art essays</text>
+          <text class="net-node-body net-node-ink-dim" x="205" y="134" text-anchor="middle">art-technology practices</text>
+        </g>
+      </g>
+    </svg>
+  </div>
+
+  <div class="reading-list">
+      <div class="reading">
+        <div class="who">Claire Bishop</div>
+        <div class="what"><span class="title">Artificial Hells</span> — participatory art & spectatorship.</div>
+      </div>
+      <div class="reading">
+        <div class="who">Claire Bishop</div>
+        <div class="what"><span class="title">Installation Art</span> — installation history & theory.</div>
+      </div>
+      <div class="reading">
+        <div class="who">Grant Kester</div>
+        <div class="what"><span class="title">Conversation Pieces</span> — dialogical aesthetics.</div>
+      </div>
+      <div class="reading">
+        <div class="who">Jussi Parikka</div>
+        <div class="what"><span class="title">What Is Media Archaeology?</span> — media archaeology.</div>
+      </div>
+      <div class="reading">
+        <div class="who">Jussi Parikka</div>
+        <div class="what"><span class="title">A Geology of Media</span> — material media histories.</div>
+      </div>
+      <div class="reading">
+        <div class="who">Mark B. N. Hansen</div>
+        <div class="what"><span class="title">Feed-Forward</span> — perception in computational environments.</div>
+      </div>
+      <div class="reading">
+        <div class="who">Erkki Huhtamo</div>
+        <div class="what"><span class="title">Media Archaeology (essays)</span> — histories of media forms.</div>
+      </div>
+      <div class="reading">
+        <div class="who">Erin Manning</div>
+        <div class="what"><span class="title">Always More Than One</span> — process philosophy & movement.</div>
+      </div>
+      <div class="reading">
+        <div class="who">Eduardo Kac</div>
+        <div class="what"><span class="title">telepresence &amp; bio art essays</span> — art-technology practices.</div>
+      </div>  </div>
 
 </main>
-
 
 <script src="main.js" defer></script>
 </body>

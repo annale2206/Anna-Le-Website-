@@ -41,6 +41,56 @@
     color:#2a1750; background:var(--yellow);
     padding:2px 8px; margin-left:10px; vertical-align:middle;
   }
+
+  .network-map{ width:100%; max-width:700px; margin:10px auto 40px; }
+  .network-map svg{ width:100%; height:auto; display:block; overflow:visible; }
+  .net-line{
+    fill:none; stroke-width:2;
+    stroke-dasharray:1; stroke-dashoffset:1;
+    animation:netgrow 1s ease forwards;
+    opacity:.6;
+  }
+  @keyframes netgrow{ to{ stroke-dashoffset:0; } }
+  .net-hub{ opacity:0; animation:netfade .6s ease forwards; }
+  .net-node{ opacity:0; animation:netfade .6s ease forwards; }
+  @keyframes netfade{ to{ opacity:1; } }
+  .net-hub-bg{ fill:#2a1750; stroke-width:2; }
+  .net-hub-text{ font-family:var(--mono); font-size:14px; fill:var(--cream); font-weight:bold; }
+  .net-node-bg{ fill:#1c2733; stroke-width:1.5; }
+  .net-node-title{ font-family:var(--mono); font-size:12px; font-weight:bold; }
+  .net-node-body{ font-family:var(--mono); font-size:9.5px; fill:#9fb3ac; }
+
+  .net-node-ink{ font-family:var(--mono); font-size:12px; font-weight:bold; fill:#2a1e14; }
+  .net-node-ink-dim{ font-family:var(--mono); font-size:9.5px; fill:#5a4a38; }
+  .net-node-bg{ filter:drop-shadow(2px 3px 2px rgba(0,0,0,.35)); }
+
+  .note-panel{
+    position:relative;
+    background:url('note.png') no-repeat center/100% 100%;
+    padding:36px 46px;
+    margin:20px 0 30px;
+  }
+  .note-panel h1{ color:#2a1e14 !important; }
+  .note-panel .path{ color:#6a5638 !important; }
+  .note-panel .hero-sub{ color:#3a2f1e !important; }
+  .note-panel .hero-sub a{ color:#7a3a1e !important; }
+  .note-panel .cluster-note{ color:#5a4a38 !important; }
+
+  .reading{
+    position:relative;
+    background:url('note.png') no-repeat center/100% 100%;
+    padding:26px 30px 30px;
+    margin-bottom:14px;
+    border-bottom:none !important;
+  }
+  .reading .who{ color:#2a1e14 !important; }
+  .reading .who .yr{ color:#6a5638 !important; }
+  .reading .what{ color:#3a2f1e !important; }
+  .reading .what .title{ color:#7a3a1e !important; }
+  .reading:nth-child(odd){ transform:rotate(-1deg); }
+  .reading:nth-child(even){ transform:rotate(1deg); }
+
+  .net-hub-ink{ font-family:var(--mono); font-size:13px; fill:#2a1e14; font-weight:bold; }
 </style>
 </head>
 <body data-petals="6">
@@ -51,14 +101,45 @@
 
 <main class="page">
 
-  <div class="eyebrow">
+  <div class="note-panel"><div class="eyebrow">
     <h1>critical algorithm studies</h1>
     <span class="path">~/anna/research/persona/persona-algorithm-studies</span>
   </div>
   <div class="hero-sub">← back to <a href="persona.html">persona</a></div>
 
-<p class="cluster-note">algorithms as active producers of what becomes visible, governable, and actionable</p>
-    <div class="reading-list">
+<p class="cluster-note">algorithms as active producers of what becomes visible, governable, and actionable</p></div>
+    <div class="network-map">
+    <svg viewBox="0 0 700 500">
+      <line class="net-line" x1="350" y1="250" x2="350" y2="75" stroke="var(--teal)" style="animation-delay:0.30s"/>
+      <line class="net-line" x1="350" y1="250" x2="502" y2="338" stroke="var(--teal)" style="animation-delay:0.45s"/>
+      <line class="net-line" x1="350" y1="250" x2="198" y2="338" stroke="var(--teal)" style="animation-delay:0.60s"/>
+      <image class="net-hub" href="note.png" x="286" y="186" width="128" height="128" preserveAspectRatio="none" style="animation-delay:.1s"/>
+      <text class="net-hub net-hub-ink" x="350" y="246" text-anchor="middle" style="animation-delay:.1s">critical</text>
+      <text class="net-hub net-hub-ink" x="350" y="262" text-anchor="middle" style="animation-delay:.1s">algorithm studies</text><g class="net-node" style="animation-delay:0.50s">
+        <g transform="rotate(-3 350 75)">
+          <image class="net-node-bg" href="note.png" x="266" y="45" width="168" height="60" preserveAspectRatio="none"/>
+          <text class="net-node-title net-node-ink" x="350" y="67" text-anchor="middle">Louise Amoore</text>
+          <text class="net-node-body net-node-ink-dim" x="350" y="83" text-anchor="middle">algorithms construct what becomes visible</text>
+        </g>
+      </g>
+      <g class="net-node" style="animation-delay:0.65s">
+        <g transform="rotate(-4 502 338)">
+          <image class="net-node-bg" href="note.png" x="418" y="308" width="168" height="60" preserveAspectRatio="none"/>
+          <text class="net-node-title net-node-ink" x="502" y="330" text-anchor="middle">Kate Crawford</text>
+          <text class="net-node-body net-node-ink-dim" x="502" y="346" text-anchor="middle">data as political infrastructure</text>
+        </g>
+      </g>
+      <g class="net-node" style="animation-delay:0.80s">
+        <g transform="rotate(-4 198 338)">
+          <image class="net-node-bg" href="note.png" x="114" y="308" width="168" height="60" preserveAspectRatio="none"/>
+          <text class="net-node-title net-node-ink" x="198" y="330" text-anchor="middle">Taina Bucher</text>
+          <text class="net-node-body net-node-ink-dim" x="198" y="346" text-anchor="middle">algorithmic power, everyday platforms</text>
+        </g>
+      </g>
+    </svg>
+  </div>
+
+  <div class="reading-list">
       <div class="reading">
         <div class="who">Louise Amoore <span class="yr">(2020)</span></div>
         <div class="what"><span class="title">Cloud Ethics</span> — machine learning reduces complex social scenes into actionable attributes; algorithmic "errors" reveal underlying rationality rather than failure.</div>
