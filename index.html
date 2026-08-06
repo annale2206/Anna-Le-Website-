@@ -882,6 +882,14 @@
     const holder = document.getElementById('canvas-holder');
     holder.id = '';
     cnv.elt.id = 'flower-canvas';
+    // p5 sets a fixed pixel width/height as an inline style by default,
+    // which silently overrides any external CSS trying to make it
+    // responsive. Setting it here, through p5's own method, guarantees
+    // this wins and the canvas actually scales together with the SVG
+    // beneath it instead of staying locked at 1200x800 regardless of
+    // screen size.
+    cnv.style('width', '100%');
+    cnv.style('height', '100%');
     angleMode(DEGREES);
     p5PageStart = millis();
     for(let i=0;i<5;i++){
