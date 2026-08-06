@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>anna_le — blossom nav tree</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Bungee&family=VT323&family=Space+Grotesk:wght@400;500;700&display=swap');
 
@@ -67,6 +68,12 @@
 
   .stage{ position:relative; width:100%; max-width:1180px; z-index:2; }
   svg{ width:100%; height:auto; display:block; overflow:visible; }
+  #flower-canvas{
+    position:absolute; left:0; top:0;
+    width:100%; height:100%;
+    z-index:3;
+    cursor:default;
+  }
 
   .branch{
     fill:none; stroke:var(--bark); stroke-linecap:round;
@@ -267,9 +274,6 @@
     50%{ opacity:.9; }
   }
 
-  body.season-winter.freeze-ready .flower{
-    animation-play-state:paused;
-  }
   body.season-winter .pollen{ display:none; }
 </style>
 </head>
@@ -278,7 +282,7 @@
 <div id="sun-glow"></div>
 <div class="sun-disc" id="sun-disc"></div>
 
-<div class="stage">
+<div class="stage" id="stage">
   <svg viewBox="0 0 1200 800">
     <defs>
       <symbol id="flower" viewBox="-22 -22 44 44">
@@ -371,6 +375,7 @@
 
     <path class="branch b3" d="M600,140 C560,110 530,80 500,60" pathLength="1" style="animation-delay:1.6s"/>
     <path class="branch b3" d="M600,140 C580,100 570,55 560,20" pathLength="1" style="animation-delay:1.7s"/>
+    <path class="branch b3" d="M600,140 C620,100 645,60 665,25" pathLength="1" style="animation-delay:1.8s"/>
 
     <path class="branch b3" d="M930,160 C870,130 830,100 810,80" pathLength="1" style="animation-delay:1.6s"/>
     <path class="branch b3" d="M930,160 C910,115 890,65 870,30" pathLength="1" style="animation-delay:1.7s"/>
@@ -455,32 +460,11 @@
     <g transform="translate(645,470) rotate(8) scale(1.3)"><g class="leaf" style="animation-delay:2.86s">
       <path d="M0,-14 C6,-8 6,7 0,15 C-6,7 -6,-8 0,-14 Z" fill="var(--leaf-1)"/><line x1="0" y1="-12" x2="0" y2="12"/><text class="snowflake-mark" x="0" y="6" text-anchor="middle">❄</text>
     </g></g>
-
-    <use class="flower" href="#flower" x="36" y="366" width="28" height="28" style="color:var(--orange); animation-delay:2.6s"
-         data-href="about.html"/>
-    <use class="flower" href="#flower" x="236" y="126" width="68" height="68" style="color:var(--pink); animation-delay:2.65s"/>
-    <use class="flower" href="#flower" x="578" y="118" width="44" height="44" style="color:var(--sky); animation-delay:2.7s"/>
-    <use class="flower" href="#flower" x="902" y="132" width="56" height="56" style="color:var(--green); animation-delay:2.75s"/>
-    <use class="flower" href="#flower" x="1136" y="366" width="28" height="28" style="color:var(--purple); animation-delay:2.8s"
-         data-href="cv.html"/>
-
     <text class="label" x="50" y="430" fill="var(--orange)" text-anchor="middle" style="animation-delay:2.3s">about</text>
     <text class="label" x="175" y="185" fill="var(--pink)" style="animation-delay:2.35s">projects</text>
     <text class="label" x="500" y="175" fill="var(--sky)" style="animation-delay:2.4s">research</text>
     <text class="label" x="930" y="210" fill="var(--green)" text-anchor="middle" style="animation-delay:2.45s">art practice</text>
     <text class="label" x="1150" y="430" fill="var(--purple)" text-anchor="middle" style="animation-delay:2.5s">cv</text>
-
-    <use class="flower" href="#flower" x="153" y="73" width="32" height="32" style="color:var(--yellow); animation-delay:2.95s"
-         data-href="project1.html"/>
-    <use class="flower" href="#flower" x="223" y="23" width="32" height="32" style="color:var(--orange); animation-delay:3.05s"
-         data-href="project2.html"/>
-    <use class="flower" href="#flower" x="313" y="13" width="32" height="32" style="color:var(--teal); animation-delay:3.15s"
-         data-href="project3.html"/>
-    <use class="flower" href="#flower" x="373" y="63" width="32" height="32" style="color:var(--sky); animation-delay:3.25s"
-         data-href="project4.html"/>
-    <use class="flower" href="#flower" x="74" y="94" width="32" height="32" style="color:var(--purple); animation-delay:3.3s"
-         data-href="3d-persona.html"/>
-
     <text class="label" x="169" y="115" fill="var(--yellow)" text-anchor="middle"
           transform="rotate(-6 169 115)" style="font-size:17px; animation-delay:3.4s">manifesto fiction</text>
     <text class="label" x="239" y="-2" fill="var(--orange)" text-anchor="middle"
@@ -491,24 +475,12 @@
           transform="rotate(5 389 105)" style="font-size:17px; animation-delay:3.55s">Color of Love</text>
     <text class="label" x="50" y="140" fill="var(--purple)" text-anchor="middle"
           transform="rotate(-6 50 140)" style="font-size:17px; animation-delay:3.6s">3d persona</text>
-
-    <use class="flower" href="#flower" x="483" y="43" width="32" height="32" style="color:var(--purple); animation-delay:2.95s"
-         data-href="persona.html"/>
-    <use class="flower" href="#flower" x="543" y="3" width="32" height="32" style="color:var(--teal); animation-delay:3.05s"
-         data-href="cindy-sherman.html"/>
-
     <text class="label" x="499" y="80" fill="var(--purple)" text-anchor="middle"
           transform="rotate(-5 499 80)" style="font-size:17px; animation-delay:3.6s">persona</text>
     <text class="label" x="559" y="-15" fill="var(--teal)" text-anchor="middle"
           transform="rotate(4 559 -15)" style="font-size:17px; animation-delay:3.65s">Cindy Sherman</text>
-
-    <use class="flower" href="#flower" x="793" y="63" width="32" height="32" style="color:var(--pink); animation-delay:2.95s"
-         data-href="interactive.html"/>
-    <use class="flower" href="#flower" x="853" y="13" width="32" height="32" style="color:var(--yellow); animation-delay:3.05s"
-         data-href="sculptures.html"/>
-    <use class="flower" href="#flower" x="943" y="23" width="32" height="32" style="color:var(--teal); animation-delay:3.15s"
-         data-href="collaboration.html"/>
-
+    <text class="label" x="665" y="-8" fill="var(--yellow)" text-anchor="middle"
+          transform="rotate(6 665 -8)" style="font-size:17px; animation-delay:3.7s">identity machine</text>
     <text class="label" x="809" y="100" fill="var(--pink)" text-anchor="middle"
           transform="rotate(5 809 100)" style="font-size:17px; animation-delay:3.7s">interactive</text>
     <text class="label" x="869" y="-12" fill="var(--yellow)" text-anchor="middle"
@@ -529,6 +501,7 @@
     </g>
 
   </svg>
+  <div id="canvas-holder"></div>
 </div>
 
 <div class="season-clock" id="season-clock">
@@ -732,14 +705,26 @@
 
   refreshSeason();
   updateSeasonClock();
+
+  // safety net: run continuously (after the initial bloom-in has had time to
+  // finish) so no matter what happens with season timing or animation state,
+  // every flower stays fully visible and clickable, this cycle and every
+  // cycle after it
+  const pageStart = Date.now();
+  function ensureFlowersVisible(){
+    if(Date.now() - pageStart < 4200) return; // let the first bloom-in play out
+    document.querySelectorAll('.flower').forEach(el=>{
+      el.style.opacity = '1';
+      el.style.animationPlayState = 'running';
+      el.style.pointerEvents = 'auto';
+    });
+  }
+
   setInterval(()=>{
     refreshSeason();
     updateSeasonClock();
+    ensureFlowersVisible();
   }, 1000);
-
-  setTimeout(()=>{
-    document.body.classList.add('freeze-ready');
-  }, 5000);
 
   (function initAliveFlowers(){
     const svgEl = document.querySelector('.stage svg');
@@ -840,6 +825,177 @@
       musicBtn.dispatchEvent(new Event('click'));
     }
   });
+</script>
+
+<script>
+  // ============================================================
+  // p5.js — draws the clickable flowers and adds butterflies.
+  // Everything else on the page (trunk, branches, leaves, grass,
+  // ground, labels, season system, bird, clock, music) is untouched
+  // SVG/CSS/JS from above. This sketch reuses the SAME `SEASONS`
+  // array and `currentSeasonIndex()` function already defined above,
+  // rather than duplicating season logic.
+  // ============================================================
+
+  const MAIN_FLOWERS = [
+    { x:36,  y:366, size:28, color:'#ff9f4d', href:'about.html' },
+    { x:236, y:126, size:68, color:'#ff3d9a', href:null },
+    { x:578, y:118, size:44, color:'#7fd4ff', href:null },
+    { x:902, y:132, size:56, color:'#9dff9e', href:null },
+    { x:1136,y:366, size:28, color:'#8a5cf6', href:'cv.html' },
+  ];
+  const SUB_FLOWERS = [
+    { x:153, y:73, size:32, color:'#ffd23f', href:'project1.html' },
+    { x:223, y:23, size:32, color:'#ff9f4d', href:'project2.html' },
+    { x:313, y:13, size:32, color:'#43e0c9', href:'project3.html' },
+    { x:373, y:63, size:32, color:'#7fd4ff', href:'project4.html' },
+    { x:74,  y:94, size:32, color:'#8a5cf6', href:'3d-persona.html' },
+    { x:483, y:43, size:32, color:'#8a5cf6', href:'persona.html' },
+    { x:543, y:3,  size:32, color:'#43e0c9', href:'cindy-sherman.html' },
+    { x:649, y:9,  size:32, color:'#ffd23f', href:'identity-machine.html' },
+    { x:793, y:63, size:32, color:'#ff3d9a', href:'interactive.html' },
+    { x:853, y:13, size:32, color:'#ffd23f', href:'sculptures.html' },
+    { x:943, y:23, size:32, color:'#43e0c9', href:'collaboration.html' },
+  ];
+  const ALL_FLOWERS = MAIN_FLOWERS.concat(SUB_FLOWERS).map(f=>({
+    ...f, cx:f.x+f.size/2, cy:f.y+f.size/2
+  }));
+
+  let butterflies = [];
+  let p5PageStart = 0;
+
+  function p5Season(){
+    return SEASONS[currentSeasonIndex()];
+  }
+
+  function bloomScale(delaySec){
+    const t = (millis() - p5PageStart)/1000 - delaySec;
+    if(t <= 0) return 0;
+    if(t >= 0.6) return 1;
+    const p = t/0.6;
+    return 1 - Math.pow(1-p,3) * (1 - p*0.3);
+  }
+
+  function setup(){
+    const cnv = createCanvas(1200, 800);
+    cnv.parent('canvas-holder');
+    const holder = document.getElementById('canvas-holder');
+    holder.id = '';
+    cnv.elt.id = 'flower-canvas';
+    angleMode(DEGREES);
+    p5PageStart = millis();
+    for(let i=0;i<5;i++){
+      butterflies.push({
+        seed: random(1000),
+        baseX: random(200,1000),
+        baseY: random(150,350),
+        wingColor: random(['#ff9fd0','#ffe07a','#b39dff','#8fe3ff']),
+        speed: random(0.15,0.3)
+      });
+    }
+  }
+
+  function flowerColor(f){
+    const s = p5Season();
+    if(s.name === 'fall') return '#f2d356';
+    if(s.name === 'winter') return '#f4faff';
+    return f.color;
+  }
+
+  function drawFlowerShape(x,y,size,hex,rotDeg){
+    push();
+    translate(x,y);
+    rotate(rotDeg);
+    const r = size/2;
+    noStroke();
+    fill(hex);
+    for(let i=0;i<5;i++){
+      push();
+      rotate(i*72);
+      ellipse(0,-r*0.55, r*0.64, r);
+      pop();
+    }
+    fill('#2a1750');
+    stroke(238,244,238);
+    strokeWeight(1);
+    circle(0,0, r*0.55);
+    pop();
+  }
+
+  function draw(){
+    clear();
+    const t = millis()/1000;
+
+    for(let i=0;i<ALL_FLOWERS.length;i++){
+      const f = ALL_FLOWERS[i];
+      const isMain = i < MAIN_FLOWERS.length;
+      const delay = isMain ? 2.6 + i*0.05 : 2.95 + (i-MAIN_FLOWERS.length)*0.1;
+      const s = bloomScale(delay);
+      if(s<=0) continue;
+
+      // organic sway (more motion than a fixed sine loop): each flower
+      // reads its own noise channel so none of them repeat in lockstep
+      const swayStart = (millis()-p5PageStart)/1000 - delay - 1;
+      const swayDeg = swayStart > 0 ? (noise(i*13.1, t*0.18)-0.5) * 8 : 0;
+
+      // hover-lean toward the cursor — same idea as the SVG version
+      const d = dist(mouseX, mouseY, f.cx, f.cy);
+      const LEAN_RADIUS = 160, MAX_LEAN = 6;
+      let leanDeg = 0;
+      if(d < LEAN_RADIUS){
+        const strength = 1 - d/LEAN_RADIUS;
+        leanDeg = (mouseX - f.cx >= 0 ? 1 : -1) * MAX_LEAN * strength;
+      }
+
+      drawFlowerShape(f.cx, f.cy, f.size*s, flowerColor(f), swayDeg+leanDeg);
+
+      // drifting pollen, same spirit as the SVG version's floating dots
+      if(s>=1 && p5Season().name !== 'winter'){
+        noStroke();
+        for(let p=0;p<2;p++){
+          const life = (t*0.15 + noise(i*20+p*7)) % 1;
+          const px = f.cx + (noise(i*20+p*7, t*0.2)-0.5) * f.size*0.7;
+          const py = f.cy - life*50;
+          const alpha = Math.sin(life*Math.PI) * 200;
+          const c = color(f.color);
+          fill(red(c), green(c), blue(c), alpha);
+          circle(px, py, 2.2);
+        }
+      }
+    }
+
+    for(const b of butterflies) drawButterfly(b, t);
+  }
+
+  function drawButterfly(b, t){
+    const x = b.baseX + (noise(b.seed, t*b.speed)-0.5) * 700;
+    const y = b.baseY + (noise(b.seed+50, t*b.speed*0.8)-0.5) * 300;
+    const flap = Math.sin(t*10 + b.seed) * 30;
+    push();
+    translate(x,y);
+    rotate(Math.sin(t*0.5+b.seed)*15);
+    noStroke();
+    fill(b.wingColor);
+    push(); rotate(-flap); ellipse(-7,0, 15,10); pop();
+    push(); rotate(flap);  ellipse(7,0, 15,10); pop();
+    fill(40,30,50);
+    ellipse(0,0, 3,9);
+    pop();
+  }
+
+  function mousePressed(){
+    for(const f of ALL_FLOWERS){
+      if(f.href && dist(mouseX,mouseY,f.cx,f.cy) < f.size/2+6){
+        window.location.href = f.href;
+        return;
+      }
+    }
+    // let clicks on the bird still work, since the canvas sits on top of it
+    const birdBox = { x1:132, y1:300, x2:248, y2:415 };
+    if(mouseX>=birdBox.x1 && mouseX<=birdBox.x2 && mouseY>=birdBox.y1 && mouseY<=birdBox.y2){
+      document.getElementById('tree-bird').dispatchEvent(new Event('click'));
+    }
+  }
 </script>
 
 </body>

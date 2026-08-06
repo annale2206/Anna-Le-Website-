@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>identity machine</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+  *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body{
+    width:100%; height:100%; overflow:hidden;
+    background:#05070a;
+    font-family:'VT323', monospace;
+    user-select:none;
+  }
+
+  .screen{
+    position:fixed; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    opacity:0; pointer-events:none;
+    transition:opacity .7s ease;
+  }
+  .screen.active{ opacity:1; pointer-events:auto; }
+
+  /* ---------- gate ---------- */
+  #gate{ flex-direction:column; gap:40px; }
+  .dots{ display:flex; gap:18px; }
+  .dot{
+    width:14px; height:14px; border-radius:50%;
+    border:1.5px solid #3a4652;
+    transition:background .15s ease, border-color .15s ease;
+  }
+  .dot.filled{ background:#43e0c9; border-color:#43e0c9; }
+  .dot.err{ background:#ff3d9a; border-color:#ff3d9a; }
+  .keypad{ display:grid; grid-template-columns:repeat(3, 64px); gap:14px; }
+  .key{
+    width:64px; height:64px; border-radius:50%;
+    background:none; border:1px solid #2a333d;
+    color:#8a99a6; font-family:'VT323', monospace; font-size:26px;
+    cursor:pointer;
+  }
+  .key:active{ background:#12181f; border-color:#43e0c9; color:#43e0c9; }
+  .key.blank{ border:none; cursor:default; }
+  .key.blank:active{ background:none; border:none; }
+  @keyframes shake{
+    0%,100%{ transform:translateX(0); }
+    20%{ transform:translateX(-10px); }
+    40%{ transform:translateX(10px); }
+    60%{ transform:translateX(-6px); }
+    80%{ transform:translateX(6px); }
+  }
+  .dots.shake{ animation:shake .4s ease; }
+
+  /* ---------- three-TV floor ---------- */
+  #floor{ gap:3vw; }
+  .tv-unit{ display:flex; flex-direction:column; align-items:center; }
+  .tv{
+    position:relative;
+    width:27vw; max-width:400px; aspect-ratio:4/3;
+    background:#14181d;
+    border-radius:20px;
+    padding:14px;
+    box-shadow:
+      0 0 0 2px #05070a,
+      0 20px 50px rgba(0,0,0,.6),
+      inset 0 0 0 1px #262c33;
+  }
+  .tv-screen{
+    position:relative;
+    width:100%; height:100%;
+    border-radius:9px;
+    overflow:hidden;
+    background:#000;
+    cursor:default;
+  }
+  .tv-screen.tappable{ cursor:pointer; }
+  .tv-screen::after{
+    content:'';
+    position:absolute; inset:0;
+    background:repeating-linear-gradient(
+      to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px,
+      rgba(0,0,0,.18) 3px, rgba(0,0,0,0) 4px
+    );
+    pointer-events:none;
+    mix-blend-mode:multiply;
+  }
+  .tv-screen::before{
+    content:'';
+    position:absolute; inset:0;
+    box-shadow: inset 0 0 60px 10px rgba(0,0,0,.75);
+    pointer-events:none;
+    z-index:5;
+  }
+  .tv video, .tv-screen img, .tv-screen canvas{
+    position:absolute; inset:0;
+    width:100%; height:100%; object-fit:cover;
+  }
+  .tv-led{
+    width:6px; height:6px; border-radius:50%;
+    background:#2a333d; margin-top:12px;
+    transition:background .3s ease, box-shadow .3s ease;
+  }
+  .tv-led.on{ background:#43e0c9; box-shadow:0 0 8px #43e0c9; }
+  .tv-led.pulse{ animation:led-pulse 1s ease-in-out infinite; }
+  @keyframes led-pulse{
+    0%,100%{ opacity:.4; }
+    50%{ opacity:1; }
+  }
+
+  .tv-caption{
+    font-family:'VT323', monospace;
+    font-size:14px;
+    letter-spacing:.12em;
+    color:#3a4652;
+    margin-top:8px;
+    text-transform:lowercase;
+  }
+
+  .static-canvas{ position:absolute; inset:0; width:100%; height:100%; }
+
+  .ring{
+    position:absolute; z-index:2; top:50%; left:50%;
+    width:15%; aspect-ratio:1;
+    transform:translate(-50%,-50%);
+    border-radius:50%;
+    border:2px solid rgba(255,255,255,.5);
+    animation:pulse 2.4s ease-in-out infinite;
+    pointer-events:none;
+  }
+  @keyframes pulse{
+    0%,100%{ transform:translate(-50%,-50%) scale(1); opacity:.5; }
+    50%{ transform:translate(-50%,-50%) scale(1.15); opacity:1; }
+  }
+
+  .tv-screen img.reveal, .tv-screen video.reveal{
+    opacity:0;
+    animation:reveal 1.1s ease forwards;
+  }
+  @keyframes reveal{
+    from{ opacity:0; filter:brightness(2) contrast(1.4); transform:scale(1.04); }
+    to{ opacity:1; filter:brightness(1) contrast(1); transform:scale(1); }
+  }
+
+  .glitch-bar{ position:absolute; z-index:3; }
+
+  #error-msg{
+    position:fixed; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    text-align:center; color:#ff3d9a; font-size:22px; letter-spacing:.05em;
+    background:rgba(5,7,10,.92);
+    opacity:0; pointer-events:none; transition:opacity .3s ease;
+    z-index:50; padding:40px;
+  }
+  #error-msg.show{ opacity:1; pointer-events:auto; }
+  #error-msg span{ max-width:480px; line-height:1.6; }
+
+  @media (max-width:900px){
+    #floor{ flex-direction:column; gap:4vh; }
+    .tv{ width:78vw; }
+  }
+</style>
+</head>
+<body>
+
+<div class="screen active" id="gate">
+  <div class="dots" id="dots">
+    <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+  </div>
+  <div class="keypad" id="keypad">
+    <button class="key" data-k="1">1</button>
+    <button class="key" data-k="2">2</button>
+    <button class="key" data-k="3">3</button>
+    <button class="key" data-k="4">4</button>
+    <button class="key" data-k="5">5</button>
+    <button class="key" data-k="6">6</button>
+    <button class="key" data-k="7">7</button>
+    <button class="key" data-k="8">8</button>
+    <button class="key" data-k="9">9</button>
+    <div class="key blank"></div>
+    <button class="key" data-k="0">0</button>
+    <button class="key" data-k="back">⌫</button>
+  </div>
+</div>
+
+<div class="screen" id="floor">
+  <div class="tv-unit">
+    <div class="tv">
+      <div class="tv-screen tappable" id="capture-screen">
+        <video id="video" autoplay playsinline muted></video>
+        <div class="ring" id="capture-ring"></div>
+      </div>
+    </div>
+    <div class="tv-led" id="led-1"></div>
+    <div class="tv-caption">take photo</div>
+  </div>
+
+  <div class="tv-unit">
+    <div class="tv">
+      <div class="tv-screen" id="studio-screen">
+        <canvas class="static-canvas" id="static-canvas-1"></canvas>
+      </div>
+    </div>
+    <div class="tv-led" id="led-2"></div>
+    <div class="tv-caption">generate identity</div>
+  </div>
+
+  <div class="tv-unit">
+    <div class="tv">
+      <div class="tv-screen tappable" id="video-screen">
+        <canvas class="static-canvas" id="static-canvas-2"></canvas>
+      </div>
+    </div>
+    <div class="tv-led" id="led-3"></div>
+    <div class="tv-caption">generate motion</div>
+  </div>
+</div>
+
+<div id="error-msg"><span id="error-text"></span></div>
+
+<canvas id="hidden-canvas" style="display:none;"></canvas>
+
+<script>
+  const CODE = '2206';
+  let entered = '';
+
+  const dotsEl = document.getElementById('dots');
+  const dots = Array.from(dotsEl.children);
+  const keypad = document.getElementById('keypad');
+  const gateScreen = document.getElementById('gate');
+  const floorScreen = document.getElementById('floor');
+  const video = document.getElementById('video');
+  const captureScreen = document.getElementById('capture-screen');
+  const studioScreen = document.getElementById('studio-screen');
+  const videoScreen = document.getElementById('video-screen');
+  const staticCanvas1 = document.getElementById('static-canvas-1');
+  const staticCanvas2 = document.getElementById('static-canvas-2');
+  const hiddenCanvas = document.getElementById('hidden-canvas');
+  const errorMsg = document.getElementById('error-msg');
+  const errorText = document.getElementById('error-text');
+  const led1 = document.getElementById('led-1');
+  const led2 = document.getElementById('led-2');
+  const led3 = document.getElementById('led-3');
+
+  function showScreen(el){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    el.classList.add('active');
+  }
+  function flashError(msg){
+    errorText.textContent = msg;
+    errorMsg.classList.add('show');
+  }
+  errorMsg.addEventListener('click', ()=> errorMsg.classList.remove('show'));
+
+  function updateDots(){
+    dots.forEach((d,i)=> d.classList.toggle('filled', i < entered.length));
+  }
+  function resetGate(){ entered = ''; updateDots(); }
+
+  keypad.addEventListener('click', e=>{
+    const btn = e.target.closest('.key');
+    if(!btn || btn.classList.contains('blank')) return;
+    const k = btn.dataset.k;
+    if(k === 'back'){ entered = entered.slice(0,-1); updateDots(); return; }
+    if(entered.length >= 4) return;
+    entered += k;
+    updateDots();
+    if(entered.length === 4){
+      if(entered === CODE){
+        setTimeout(()=> enterMachine(), 200);
+      } else {
+        dotsEl.classList.add('shake');
+        dots.forEach(d=>d.classList.add('err'));
+        setTimeout(()=>{
+          dotsEl.classList.remove('shake');
+          dots.forEach(d=>d.classList.remove('err'));
+          resetGate();
+        }, 420);
+      }
+    }
+  });
+
+  // ---- static / "no signal" noise, shared by both downstream TVs ----
+  let static1Running = true;
+  let static2Running = true;
+  function drawStatic(canvas, isRunningRef){
+    function frame(){
+      if(!isRunningRef.on) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width = canvas.clientWidth;
+      const h = canvas.height = canvas.clientHeight;
+      const imgData = ctx.createImageData(w,h);
+      for(let i=0;i<imgData.data.length;i+=4){
+        const v = Math.random()*255;
+        imgData.data[i]=v; imgData.data[i+1]=v; imgData.data[i+2]=v; imgData.data[i+3]=40;
+      }
+      ctx.putImageData(imgData,0,0);
+      requestAnimationFrame(frame);
+    }
+    frame();
+  }
+  const s1 = { on:true }, s2 = { on:true };
+
+  async function enterMachine(){
+    showScreen(floorScreen);
+    drawStatic(staticCanvas1, s1);
+    drawStatic(staticCanvas2, s2);
+
+    if(!window.isSecureContext){
+      flashError('this page needs to run on https:// (or localhost) — camera won\'t work opened directly from a file.');
+      return;
+    }
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      flashError('this browser has no camera API available');
+      return;
+    }
+    try{
+      const stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user' } });
+      video.srcObject = stream;
+      led1.classList.add('on');
+    } catch(err){
+      flashError('camera permission was blocked — check your browser\'s site settings');
+    }
+  }
+
+  captureScreen.addEventListener('click', ()=>{
+    const w = video.videoWidth, h = video.videoHeight;
+    if(!w || !h) return;
+    hiddenCanvas.width = w;
+    hiddenCanvas.height = h;
+    hiddenCanvas.getContext('2d').drawImage(video, 0, 0, w, h);
+    const dataURL = hiddenCanvas.toDataURL('image/jpeg', 0.92);
+    generateStudioPortrait(dataURL);
+  });
+
+  function runGlitch(container, led){
+    led.classList.add('pulse');
+    const iv = setInterval(()=>{
+      const bar = document.createElement('div');
+      bar.className = 'glitch-bar';
+      const w = 10 + Math.random()*80;
+      const h = 1 + Math.random()*3;
+      const x = Math.random()*100;
+      const y = Math.random()*100;
+      bar.style.width = w+'%';
+      bar.style.height = h+'px';
+      bar.style.left = '0';
+      bar.style.top = y+'%';
+      bar.style.transform = `translateX(${x-50}%)`;
+      bar.style.background = Math.random() > 0.5 ? '#43e0c9' : '#ff3d9a';
+      bar.style.opacity = (0.3 + Math.random()*0.6).toString();
+      container.appendChild(bar);
+      if(container.querySelectorAll('.glitch-bar').length > 30){
+        container.querySelector('.glitch-bar').remove();
+      }
+    }, 60);
+    return () => {
+      clearInterval(iv);
+      led.classList.remove('pulse');
+      container.querySelectorAll('.glitch-bar').forEach(b=>b.remove());
+    };
+  }
+
+  // ---- screen 2: professional studio portrait, clean background, new identity ----
+  async function generateStudioPortrait(dataURL){
+    s1.on = false;
+    const stopGlitch = runGlitch(studioScreen, led2);
+
+    try{
+      const res = await fetch('/api/generate-persona', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ image: dataURL })
+      });
+      if(!res.ok) throw new Error('bad response');
+      const data = await res.json();
+      if(!data.image) throw new Error('no image');
+
+      stopGlitch();
+      studioScreen.querySelectorAll('img.reveal').forEach(el=>el.remove());
+      const img = document.createElement('img');
+      img.className = 'reveal';
+      img.src = data.image;
+      studioScreen.insertBefore(img, studioScreen.firstChild);
+      led2.classList.add('on');
+
+      // automatically continue into screen 3
+      generateVideo(data.image);
+
+    } catch(err){
+      stopGlitch();
+      s1.on = true;
+      drawStatic(staticCanvas1, s1);
+      flashError('the machine is resting — try again shortly');
+    }
+  }
+
+  // ---- screen 3: animate the studio portrait into a short video ----
+  async function generateVideo(portraitDataURLOrUrl){
+    s2.on = false;
+    const stopGlitch = runGlitch(videoScreen, led3);
+
+    try{
+      const res = await fetch('/api/generate-video', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ image: portraitDataURLOrUrl })
+      });
+      if(!res.ok) throw new Error('bad response');
+      const data = await res.json();
+      if(!data.video) throw new Error('no video');
+
+      stopGlitch();
+      videoScreen.querySelectorAll('video.reveal').forEach(el=>el.remove());
+      const vid = document.createElement('video');
+      vid.className = 'reveal';
+      vid.src = data.video;
+      vid.autoplay = true;
+      vid.loop = true;
+      vid.muted = true;
+      vid.playsInline = true;
+      videoScreen.insertBefore(vid, videoScreen.firstChild);
+      led3.classList.add('on');
+
+    } catch(err){
+      stopGlitch();
+      s2.on = true;
+      drawStatic(staticCanvas2, s2);
+      flashError('the video isn\'t ready yet — the portrait is still here');
+    }
+  }
+
+  // tap the final (video) screen to reset the whole sequence for the next visitor —
+  // camera on screen 1 keeps running the entire time
+  videoScreen.addEventListener('click', ()=>{
+    studioScreen.querySelectorAll('img.reveal').forEach(el=>el.remove());
+    videoScreen.querySelectorAll('video.reveal').forEach(el=>el.remove());
+    led2.classList.remove('on');
+    led3.classList.remove('on');
+    s1.on = true; drawStatic(staticCanvas1, s1);
+    s2.on = true; drawStatic(staticCanvas2, s2);
+  });
+</script>
+
+</body>
+</html>
