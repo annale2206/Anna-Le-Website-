@@ -35,6 +35,32 @@
 //        knob, similarly worth testing against a few real faces before
 //        the show.
 //
+// QUALITY TUNING (adjusted after real-world testing produced poor
+// results with the original defaults):
+//      - `guidance_scale` raised from 5 to 7.5 (the model's actual
+//        default) — 5 was too low, causing vague, muddy results with
+//        weak prompt adherence.
+//      - `num_inference_steps` raised from the default 30 to 50 — more
+//        denoising steps generally means sharper, more coherent detail,
+//        at the cost of a few extra seconds of generation time (there's
+//        headroom for this now that the timeout is 120s).
+//      - `output_quality` raised from the default 80 to 95, to reduce
+//        compression artifacts in the final image.
+//      - `controlnet_conditioning_scale` lowered from 0.8 to 0.7, and
+//        `ip_adapter_scale` from 0.8 to 0.65 — both were locking too
+//        rigidly onto the source selfie, which can produce warped or
+//        uncanny results when combined with a stylistically different
+//        prompt. Lowering both gives the model a bit more creative room.
+//      - Negative prompt expanded to explicitly rule out plastic/waxy
+//        skin and asymmetrical features, two common InstantID failure
+//        modes.
+//    These are a reasonable starting point, not guaranteed perfect —
+//    image model quality is genuinely trial-and-error. If results are
+//    still off, the next things worth adjusting (in rough order of
+//    impact) are the prompt wording itself, then
+//    controlnet_conditioning_scale further, then trying a different
+//    sdxl_weights preset.
+//
 // 5. Still worth testing once you have a real token: the schema types
 //    `image` and `pose_image` as `uri`. The captured selfie starts as a
 //    base64 data URL from the browser's canvas — Replicate generally
@@ -77,14 +103,21 @@ export default async function handler(req, res) {
     const input = {
       image: image,
       pose_image: image,
-      prompt: 'professional studio portrait, clean neutral background, ' +
-              'soft even studio lighting, sharp focus, a new synthetic ' +
-              'identity, high detail, photorealistic',
-      negative_prompt: '(lowres, low quality, worst quality:1.2), (text:1.2), ' +
-              'watermark, painting, drawing, illustration, glitch, deformed, ' +
-              'mutated, cross-eyed, ugly, disfigured',
+      prompt: 'professional studio headshot photograph, clean neutral grey ' +
+              'background, soft even studio lighting, sharp focus, natural ' +
+              'skin texture, photorealistic, high detail, 85mm lens, ' +
+              'shallow depth of field',
+      negative_prompt: '(lowres, low quality, worst quality:1.3), (text:1.3), ' +
+              'watermark, painting, drawing, illustration, cartoon, 3d render, ' +
+              'plastic skin, waxy, glitch, deformed, mutated, cross-eyed, ' +
+              'asymmetrical eyes, extra fingers, ugly, disfigured, blurry, ' +
+              'overexposed, oversaturated',
       sdxl_weights: 'protovision-xl-high-fidel',
-      guidance_scale: 5
+      guidance_scale: 7.5,
+      num_inference_steps: 50,
+      output_quality: 95,
+      controlnet_conditioning_scale: 0.7,
+      ip_adapter_scale: 0.65
     };
 
     const output = await replicate.run(MODEL, { input });
