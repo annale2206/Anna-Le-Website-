@@ -45,10 +45,11 @@
 import Replicate from 'replicate';
 
 // Vercel's default timeout (5-10s on the Hobby plan) is far too short for
-// AI image generation, which commonly takes 10-30+ seconds. This extends
-// it to 60 seconds — the maximum allowed on Hobby without upgrading.
+// AI image generation, which commonly takes 10-30+ seconds. With Fluid
+// Compute enabled in project settings, this can go up to 300 seconds —
+// 120 gives a healthy safety margin for InstantID specifically.
 export const config = {
-  maxDuration: 60,
+  maxDuration: 120,
 };
 
 const MODEL = 'zsxkib/instant-id:2e4785a4d80dadf580077b2244c8d7c05d8e3faac04a04c02d8e099dd2876789';

@@ -30,13 +30,11 @@
 import Replicate from 'replicate';
 
 // Video generation (Kling) commonly takes even longer than image
-// generation — same 60-second extension as generate-persona.js. If videos
-// still time out even with this, that means Kling is taking longer than
-// 60 seconds for your specific settings — the fix then is enabling
-// "Fluid Compute" in Vercel's project settings (still free on Hobby),
-// which raises the ceiling to 300 seconds.
+// generation. With Fluid Compute enabled in Vercel's project settings,
+// the platform allows up to 300 seconds — this uses 280 to leave a small
+// safety margin under that ceiling.
 export const config = {
-  maxDuration: 60,
+  maxDuration: 280,
 };
 
 const MODEL = 'kwaivgi/kling-v3-omni-video';
