@@ -3,18 +3,21 @@
 // Called at three points during a visit: when someone unlocks the machine
 // (counts as a participant), when a portrait finishes generating, and when
 // a video finishes generating. Increments the relevant counter and appends
-// a record (URL + timestamp) to that stage's log — this IS the "folder"
-// of archived photos/videos/information: since generated images and
-// videos already live on Replicate's own hosting, this log is a list of
+// a record (URL + timestamp) to that stage's log — this IS the "folder" of
+// archived photos/videos/information: since generated images and videos
+// already live on Replicate's own hosting, this log is a list of
 // references to them plus a timestamp, rather than copies of the files
-// themselves. Uses the same Vercel KV database as stats.js.
-//
+// themselves. Uses the same Upstash Redis connection as stats.js.
 // ─────────────────────────────────────────────────────────────────────────
-// SETUP: same Vercel KV database as stats.js — nothing extra to configure
-// here once that's connected.
+// SETUP: same KV_REST_API_URL / KV_REST_API_TOKEN connection as stats.js.
 // ─────────────────────────────────────────────────────────────────────────
 
-import { kv } from '@vercel/kv';
+import { Redis } from '@upstash/redis';
+
+const redis = new Redis({
+  url: process.env.KV_REST_API_URL,
+  token: process.env.KV_REST_API_TOKEN,
+});
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -29,18 +32,18 @@ export default async function handler(req, res) {
 
   try {
     if (stage === 'participant') {
-      await kv.incr('participants');
+      await redis.incr('participants');
     }
     if (stage === 'portrait') {
-      await kv.incr('portraits');
+      await redis.incr('portraits');
       if (url) {
-        await kv.rpush('portrait_log', JSON.stringify({ url, ts: Date.now() }));
+        await redis.rpush('portrait_log', JSON.stringify({ url, ts: Date.now() }));
       }
     }
     if (stage === 'video') {
-      await kv.incr('videos');
+      await redis.incr('videos');
       if (url) {
-        await kv.rpush('video_log', JSON.stringify({ url, ts: Date.now() }));
+        await redis.rpush('video_log', JSON.stringify({ url, ts: Date.now() }));
       }
     }
     return res.status(200).json({ ok: true });
