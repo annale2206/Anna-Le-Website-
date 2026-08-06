@@ -25,6 +25,13 @@
 //    real hosted URL (Replicate returns one after generating the studio
 //    portrait), so it satisfies the "uri" requirement automatically —
 //    nothing extra to convert here.
+//
+// 4. Confirmed from a real 422 error: this model also requires a
+//    `prompt` field alongside `start_image` — it's not optional. The
+//    prompt below describes subtle, natural motion (breathing, slight
+//    head turn, blinking) rather than anything dramatic, to keep the
+//    animation feeling like a living portrait rather than a music video.
+//    Adjust the wording if you want more or less movement in the result.
 // ─────────────────────────────────────────────────────────────────────────
 
 import Replicate from 'replicate';
@@ -61,7 +68,9 @@ export default async function handler(req, res) {
 
     const input = {
       start_image: image,
-      duration: 5
+      duration: 5,
+      prompt: 'subtle natural motion, gentle breathing, slight head turn, ' +
+              'soft blinking, cinematic portrait animation, minimal camera movement'
     };
 
     const output = await replicate.run(MODEL, { input });
