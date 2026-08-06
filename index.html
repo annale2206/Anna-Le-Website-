@@ -829,7 +829,7 @@
 
 <script>
   // ============================================================
-  // p5.js — draws the clickable flowers and adds butterflies.
+  // p5.js — draws the clickable flowers.
   // Everything else on the page (trunk, branches, leaves, grass,
   // ground, labels, season system, bird, clock, music) is untouched
   // SVG/CSS/JS from above. This sketch reuses the SAME `SEASONS`
@@ -861,7 +861,6 @@
     ...f, cx:f.x+f.size/2, cy:f.y+f.size/2
   }));
 
-  let butterflies = [];
   let p5PageStart = 0;
 
   function p5Season(){
@@ -892,15 +891,6 @@
     cnv.style('height', '100%');
     angleMode(DEGREES);
     p5PageStart = millis();
-    for(let i=0;i<5;i++){
-      butterflies.push({
-        seed: random(1000),
-        baseX: random(200,1000),
-        baseY: random(150,350),
-        wingColor: random(['#ff9fd0','#ffe07a','#b39dff','#8fe3ff']),
-        speed: random(0.15,0.3)
-      });
-    }
   }
 
   function flowerColor(f){
@@ -944,7 +934,8 @@
       // organic sway (more motion than a fixed sine loop): each flower
       // reads its own noise channel so none of them repeat in lockstep
       const swayStart = (millis()-p5PageStart)/1000 - delay - 1;
-      const swayDeg = swayStart > 0 ? (noise(i*13.1, t*0.18)-0.5) * 8 : 0;
+      const swayEase = Math.max(0, Math.min(1, swayStart));
+      const swayDeg = (noise(i*13.1, t*0.18)-0.5) * 8 * swayEase;
 
       // hover-lean toward the cursor — same idea as the SVG version
       const d = dist(mouseX, mouseY, f.cx, f.cy);
@@ -957,38 +948,8 @@
 
       drawFlowerShape(f.cx, f.cy, f.size*s, flowerColor(f), swayDeg+leanDeg);
 
-      // drifting pollen, same spirit as the SVG version's floating dots
-      if(s>=1 && p5Season().name !== 'winter'){
-        noStroke();
-        for(let p=0;p<2;p++){
-          const life = (t*0.15 + noise(i*20+p*7)) % 1;
-          const px = f.cx + (noise(i*20+p*7, t*0.2)-0.5) * f.size*0.7;
-          const py = f.cy - life*50;
-          const alpha = Math.sin(life*Math.PI) * 200;
-          const c = color(f.color);
-          fill(red(c), green(c), blue(c), alpha);
-          circle(px, py, 2.2);
-        }
-      }
     }
 
-    for(const b of butterflies) drawButterfly(b, t);
-  }
-
-  function drawButterfly(b, t){
-    const x = b.baseX + (noise(b.seed, t*b.speed)-0.5) * 700;
-    const y = b.baseY + (noise(b.seed+50, t*b.speed*0.8)-0.5) * 300;
-    const flap = Math.sin(t*10 + b.seed) * 30;
-    push();
-    translate(x,y);
-    rotate(Math.sin(t*0.5+b.seed)*15);
-    noStroke();
-    fill(b.wingColor);
-    push(); rotate(-flap); ellipse(-7,0, 15,10); pop();
-    push(); rotate(flap);  ellipse(7,0, 15,10); pop();
-    fill(40,30,50);
-    ellipse(0,0, 3,9);
-    pop();
   }
 
   function mousePressed(){
