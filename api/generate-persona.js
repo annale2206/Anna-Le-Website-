@@ -61,6 +61,15 @@
 //    controlnet_conditioning_scale further, then trying a different
 //    sdxl_weights preset.
 //
+// STYLE UPDATE: swapped the flat grey studio-headshot look for a warmer
+// "Instagram beauty filter" aesthetic — glowing/dewy skin, soft romantic
+// lighting, blurred bokeh background instead of a plain backdrop. Note
+// this deliberately removed "plastic skin, waxy" from the negative
+// prompt, since a beauty-filter look is SUPPOSED to smooth skin — that
+// negative term was actively fighting the desired look. If results start
+// looking too smoothed/artificial, that's the first thing to reintroduce
+// or dial back via a lower ip_adapter_scale.
+//
 // 5. Still worth testing once you have a real token: the schema types
 //    `image` and `pose_image` as `uri`. The captured selfie starts as a
 //    base64 data URL from the browser's canvas — Replicate generally
@@ -85,7 +94,15 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Use POST' });
   }
 
-  const { image } = req.body; // base64 data URL of the captured selfie
+  const { image, prompt } = req.body; // image: base64 selfie, prompt: visitor's own description
+
+  const DEFAULT_PROMPT = 'instagram beauty filter aesthetic, flawless glowing skin, ' +
+    'soft dewy radiant complexion, smooth even skin tone, subtle glam makeup, ' +
+    'bright sparkling eyes, soft romantic lighting, warm golden hour glow, ' +
+    'blurred bokeh background, editorial beauty photography, professional ' +
+    'retouching, 85mm lens, shallow depth of field, photorealistic, high detail';
+
+  const finalPrompt = (prompt && prompt.trim()) ? prompt.trim() : DEFAULT_PROMPT;
 
   if (!image) {
     return res.status(400).json({ error: 'No image provided' });
@@ -103,15 +120,13 @@ export default async function handler(req, res) {
     const input = {
       image: image,
       pose_image: image,
-      prompt: 'professional studio headshot photograph, clean neutral grey ' +
-              'background, soft even studio lighting, sharp focus, natural ' +
-              'skin texture, photorealistic, high detail, 85mm lens, ' +
-              'shallow depth of field',
+      prompt: finalPrompt,
       negative_prompt: '(lowres, low quality, worst quality:1.3), (text:1.3), ' +
               'watermark, painting, drawing, illustration, cartoon, 3d render, ' +
-              'plastic skin, waxy, glitch, deformed, mutated, cross-eyed, ' +
-              'asymmetrical eyes, extra fingers, ugly, disfigured, blurry, ' +
-              'overexposed, oversaturated',
+              'grey background, plain background, flat lighting, harsh ' +
+              'shadows, glitch, deformed, mutated, cross-eyed, asymmetrical ' +
+              'eyes, extra fingers, ugly, disfigured, blurry, overexposed, ' +
+              'oversaturated',
       sdxl_weights: 'protovision-xl-high-fidel',
       guidance_scale: 7.5,
       num_inference_steps: 50,

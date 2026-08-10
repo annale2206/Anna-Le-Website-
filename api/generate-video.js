@@ -51,17 +51,12 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Use POST' });
   }
 
-  const { image, style } = req.body; // image: portrait URL, style: visitor's preset choice
+  const { image, prompt } = req.body; // image: portrait URL, prompt: visitor's own motion description
 
-  const STYLE_PROMPTS = {
-    minimal: 'subtle natural motion, gentle breathing, slight head turn, ' +
-             'soft blinking, cinematic portrait animation, minimal camera movement',
-    expressive: 'expressive motion, animated facial expression, confident ' +
-             'head movement, engaged eye contact, lively cinematic portrait',
-    surreal: 'dreamlike motion, slow otherworldly drift, surreal shifting ' +
-             'light, ethereal atmosphere, ambient particle motion around the subject',
-  };
-  const chosenPrompt = STYLE_PROMPTS[style] || STYLE_PROMPTS.minimal;
+  const DEFAULT_MOTION_PROMPT = 'subtle natural motion, gentle breathing, ' +
+    'slight head turn, soft blinking, cinematic portrait animation, minimal camera movement';
+
+  const finalPrompt = (prompt && prompt.trim()) ? prompt.trim() : DEFAULT_MOTION_PROMPT;
 
   if (!image) {
     return res.status(400).json({ error: 'No image provided' });
@@ -79,7 +74,7 @@ export default async function handler(req, res) {
     const input = {
       start_image: image,
       duration: 5,
-      prompt: chosenPrompt
+      prompt: finalPrompt
     };
 
     const output = await replicate.run(MODEL, { input });

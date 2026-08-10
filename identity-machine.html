@@ -166,24 +166,33 @@
   }
   .glitch-bar{ position:absolute; z-index:3; }
 
-  /* ---------- style-choice interstitial ---------- */
-  #style-choice{ flex-direction:column; gap:30px; }
-  .style-title{
+  /* ---------- text prompt input screens ---------- */
+  .prompt-screen{ flex-direction:column; gap:24px; padding:20px; }
+  .prompt-title{
     font-size:14px; letter-spacing:.2em; color:#43e0c9; text-transform:uppercase;
   }
-  .style-options{ display:flex; gap:24px; }
-  .style-btn{
-    width:180px; padding:26px 18px;
+  .prompt-input{
+    width:min(600px, 90vw);
     background:#0d1114; border:1px solid #2a3a3f;
-    color:#c8d4d8; font-family:'Space Mono', monospace;
-    cursor:pointer; text-align:center;
+    color:#c8d4d8; font-family:'Space Mono', monospace; font-size:16px;
+    padding:18px 20px; resize:none;
+    height:110px;
   }
-  .style-btn:active{ border-color:#43e0c9; background:#141c20; }
-  .style-btn .name{
-    font-size:16px; letter-spacing:.1em; color:#43e0c9; text-transform:uppercase;
-    margin-bottom:8px;
+  .prompt-input:focus{ outline:none; border-color:#43e0c9; }
+  .prompt-input::placeholder{ color:#3f4d52; }
+  .prompt-submit{
+    padding:14px 40px;
+    background:#43e0c9; border:none; color:#0a0d10;
+    font-family:'Space Mono', monospace; font-size:14px; font-weight:700;
+    letter-spacing:.1em; text-transform:uppercase;
+    cursor:pointer;
   }
-  .style-btn .desc{ font-size:12px; color:#5a6f75; line-height:1.5; }
+  .prompt-submit:active{ background:#35b8a4; }
+  .prompt-skip{
+    background:none; border:none; color:#5a6f75;
+    font-family:'Space Mono', monospace; font-size:12px;
+    letter-spacing:.1em; text-decoration:underline; cursor:pointer;
+  }
 
   #error-msg{
     position:fixed; inset:0;
@@ -200,8 +209,6 @@
     #floor{ flex-direction:column; gap:5vh; padding-top:110px; }
     .rig{ width:78vw; }
     #dashboard{ flex-wrap:wrap; gap:24px; }
-    .style-options{ flex-direction:column; }
-    .style-btn{ width:260px; }
   }
 </style>
 </head>
@@ -282,22 +289,20 @@
   </div>
 </div>
 
-<div class="screen" id="style-choice">
-  <div class="style-title">select motion profile</div>
-  <div class="style-options">
-    <button class="style-btn" data-style="minimal">
-      <div class="name">Minimal</div>
-      <div class="desc">breathing, blinking,<br>a slight turn of the head</div>
-    </button>
-    <button class="style-btn" data-style="expressive">
-      <div class="name">Expressive</div>
-      <div class="desc">animated expression,<br>engaged, alive</div>
-    </button>
-    <button class="style-btn" data-style="surreal">
-      <div class="name">Surreal</div>
-      <div class="desc">dreamlike drift,<br>ambient, otherworldly</div>
-    </button>
-  </div>
+<div class="screen prompt-screen" id="portrait-prompt">
+  <div class="prompt-title">describe the portrait you want to see</div>
+  <textarea class="prompt-input" id="portrait-prompt-input"
+    placeholder="e.g. renaissance oil painting, dramatic candlelight, velvet clothing..."></textarea>
+  <button class="prompt-submit" id="portrait-prompt-submit">generate</button>
+  <button class="prompt-skip" id="portrait-prompt-skip">use default instead</button>
+</div>
+
+<div class="screen prompt-screen" id="video-prompt">
+  <div class="prompt-title">describe how it should move</div>
+  <textarea class="prompt-input" id="video-prompt-input"
+    placeholder="e.g. slow zoom in, hair blowing in wind, eyes glowing..."></textarea>
+  <button class="prompt-submit" id="video-prompt-submit">animate</button>
+  <button class="prompt-skip" id="video-prompt-skip">use default instead</button>
 </div>
 
 <div id="error-msg"><span id="error-text"></span></div>
@@ -308,13 +313,15 @@
   const CODE = '2206';
   let entered = '';
   let latestPortraitUrl = null;
+  let pendingCaptureDataURL = null;
 
   const dotsEl = document.getElementById('dots');
   const dots = Array.from(dotsEl.children);
   const keypad = document.getElementById('keypad');
   const gateScreen = document.getElementById('gate');
   const floorScreen = document.getElementById('floor');
-  const styleScreen = document.getElementById('style-choice');
+  const portraitPromptScreen = document.getElementById('portrait-prompt');
+  const videoPromptScreen = document.getElementById('video-prompt');
   const dashboard = document.getElementById('dashboard');
   const video = document.getElementById('video');
   const captureScreen = document.getElementById('capture-screen');
@@ -435,8 +442,19 @@
     hiddenCanvas.width = w;
     hiddenCanvas.height = h;
     hiddenCanvas.getContext('2d').drawImage(video, 0, 0, w, h);
-    const dataURL = hiddenCanvas.toDataURL('image/jpeg', 0.92);
-    generateStudioPortrait(dataURL);
+    pendingCaptureDataURL = hiddenCanvas.toDataURL('image/jpeg', 0.92);
+    document.getElementById('portrait-prompt-input').value = '';
+    showScreen(portraitPromptScreen);
+  });
+
+  document.getElementById('portrait-prompt-submit').addEventListener('click', ()=>{
+    const typed = document.getElementById('portrait-prompt-input').value;
+    showScreen(floorScreen);
+    generateStudioPortrait(pendingCaptureDataURL, typed);
+  });
+  document.getElementById('portrait-prompt-skip').addEventListener('click', ()=>{
+    showScreen(floorScreen);
+    generateStudioPortrait(pendingCaptureDataURL, '');
   });
 
   function runGlitch(container, led){
@@ -468,7 +486,7 @@
   }
 
   // ---- stage 02: professional studio portrait ----
-  async function generateStudioPortrait(dataURL){
+  async function generateStudioPortrait(dataURL, typedPrompt){
     s1.on = false;
     const stopGlitch = runGlitch(studioScreen, led2);
 
@@ -476,7 +494,7 @@
       const res = await fetch('/api/generate-persona', {
         method:'POST',
         headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify({ image: dataURL })
+        body: JSON.stringify({ image: dataURL, prompt: typedPrompt })
       });
       if(!res.ok) throw new Error('bad response');
       const data = await res.json();
@@ -492,8 +510,9 @@
       latestPortraitUrl = data.image;
       logSession('portrait', data.image);
 
-      // now let the visitor choose a motion style before continuing
-      showScreen(styleScreen);
+      // now let the visitor describe how it should move
+      document.getElementById('video-prompt-input').value = '';
+      showScreen(videoPromptScreen);
 
     } catch(err){
       stopGlitch();
@@ -503,16 +522,19 @@
     }
   }
 
-  // ---- style choice → triggers stage 03 ----
-  document.querySelectorAll('.style-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      showScreen(floorScreen);
-      generateVideo(latestPortraitUrl, btn.dataset.style);
-    });
+  document.getElementById('video-prompt-submit').addEventListener('click', ()=>{
+    const typed = document.getElementById('video-prompt-input').value;
+    showScreen(floorScreen);
+    generateVideo(latestPortraitUrl, typed);
+  });
+  document.getElementById('video-prompt-skip').addEventListener('click', ()=>{
+    showScreen(floorScreen);
+    generateVideo(latestPortraitUrl, '');
   });
 
+
   // ---- stage 03: animate the studio portrait ----
-  async function generateVideo(portraitUrl, style){
+  async function generateVideo(portraitUrl, typedPrompt){
     s2.on = false;
     const stopGlitch = runGlitch(videoScreen, led3);
 
@@ -520,7 +542,7 @@
       const res = await fetch('/api/generate-video', {
         method:'POST',
         headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify({ image: portraitUrl, style })
+        body: JSON.stringify({ image: portraitUrl, prompt: typedPrompt })
       });
       if(!res.ok) throw new Error('bad response');
       const data = await res.json();

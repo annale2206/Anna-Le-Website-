@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>anna_le — personas land</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<style>
+  .hero-sub{
+    font-family:var(--mono); color:var(--sky); font-size:1.05rem;
+    margin:-4px 0 20px;
+  }
+  .hero-sub a{ color:var(--green-dim); }
+
+  .statement{ max-width:68ch; font-size:1.05rem; margin-bottom:20px; }
+
+  .land-wrap{
+    position:relative;
+    width:100%;
+    margin:20px 0 60px;
+    background:#0b2e46;
+    line-height:0;
+  }
+  .land-wrap canvas{
+    width:100% !important;
+    height:auto !important;
+    display:block;
+    border:1px solid rgba(255,255,255,.08);
+  }
+</style>
+</head>
+<body data-petals="6">
+
+<header class="nav">
+  <a class="logo" href="index.html">anna<span>_</span>le</a>
+</header>
+
+<main class="page">
+
+  <div class="eyebrow">
+    <h1>personas land</h1>
+    <span class="path">~/anna/research/personas-land</span>
+  </div>
+  <div class="hero-sub">research: algorithmic persona — <a href="persona.html">back to persona</a></div>
+
+  <p class="statement">
+    A landscape built to hold everything this project has generated — every
+    persona the machine has made. Sky and rainbow up top, a garden, a river
+    with a little bridge across it, and a whole ocean underneath — a boat,
+    a library, a playground, and a handful of personas swimming through it.
+  </p>
+
+  <div class="land-wrap" id="land-wrap"></div>
+
+</main>
+
+<footer class="site-footer">© anna_le</footer>
+
+<script>
+  // ============================================================
+  // PERSONAS LAND — p5.js
+  //
+  // Every persona is placed explicitly below in PLACEMENTS — edit the
+  // `type`/params on any entry to move it. Filenames must sit in the
+  // same folder as this html file:
+  //   persona.png, persona1.png..persona14.png
+  //   boat.png, library.png, playground.png
+  // ============================================================
+  const PLACEMENTS = [
+    { file:'persona.png',   type:'tree',        tree:0 },              // sitting under the apple tree
+    { file:'persona1.png',  type:'walk' },                              // walking on the grass
+    { file:'persona1.png',  type:'mountain-walk', x:700 },              // also walking along the mountain
+    { file:'persona2.png',  type:'tree', tree:1 },                     // sitting under the second apple tree, left side
+    { file:'persona3.png',  type:'ground', x:520 },                     // standing on the ground
+    { file:'persona4.png',  type:'rainbow-top' },                       // standing on top of the rainbow
+    { file:'persona5.png',  type:'ground', x:1260 },                    // standing
+    { file:'persona6.png',  type:'cloud', seat:0 },
+    { file:'persona7.png',  type:'cloud', seat:1 },
+    { file:'persona8.png',  type:'ocean', x:220 },
+    { file:'persona9.png',  type:'ocean', x:480 },
+    { file:'persona10.png', type:'ocean', x:760 },
+    { file:'persona11.png', type:'ocean', x:1000 },
+    { file:'persona12.png', type:'ocean', x:1230 },
+    { file:'persona13.png', type:'house', win:'left' },
+    { file:'persona14.png', type:'house', win:'right' }
+  ];
+
+  const PALETTE = ['#ff3d9a','#ff9f4d','#7fd4ff','#8a5cf6','#43e0c9','#ffd23f','#9dff9e'];
+  const RAINBOW_COLORS = ['#ff5e6c','#ff9f4d','#ffd23f','#8fe38f','#5fc0ff','#8a5cf6'];
+
+  let creatures = [];
+  let butterflies = [];
+  let daisies = [];
+  let sunflowers = [];
+  let grassBlades = [];
+  let grassLeaves = [];
+  let clouds = [];
+  let seatClouds = [];
+  let sparkles = [];
+  let stars = [];
+  let trees = [];
+  let mountainTreesFar = [];
+  let mountainTreesNear = [];
+  let corals = [];
+  let seaweeds = [];
+  let oceanFish = [];
+  let oceanGlow = [];
+  let bubbles = [];
+
+  let boatImg, libraryImg, playgroundImg;
+
+  // canvas locked to exact TV/HD resolution — 1920x1080, 16:9
+  const W = 1920;
+  const H = 1080;
+
+  // original design was tuned at 1400x1380 (SKY_H 900 + OCEAN_H 480) —
+  // these scale every fixed pixel position/size proportionally to 1920x1080
+  const WSCALE = W / 1400;
+  const HSCALE = H / 1380;
+  const SKY_H = Math.round(900 * HSCALE);
+  const OCEAN_H = H - SKY_H;
+
+  const GROUND_TOP = SKY_H * 0.64;
+  const RAINBOW_CX = W * 0.62;
+  const RAINBOW_CY = GROUND_TOP + 10;
+  const RAINBOW_R  = 230 * HSCALE;
+  const OCEAN_TOP  = SKY_H + 40 * HSCALE;
+  const RIVER_Y0   = SKY_H * 0.82;
+  const BRIDGE_X   = 700 * WSCALE;
+
+  const HOUSE_X = 190 * WSCALE, HOUSE_Y = 800 * HSCALE, HOUSE_SCALE = 1.8 * HSCALE;
+  const WIN_SIZE = 80 * HOUSE_SCALE;
+  const WIN_L_X = HOUSE_X + HOUSE_SCALE*-25, WIN_L_Y = HOUSE_Y + HOUSE_SCALE*-100;
+  const WIN_R_X = HOUSE_X + HOUSE_SCALE*85,  WIN_R_Y = HOUSE_Y + HOUSE_SCALE*-100;
+
+  function preload(){
+    for(const p of PLACEMENTS){
+      p.img = loadImage(p.file, ()=>{}, ()=>{});
+    }
+    boatImg       = loadImage('boat.png', ()=>{}, ()=>{});
+    libraryImg    = loadImage('library.png', ()=>{}, ()=>{});
+    playgroundImg = loadImage('playground.png', ()=>{}, ()=>{});
+  }
+
+  function rainbowPoint(t, r){
+    const angle = PI + t * PI;
+    return { x: RAINBOW_CX + r * cos(angle), y: RAINBOW_CY + r * sin(angle), angle };
+  }
+
+  function mountainEdgeY(x, peakY, baseY, freq, seedOff){
+    return baseY - noise(x*freq, seedOff) * (baseY - peakY);
+  }
+
+  function setup(){
+    const cnv = createCanvas(W, H);
+    cnv.parent('land-wrap');
+    cnv.style('width', '100%');
+    cnv.style('height', 'auto');
+    imageMode(CENTER);
+    rectMode(CORNER);
+    noStroke();
+
+    trees = [
+      { x: 850 * WSCALE, baseY: 765 * HSCALE, kind:'apple' },
+      { x: 520 * WSCALE, baseY: 770 * HSCALE, kind:'apple' }
+    ];
+
+    seatClouds = [
+      { x: 320,  y: 170, w: 220 },
+      { x: 1080, y: 135, w: 250 }
+    ];
+
+    for(let x=20; x<W-20; x+= random(24,38)){
+      const y = mountainEdgeY(x, SKY_H*0.40, SKY_H*0.615, 0.0032, 55);
+      mountainTreesNear.push({ x, y, h: random(34,60), col: random(['#245e2b','#2e6e35','#3a7d3f']) });
+    }
+    for(let x=10; x<W-10; x+= random(30,48)){
+      const y = mountainEdgeY(x, SKY_H*0.30, SKY_H*0.58, 0.0022, 5);
+      mountainTreesFar.push({ x, y, h: random(20,36), col: random(['#6bb36e','#7fc082','#8fce8f']) });
+    }
+
+    // ---- place every persona per PLACEMENTS ----
+    for(const p of PLACEMENTS){
+      let baseX, baseY, size, rot = 0, walkRange = 0;
+
+      if(p.type === 'tree'){
+        const t = trees[p.tree % trees.length];
+        baseX = t.x + random(-46,-10); baseY = t.baseY - random(20,40); size = random(122,144);
+      } else if(p.type === 'bridge'){
+        baseX = BRIDGE_X + random(-10,10); baseY = RIVER_Y0 - 26; size = 138;
+      } else if(p.type === 'ground'){
+        baseX = p.x * WSCALE; baseY = SKY_H*0.92; size = random(145,172); walkRange = 110;
+      } else if(p.type === 'walk'){
+        baseX = 260 * WSCALE; baseY = SKY_H*0.92; size = random(145,172); walkRange = 140;
+      } else if(p.type === 'mountain-walk'){
+        baseX = p.x * WSCALE; baseY = 0; size = random(128,150); walkRange = 260 * WSCALE;
+      } else if(p.type === 'rainbow-top'){
+        const top = rainbowPoint(0.5, RAINBOW_R);
+        baseX = top.x; baseY = top.y - 6; size = 155; rot = 0;
+      } else if(p.type === 'rainbow'){
+        const pt = rainbowPoint(p.t, RAINBOW_R);
+        baseX = pt.x; baseY = pt.y; size = random(122,144); rot = pt.angle - PI/2;
+      } else if(p.type === 'mountain'){
+        const mx = p.x * WSCALE;
+        const ridgeY = mountainEdgeY(mx, SKY_H*0.40, SKY_H*0.615, 0.0032, 55);
+        baseX = mx; baseY = ridgeY - 22; size = random(128,150);
+      } else if(p.type === 'house'){
+        baseX = p.win === 'left' ? WIN_L_X : WIN_R_X;
+        baseY = p.win === 'left' ? WIN_L_Y : WIN_R_Y;
+        size = 100;
+      } else if(p.type === 'cloud'){
+        const c = seatClouds[p.seat % seatClouds.length];
+        baseX = c.x + random(-20,20); baseY = c.y + 26; size = random(140,168);
+      } else if(p.type === 'ocean'){
+        baseX = p.x * WSCALE; baseY = OCEAN_TOP + random(80,260); size = random(122,150);
+      }
+
+      creatures.push({
+        img: p.img, baseX, baseY, size, type: p.type, rot,
+        walkRange, seed: random(1000), glow: PALETTE[creatures.length % PALETTE.length]
+      });
+    }
+
+    const bedCenters = [
+      {x:230*WSCALE, y:815*HSCALE, n:11}, {x:640*WSCALE, y:845*HSCALE, n:8}, {x:1010*WSCALE, y:855*HSCALE, n:8},
+      {x:1330*WSCALE,y:825*HSCALE, n:8}, {x:80*WSCALE,  y:870*HSCALE, n:7}
+    ];
+    for(const b of bedCenters){
+      for(let i=0;i<b.n;i++){
+        daisies.push({
+          x: b.x + random(-140,140), y: b.y + random(-40,55),
+          h: random(16,30), size: random(20,30), seed: random(1000)
+        });
+      }
+    }
+
+    for(let i=0;i<28;i++){
+      sunflowers.push({
+        x: random(470*WSCALE, 1360*WSCALE), y: SKY_H*0.76 + random(-15, 90),
+        h: random(48,72), size: random(20,29), seed: random(1000)
+      });
+    }
+
+    for(let i=0;i<5;i++){
+      clouds.push({ baseX: random(W), y: random(50, SKY_H*0.30), scale: random(0.7, 1.3), speed: random(3, 8) });
+    }
+
+    for(let i=0;i<7;i++){
+      butterflies.push({
+        baseX: random(W*0.1, W*0.95), baseY: random(SKY_H*0.4, SKY_H*0.7),
+        seed: random(1000),
+        wingColor: color(random(['#ff9fd0','#ffe07a','#b39dff','#8fe3ff','#ff7ab8'])),
+        speed: random(0.2,0.4)
+      });
+    }
+
+    for(let i=0;i<45;i++){
+      sparkles.push({ x: random(W), y: random(SKY_H*0.15, SKY_H*0.92), seed: random(1000), size: random(2,5) });
+    }
+
+    for(let i=0;i<70;i++){
+      stars.push({ x: random(W), y: random(20, GROUND_TOP-30), seed: random(1000), size: random(1.5,3.2) });
+    }
+
+    for(let i=0;i<520;i++){
+      grassBlades.push({
+        x: random(W), y: GROUND_TOP + random(SKY_H - GROUND_TOP + 20),
+        h: random(10,32), bow: random(2,6),
+        c: random(['#2f6b34','#3f7a3f','#5fae6a','#4a8f52','#6bc06f','#376f3c'])
+      });
+    }
+    for(let i=0;i<90;i++){
+      grassLeaves.push({
+        x: random(W), y: GROUND_TOP + random(SKY_H - GROUND_TOP + 20),
+        size: random(10,18), rot: random(360), seed: random(1000),
+        c: random(['#3f8a45','#4a9950','#357a3d','#5aab5f'])
+      });
+    }
+
+    // ---- ocean layer ----
+    const floorY = H - 55;
+    const coralSpots = [
+      {x:900*WSCALE,n:8,palette:['#ff8fb8','#ffb3d1','#ff5f9e']},
+      {x:1340*WSCALE,n:6,palette:['#7fd4ff','#a9e6ff','#4db3e6']}
+    ];
+    for(const cs of coralSpots){
+      for(let i=0;i<cs.n;i++){
+        corals.push({
+          x: cs.x + random(-70,70), y: floorY - random(0,12),
+          size: random(24,50), seed: random(1000),
+          col: random(cs.palette)
+        });
+      }
+    }
+    for(let x=200; x<W-200; x+=random(70,110)){
+      seaweeds.push({ x, y: floorY, h: random(60,130), seed: random(1000) });
+    }
+    for(let i=0;i<14;i++){
+      oceanFish.push({
+        baseX: random(W*0.1,W*0.9), baseY: random(OCEAN_TOP+40, floorY-40),
+        size: random(16,30), seed: random(1000), speed: random(0.15,0.35),
+        col: random(['#ff9f4d','#ffd23f','#7fd4ff','#ff6b8a','#8affc1'])
+      });
+    }
+    for(let i=0;i<40;i++){
+      bubbles.push({ x: random(W), y: random(OCEAN_TOP, H), r: random(3,8), seed: random(1000), speed: random(10,25) });
+    }
+    for(let i=0;i<45;i++){
+      oceanGlow.push({ x: random(W), y: random(OCEAN_TOP+30, H-40), seed: random(1000), size: random(2,4) });
+    }
+  }
+
+  function draw(){
+    drawSky();
+    drawCelestial();
+    drawMountains();
+    drawRainbow();
+    drawClouds();
+    drawSeatClouds();
+    drawGround();
+    drawRiver();
+    drawGrass();
+    drawBridge();
+    drawHouse();
+    drawDaisies();
+    drawSunflowerMeadow();
+    for(const t of trees) drawTree(t);
+    drawSparkles();
+    drawButterflies();
+    drawNightOverlay();
+
+    drawUnderworldTransition();
+    drawOceanWater();
+    drawSeaFloor();
+    drawSunkenStructures();
+    drawCorals();
+    drawSeaweed();
+    drawOceanFish();
+    drawBubbles();
+    drawOceanGlow(1 - dayness());
+
+    drawCreatures();
+    drawHouseWindowGlass();
+  }
+
+  // ---------- day / night cycle (one full cycle every 60 seconds) ----------
+  // first half of the cycle: sun rises at the left horizon, arcs up
+  // overhead, and sets at the right horizon. second half: the moon does
+  // the same arc across the night sky.
+
+  const DAY_CYCLE_SEC = 60;
+  const CEL_ARC_CX = W * 0.5, CEL_ARC_CY = GROUND_TOP, CEL_ARC_R = GROUND_TOP * 0.78;
+
+  function dayPhase(){ return (millis()/1000 % DAY_CYCLE_SEC) / DAY_CYCLE_SEC; } // 0..1
+
+  // overall day-ness used for sky/ocean color blending: peaks at solar
+  // noon, tapers to 0 through sunset/night/sunrise
+  function dayness(){
+    const p = dayPhase();
+    return p < 0.5 ? sin((p/0.5) * PI) : 0;
+  }
+
+  // point along the sky arc: t=0 rising at the left horizon, t=0.5 at
+  // its peak overhead, t=1 setting at the right horizon
+  function celestialArcPoint(t){
+    const angle = PI + t*PI;
+    return { x: CEL_ARC_CX + CEL_ARC_R*cos(angle), y: CEL_ARC_CY + CEL_ARC_R*sin(angle) };
+  }
+
+  function drawCelestial(){
+    const p = dayPhase();
+    if(p < 0.5){
+      const t = p / 0.5;
+      drawSun(celestialArcPoint(t), sin(t*PI));
+    } else {
+      const t = (p - 0.5) / 0.5;
+      drawMoonAndStars(celestialArcPoint(t), sin(t*PI), 1 - dayness());
+    }
+  }
+
+  function drawSun(pos, height){
+    const t = millis()/1000;
+    const pulse = (sin(t*0.6)+1)/2;
+    const alpha = 0.35 + 0.65*height;
+    noStroke();
+    fill(255, 240, 200, (60 + pulse*20) * alpha);
+    circle(pos.x, pos.y, 150 + pulse*10);
+    fill(255, 236, 170, 255*alpha);
+    circle(pos.x, pos.y, 84);
+  }
+
+  function drawMoonAndStars(pos, height, starAlpha){
+    const t = millis()/1000;
+    const alpha = 0.35 + 0.65*height;
+    noStroke();
+    for(const s of stars){
+      const tw = (sin(t*1.8 + s.seed) + 1)/2;
+      fill(255,255,255, (140 + tw*100) * starAlpha);
+      circle(s.x, s.y, s.size);
+    }
+    fill(235,235,245, 255*alpha);
+    circle(pos.x, pos.y, 68);
+    fill(210,215,225, 220*alpha);
+    circle(pos.x - 12, pos.y - 10, 14);
+    circle(pos.x + 8, pos.y + 12, 10);
+    circle(pos.x + 14, pos.y - 14, 8);
+  }
+
+  // dims the surface world (sky already blends separately) for a dusky
+  // evening feel as night falls — ocean stays untouched, it's dark already
+  function drawNightOverlay(){
+    const nightAlpha = (1 - dayness()) * 95;
+    if(nightAlpha < 1) return;
+    noStroke();
+    fill(15,15,45, nightAlpha);
+    rect(0, 0, W, SKY_H);
+  }
+
+  // ---------- sky / horizon ----------
+
+  function drawSky(){
+    const dn = dayness();
+    for(let y=0;y<GROUND_TOP+2;y++){
+      const t = y/GROUND_TOP;
+      const dayC = lerpColor(color('#7ec3ea'), color('#f3ecf8'), t);
+      const nightC = lerpColor(color('#0a1230'), color('#2a2a55'), t);
+      stroke(lerpColor(nightC, dayC, dn));
+      line(0,y,W,y);
+    }
+    noStroke();
+  }
+
+  function drawMountains(){
+    drawMountainLayer(SKY_H*0.30, SKY_H*0.58, '#c9ac82', 0.0022, 5);
+    drawTreeline(mountainTreesFar);
+    drawMountainLayer(SKY_H*0.40, SKY_H*0.615, '#8a6a48', 0.0032, 55);
+    drawTreeline(mountainTreesNear);
+    for(const mx of [260*WSCALE, 1180*WSCALE]){
+      drawMountainAppleTree(mx, mountainEdgeY(mx, SKY_H*0.40, SKY_H*0.615, 0.0032, 55));
+    }
+    noStroke();
+    for(let y=0;y<70;y++){
+      fill(255,255,255, 90*(1-y/70));
+      rect(0, GROUND_TOP-70+y, W, 1);
+    }
+  }
+
+  function drawMountainAppleTree(x, y){
+    noStroke();
+    fill(0,20,10,45);
+    ellipse(x, y+3, 46, 8);
+    push();
+    translate(x, y+2);
+    fill('#5c3a22');
+    rect(-4, -34, 8, 34);
+    const canopy = [
+      {x:-15,y:-46,r:24,c:'#2e6e35'}, {x:12,y:-50,r:26,c:'#3a7d3f'},
+      {x:-3,y:-58,r:22,c:'#4a8f52'}, {x:-2,y:-38,r:20,c:'#5fae6a'}
+    ];
+    for(const b of canopy){ fill(b.c); circle(b.x, b.y, b.r*2); }
+    fill('#e0433f');
+    for(const [ax,ay] of [[-12,-50],[10,-52],[-2,-42],[6,-62]]) circle(ax,ay,7);
+    pop();
+  }
+
+  function drawMountainLayer(peakY, baseY, col, freq, seedOff){
+    fill(col);
+    beginShape();
+    vertex(0, baseY+50);
+    for(let x=0;x<=W;x+=30) vertex(x, mountainEdgeY(x, peakY, baseY, freq, seedOff));
+    vertex(W, baseY+50);
+    endShape(CLOSE);
+  }
+
+  function drawTreeline(list){
+    noStroke();
+    for(const t of list){
+      fill(0,30,10,45);
+      ellipse(t.x, t.y+3, t.h*0.6, t.h*0.16);
+      push();
+      translate(t.x, t.y+2);
+      fill(t.col);
+      triangle(-t.h*0.32, 0, t.h*0.32, 0, 0, -t.h);
+      triangle(-t.h*0.26, -t.h*0.35, t.h*0.26, -t.h*0.35, 0, -t.h*1.25);
+      pop();
+    }
+  }
+
+  function drawRainbow(){
+    const t = millis()/1000;
+    push();
+    noFill();
+    strokeCap(ROUND);
+    let r = RAINBOW_R + 65 + sin(t*0.7)*5;
+    for(let i=0;i<RAINBOW_COLORS.length;i++){
+      const c = color(RAINBOW_COLORS[i]);
+      const shimmer = 200 + sin(t*2.4 + i*0.8)*55;
+      stroke(red(c), green(c), blue(c), shimmer);
+      strokeWeight(17);
+      arc(RAINBOW_CX, RAINBOW_CY, r*2, r*2, PI, TWO_PI);
+      r -= 15;
+    }
+    pop();
+    noStroke();
+    drawRainbowSparkles(t);
+  }
+
+  function drawRainbowSparkles(t){
+    noStroke();
+    const n = 6, midR = RAINBOW_R + 65 - 45;
+    for(let i=0;i<n;i++){
+      const tt = ((t*0.12) + i/n) % 1;
+      const p = rainbowPoint(tt, midR);
+      const tw = (sin(t*3 + i*1.3) + 1)/2;
+      fill(255,255,255, 110 + tw*140);
+      circle(p.x, p.y, 5 + tw*4);
+    }
+  }
+
+  function drawClouds(){
+    const t = millis()/1000;
+    noStroke();
+    fill(255,255,255,235);
+    for(const c of clouds){
+      const x = (c.baseX + t*c.speed) % (W+300) - 150;
+      push();
+      translate(x, c.y);
+      scale(c.scale);
+      ellipse(0,0, 90,38); ellipse(-38,8, 62,32); ellipse(42,10, 68,30); ellipse(0,-16, 64,32);
+      pop();
+    }
+  }
+
+  function drawSeatClouds(){
+    const t = millis()/1000;
+    noStroke();
+    fill(255,255,255,250);
+    for(const c of seatClouds){
+      const bob = sin(t*0.5 + c.x) * 4;
+      push();
+      translate(c.x, c.y + bob);
+      ellipse(0,4, c.w, c.w*0.42);
+      ellipse(-c.w*0.28,-8, c.w*0.5, c.w*0.32);
+      ellipse(c.w*0.3,-10, c.w*0.55, c.w*0.34);
+      ellipse(0,-16, c.w*0.42, c.w*0.3);
+      pop();
+    }
+  }
+
+  // ---------- ground ----------
+
+  function drawGround(){
+    noStroke();
+    for(let y=GROUND_TOP; y<SKY_H; y++){
+      const t = (y-GROUND_TOP)/(SKY_H-GROUND_TOP);
+      stroke(lerpColor(color('#6cb35e'), color('#2f6b34'), t));
+      line(0,y,W,y);
+    }
+    noStroke();
+    for(let i=0;i<9;i++){
+      const px = (i*197 + 40) % W, py = GROUND_TOP + 60 + (i*83) % (SKY_H-GROUND_TOP-80);
+      fill(255,255,200, 14);
+      ellipse(px, py, 220, 90);
+    }
+  }
+
+  function riverBezierY(x){
+    // approximate y along the river's curve at a given x, for the bridge
+    const t = x / W;
+    return lerp(RIVER_Y0-20, RIVER_Y0+10, t) + sin(t*PI*2.2)* -34;
+  }
+
+  function drawRiver(){
+    const t = millis()/1000;
+    const y0 = RIVER_Y0;
+    noFill();
+    stroke('#4a9fc7'); strokeWeight(52); strokeCap(ROUND);
+    beginShape();
+    vertex(0, y0-28);
+    bezierVertex(W*0.22, y0-72, W*0.32, y0+42, W*0.5, y0);
+    bezierVertex(W*0.68, y0-42, W*0.8, y0+55, W, y0+14);
+    endShape();
+
+    stroke('#8fd6ee'); strokeWeight(8);
+    const dashOffset = (t*40) % 60;
+    drawingContext.setLineDash([16,28]);
+    drawingContext.lineDashOffset = -dashOffset;
+    beginShape();
+    vertex(0, y0-28);
+    bezierVertex(W*0.22, y0-72, W*0.32, y0+42, W*0.5, y0);
+    bezierVertex(W*0.68, y0-42, W*0.8, y0+55, W, y0+14);
+    endShape();
+    drawingContext.setLineDash([]);
+    noStroke();
+  }
+
+  function drawBridge(){
+    const y = RIVER_Y0 - 24;
+    noStroke();
+    fill(0,30,15,50);
+    ellipse(BRIDGE_X, y+30, 190, 20);
+
+    push();
+    translate(BRIDGE_X, y);
+    fill('#8b5a2b');
+    rect(-95, -8, 190, 16, 4);
+    stroke('#6b431f'); strokeWeight(2);
+    for(let i=-90;i<=90;i+=16) line(i,-8, i,8);
+    noStroke();
+    fill('#6b431f');
+    rect(-95,-34, 8,34); rect(87,-34,8,34);
+    rect(-95,-38, 190,6, 3);
+    stroke('#6b431f'); strokeWeight(4);
+    for(let i=-80;i<=80;i+=32) line(i,-36, i,-10);
+    // simple stone piers into the water
+    noStroke();
+    fill('#9a8f80');
+    rect(-100, 6, 14, 30, 0,0,4,4);
+    rect(86, 6, 14, 30, 0,0,4,4);
+    pop();
+  }
+
+  function drawGrass(){
+    const t = millis()/1000;
+    strokeWeight(2.5);
+    for(const b of grassBlades){
+      const wind = (noise(b.x*0.01, t*0.3) - 0.5) * 20;
+      push();
+      translate(b.x, b.y);
+      stroke(b.c);
+      line(0,0, wind*0.5, -b.h);
+      pop();
+    }
+    noStroke();
+    for(const l of grassLeaves){
+      const sway = sin(t*0.6 + l.seed) * 6;
+      push();
+      translate(l.x, l.y);
+      rotate(radians(l.rot + sway));
+      fill(l.c);
+      ellipse(0,0, l.size, l.size*0.48);
+      stroke('#2a5a2f'); strokeWeight(1);
+      line(-l.size*0.4,0, l.size*0.4,0);
+      noStroke();
+      pop();
+    }
+  }
+
+  function drawDaisies(){
+    const t = millis()/1000;
+    noStroke();
+    for(const f of daisies){
+      const sway = sin(t*0.8 + f.seed) * 4;
+      push();
+      translate(f.x, f.y);
+      stroke('#3f7a3f'); strokeWeight(2.5);
+      line(0,4, sway, -f.h); noStroke();
+      fill('#3f7a3f');
+      ellipse(sway*0.5, -f.h*0.5, 12, 6);
+      push();
+      translate(sway, -f.h);
+      const r = f.size;
+      fill(255,255,255);
+      for(let i=0;i<10;i++){
+        push(); rotate(i*36 + sin(t+f.seed)*4); ellipse(0, -r*0.42, r*0.24, r*0.5); pop();
+      }
+      fill('#f6c445'); circle(0,0, r*0.34);
+      fill('#e0a52a');
+      for(let i=0;i<5;i++){
+        const a = i*72;
+        circle(cos(radians(a))*r*0.09, sin(radians(a))*r*0.09, 3);
+      }
+      pop();
+      pop();
+    }
+  }
+
+  function drawSunflowerMeadow(){
+    const t = millis()/1000;
+    noStroke();
+    fill(120,150,50,50);
+    ellipse(915*WSCALE, SKY_H*0.80, 970*WSCALE, 300);
+
+    for(const f of sunflowers){
+      const sway = sin(t*0.7 + f.seed) * 6;
+      push();
+      translate(f.x, f.y);
+      stroke('#3f7a3f'); strokeWeight(4);
+      line(0,0, sway, -f.h);
+      noStroke();
+      fill('#3f7a3f');
+      ellipse(sway*0.4, -f.h*0.45, 20, 10);
+      push();
+      translate(sway, -f.h);
+      rotate(radians(sway*0.6));
+      for(let i=0;i<12;i++){
+        push(); rotate(i*30); fill(224,181,74,215); ellipse(0, -f.size*0.62, f.size*0.34, f.size*0.7); pop();
+      }
+      fill('#6b4a1f'); circle(0,0, f.size*0.62);
+      fill(122,89,45,215);
+      for(let i=0;i<6;i++){
+        const a = i*60;
+        circle(cos(radians(a))*f.size*0.18, sin(radians(a))*f.size*0.18, 4);
+      }
+      pop();
+      pop();
+    }
+  }
+
+  // ---------- house ----------
+
+  function drawHouse(){
+    noStroke();
+    fill(0,40,20,50);
+    ellipse(HOUSE_X, HOUSE_Y+3, 220*HOUSE_SCALE*0.85, 34*HOUSE_SCALE*0.85);
+
+    push();
+    translate(HOUSE_X, HOUSE_Y);
+    scale(HOUSE_SCALE);
+    fill('#8b5a2b');
+    rect(-70, -140, 200, 150);
+    stroke('#6b431f'); strokeWeight(1.5);
+    for(let i=1;i<7;i++) line(-70, -140 + i*21, 130, -140 + i*21);
+    noStroke();
+    fill('#6b431f');
+    triangle(-85, -140, 30, -230, 145, -140);
+    fill('#5a3a1a');
+    rect(-10, -60, 44, 70, 8, 8, 0, 0);
+    fill('#e8c247'); circle(24, -25, 4);
+
+    // dark window recesses — the glass + frame are drawn later, on top
+    // of whichever persona is standing inside
+    fill('#101c22');
+    rect(-65, -140, 80, 80);
+    rect(45, -140, 80, 80);
+
+    fill('#6b431f'); rect(90, -215, 16, 40);
+    pop();
+  }
+
+  function drawHouseWindowGlass(){
+    push();
+    rectMode(CENTER);
+    noStroke();
+    fill(163,232,255,55);
+    rect(WIN_L_X, WIN_L_Y, WIN_SIZE, WIN_SIZE, 5);
+    rect(WIN_R_X, WIN_R_Y, WIN_SIZE, WIN_SIZE, 5);
+    noFill();
+    stroke('#5a3a1a'); strokeWeight(6);
+    rect(WIN_L_X, WIN_L_Y, WIN_SIZE, WIN_SIZE, 5);
+    rect(WIN_R_X, WIN_R_Y, WIN_SIZE, WIN_SIZE, 5);
+    strokeWeight(3.5);
+    line(WIN_L_X-WIN_SIZE/2, WIN_L_Y, WIN_L_X+WIN_SIZE/2, WIN_L_Y);
+    line(WIN_L_X, WIN_L_Y-WIN_SIZE/2, WIN_L_X, WIN_L_Y+WIN_SIZE/2);
+    line(WIN_R_X-WIN_SIZE/2, WIN_R_Y, WIN_R_X+WIN_SIZE/2, WIN_R_Y);
+    line(WIN_R_X, WIN_R_Y-WIN_SIZE/2, WIN_R_X, WIN_R_Y+WIN_SIZE/2);
+    pop();
+  }
+
+  // ---------- trees ----------
+
+  function drawTree(t){
+    if(t.kind === 'leafy') drawLeafyTree(t);
+    else if(t.kind === 'apple') drawAppleTree(t);
+    else drawRoundTree(t);
+  }
+
+  function treeShadow(x,y,w){
+    noStroke();
+    fill(0,40,20,55);
+    ellipse(x, y+6, w, w*0.24);
+  }
+
+  function drawLeafyTree(t){
+    const tm = millis()/1000;
+    const sway = sin(tm*0.3) * 2;
+    treeShadow(t.x, t.baseY, 200);
+    push();
+    translate(t.x, t.baseY);
+    stroke('#5c3d24'); strokeWeight(18); strokeCap(ROUND); noFill();
+    line(0,0, sway*2, -180);
+    rotate(sway*0.3);
+    noStroke();
+    const canopySeeds = [
+      {x:-60,y:-235,r:105,c:'#2e6e35'}, {x:40,y:-250,r:118,c:'#3a7d3f'},
+      {x:-10,y:-280,r:100,c:'#4a8f52'}, {x:-78,y:-190,r:78, c:'#5fae6a'},
+      {x:62,y:-195,r:84,  c:'#6bc06f'}, {x:0,y:-215,r:96,  c:'#5fae6a'}
+    ];
+    for(const b of canopySeeds){
+      fill(b.c);
+      beginShape();
+      const N=14;
+      for(let i=0;i<N;i++){
+        const a = (TWO_PI/N)*i;
+        const rr = b.r * (0.82 + noise(b.x+i*3.7, b.y+9)*0.42);
+        vertex(b.x + cos(a)*rr, b.y + sin(a)*rr*0.85);
+      }
+      endShape(CLOSE);
+    }
+    fill(255,255,255,26);
+    for(const b of canopySeeds) ellipse(b.x-14, b.y-16, b.r*0.9, b.r*0.7);
+    pop();
+  }
+
+  function drawAppleTree(t){
+    const tm = millis()/1000;
+    const sway = sin(tm*0.28 + 2) * 2;
+    treeShadow(t.x, t.baseY, 150);
+    push();
+    translate(t.x, t.baseY);
+    scale(0.7);
+
+    stroke('#5c3a22'); strokeCap(ROUND); noFill();
+    strokeWeight(22); line(0,0, sway, -70);
+    strokeWeight(16); line(sway, -70, sway*1.6-14, -150);
+    strokeWeight(11); line(sway, -70, sway*1.4+22, -140);
+    strokeWeight(8);  line(sway*1.6-14,-150, sway*1.6-40,-195);
+    strokeWeight(7);  line(sway*1.6-14,-150, sway*1.6+16,-190);
+    strokeWeight(6);  line(sway*1.4+22,-140, sway*1.4+52,-182);
+    noStroke();
+
+    rotate(sway*0.12);
+
+    const canopySeeds = [
+      {x:-52,y:-210,r:100,c:'#2e6e35'}, {x:34,y:-225,r:110,c:'#3a7d3f'},
+      {x:-8,y:-250,r:95, c:'#4a8f52'}, {x:-70,y:-165,r:75, c:'#4a8f52'},
+      {x:60,y:-170,r:78, c:'#5fae6a'}, {x:0,y:-190,r:88,  c:'#5fae6a'}
+    ];
+    for(const b of canopySeeds){
+      fill(b.c);
+      beginShape();
+      const N=14;
+      for(let i=0;i<N;i++){
+        const a = (TWO_PI/N)*i;
+        const rr = b.r * (0.82 + noise(b.x+i*3.7, b.y+9)*0.42);
+        vertex(b.x + cos(a)*rr, b.y + sin(a)*rr*0.85);
+      }
+      endShape(CLOSE);
+    }
+    fill(255,255,255,26);
+    for(const b of canopySeeds) ellipse(b.x-14, b.y-16, b.r*0.9, b.r*0.7);
+
+    const applePositions = [[-58,-232],[26,-252],[-6,-198],[-84,-178],[64,-186],[8,-278],[42,-206],[-32,-160]];
+    for(const [ax,ay] of applePositions){
+      stroke('#4a3320'); strokeWeight(2); line(ax,ay-9, ax+1,ay-14); noStroke();
+      fill('#7a1f1f'); circle(ax+1,ay+1, 15);
+      fill('#e0433f'); circle(ax,ay, 14);
+      fill('#ff9a8a'); circle(ax-3,ay-3, 5);
+    }
+    pop();
+  }
+
+  function drawRoundTree(t){
+    const tm = millis()/1000;
+    const sway = sin(tm*0.25 + 4) * 2;
+    treeShadow(t.x, t.baseY, 190);
+    push();
+    translate(t.x, t.baseY);
+    stroke('#5c3d24'); strokeWeight(20); strokeCap(ROUND); noFill();
+    line(0,0, sway*2, -190);
+    rotate(sway*0.3);
+    noStroke();
+    fill('#2e6e35'); circle(0,-250, 175);
+    fill('#4a8f52'); circle(-55,-220, 120); circle(58,-225, 125);
+    fill('#6bc06f'); circle(0,-300, 110);
+    pop();
+  }
+
+  // ---------- underwater layer ----------
+
+  function drawUnderworldTransition(){
+    noStroke();
+    fill('#213a1e');
+    rect(0, SKY_H-2, W, 26);
+    fill('#16261a');
+    rect(0, SKY_H+18, W, 22);
+  }
+
+  function drawOceanWater(){
+    const dn = dayness();
+    noStroke();
+    for(let y=OCEAN_TOP; y<H; y++){
+      const t = (y-OCEAN_TOP)/(H-OCEAN_TOP);
+      const dayC = lerpColor(color('#2f7f9e'), color('#0b3350'), t);
+      const nightC = lerpColor(color('#050c1e'), color('#02030a'), t);
+      stroke(lerpColor(nightC, dayC, dn));
+      line(0,y,W,y);
+    }
+    noStroke();
+    for(let i=0;i<6;i++){
+      const x = 130 + i*230;
+      fill(255,255,255, 10*dn);
+      quad(x-26, OCEAN_TOP, x+26, OCEAN_TOP, x+64, H, x-64, H);
+    }
+  }
+
+  function drawSeaFloor(){
+    noStroke();
+    fill('#d8c07a');
+    rect(0, H-55, W, 55);
+    fill('#c9ac68');
+    rect(0, H-55, W, 12);
+  }
+
+  // boat, library and playground resting on the sea floor
+  function drawSunkenStructures(){
+    const floorY = H - 55;
+    noStroke();
+
+    if(boatImg && boatImg.width){
+      const w = 380, h = w * (boatImg.height/boatImg.width);
+      const bottom = H - 22, x = 170*WSCALE;
+      fill(0,10,20,55); ellipse(x, bottom+2, w*0.8, 22);
+      image(boatImg, x, bottom - h/2, w, h);
+    }
+    if(libraryImg && libraryImg.width){
+      const w = 420, h = w * (libraryImg.height/libraryImg.width);
+      const bottom = H - 22, x = 700*WSCALE;
+      fill(0,10,20,55); ellipse(x, bottom+2, w*0.8, 22);
+      image(libraryImg, x, bottom - h/2, w, h);
+    }
+    if(playgroundImg && playgroundImg.width){
+      const w = 440, h = w * (playgroundImg.height/playgroundImg.width);
+      const bottom = H - 22, x = 1120*WSCALE;
+      fill(0,10,20,55); ellipse(x, bottom+2, w*0.8, 22);
+      image(playgroundImg, x, bottom - h/2, w, h);
+    }
+  }
+
+  function drawCorals(){
+    const t = millis()/1000;
+    noStroke();
+    for(const c of corals){
+      const sway = sin(t*0.6+c.seed)*3;
+      push();
+      translate(c.x, c.y);
+      fill(c.col);
+      for(let i=0;i<6;i++){
+        const a = (i/6)*TWO_PI + sway*0.05;
+        ellipse(cos(a)*c.size*0.35, -sin(abs(cos(a)))*c.size*0.5 + sway, c.size*0.32, c.size*0.62);
+      }
+      fill(255,255,255,50);
+      circle(0,-c.size*0.3, c.size*0.3);
+      pop();
+    }
+  }
+
+  function drawSeaweed(){
+    const t = millis()/1000;
+    noStroke();
+    for(const s of seaweeds){
+      stroke('#2f9e6b'); strokeWeight(6); strokeCap(ROUND); noFill();
+      for(let side=-1;side<=1;side+=2){
+        beginShape();
+        for(let i=0;i<=8;i++){
+          const py = s.y - (i/8)*s.h;
+          const px = s.x + side*10 + sin(t*1.2 + s.seed + i*0.6) * (10 + i*1.5);
+          vertex(px, py);
+        }
+        endShape();
+      }
+      noStroke();
+    }
+  }
+
+  function drawOceanFish(){
+    const t = millis()/1000;
+    noStroke();
+    for(const f of oceanFish){
+      const x = f.baseX + (noise(f.seed, t*f.speed)-0.5) * 320;
+      const y = f.baseY + (noise(f.seed+40, t*f.speed*0.8)-0.5) * 90;
+      const dir = noise(f.seed, t*f.speed + 0.01) > noise(f.seed, t*f.speed) ? 1 : -1;
+      push();
+      translate(x,y);
+      scale(dir,1);
+      fill(f.col);
+      ellipse(0,0, f.size, f.size*0.6);
+      triangle(-f.size*0.5,0, -f.size*0.85,-f.size*0.28, -f.size*0.85,f.size*0.28);
+      fill(20,20,30);
+      circle(f.size*0.28,-f.size*0.06, f.size*0.1);
+      pop();
+    }
+  }
+
+  function drawBubbles(){
+    const t = millis()/1000;
+    noStroke();
+    fill(255,255,255,140);
+    for(const b of bubbles){
+      const y = H - ((t*b.speed + b.seed*3) % (H-OCEAN_TOP));
+      const x = b.x + sin(t*0.8 + b.seed) * 8;
+      if(y > OCEAN_TOP) circle(x, y, b.r);
+    }
+  }
+
+  // bioluminescent specks that glow brighter as the ocean goes dark at night
+  function drawOceanGlow(nightAmt){
+    if(nightAmt < 0.05) return;
+    const t = millis()/1000;
+    noStroke();
+    for(const g of oceanGlow){
+      const tw = (sin(t*1.6 + g.seed) + 1)/2;
+      fill(150,255,220, (80 + tw*130) * nightAmt);
+      circle(g.x, g.y, g.size * (0.7 + tw*0.6));
+    }
+  }
+
+  // ---------- creatures ----------
+
+  function drawSparkles(){
+    const t = millis()/1000;
+    noStroke();
+    for(const s of sparkles){
+      const tw = (sin(t*1.6 + s.seed) + 1)/2;
+      fill(255,255,255, 60 + tw*160);
+      circle(s.x, s.y, s.size * (0.6 + tw*0.7));
+    }
+  }
+
+  function drawButterflies(){
+    const t = millis()/1000;
+    for(const b of butterflies){
+      const x = b.baseX + (noise(b.seed, t*b.speed)-0.5) * 280;
+      const y = b.baseY + (noise(b.seed+80, t*b.speed*0.8)-0.5) * 180;
+      const flap = sin(t*11 + b.seed) * 32;
+      push();
+      translate(x,y);
+      rotate(sin(t*0.4+b.seed)*10);
+      noStroke();
+      fill(b.wingColor);
+      push(); rotate(-flap); ellipse(-9,0, 18,12); ellipse(-6,7,10,7); pop();
+      push(); rotate(flap);  ellipse(9,0, 18,12);  ellipse(6,7,10,7); pop();
+      fill(40,30,50); ellipse(0,0, 3,11);
+      pop();
+    }
+  }
+
+  function drawCreatures(){
+    const t = millis()/1000;
+    for(const c of creatures){
+      if(!c.img || !c.img.width) continue;
+
+      let bob = 0, sway = 0, walkX = 0;
+      if(c.type === 'walk' || c.type === 'ground'){
+        walkX = sin(t*0.35 + c.seed) * c.walkRange;
+        bob = abs(sin(t*4 + c.seed)) * 8;
+      } else if(c.type === 'mountain-walk'){
+        walkX = sin(t*0.2 + c.seed) * c.walkRange;
+        bob = abs(sin(t*4 + c.seed)) * 6;
+      } else if(c.type === 'rainbow'){
+        bob = sin(t*0.9 + c.seed) * 6;
+        sway = sin(t*0.7 + c.seed) * radians(3);
+      } else if(c.type === 'rainbow-top'){
+        bob = sin(t*0.8 + c.seed) * 6;
+      } else if(c.type === 'cloud'){
+        bob = sin(t*0.5 + c.seed) * 10;
+        sway = sin(t*0.4 + c.seed) * radians(3);
+      } else if(c.type === 'ocean'){
+        bob = sin(t*0.8 + c.seed) * 18;
+        sway = sin(t*0.55 + c.seed) * radians(10);
+        walkX = sin(t*0.4 + c.seed) * 22;
+      } else if(c.type === 'tree' || c.type === 'bridge' || c.type === 'mountain' || c.type === 'house'){
+        bob = sin(t*0.6 + c.seed) * 4;
+      }
+      const glowPulse = (sin(t*1.4 + c.seed) + 1)/2;
+
+      push();
+      let posX = c.baseX + walkX;
+      let posY = c.baseY + bob;
+      if(c.type === 'mountain-walk'){
+        posY = mountainEdgeY(posX, SKY_H*0.40, SKY_H*0.615, 0.0032, 55) - 20 + bob*0.4;
+      }
+      translate(posX, posY);
+      const gc = color(c.glow);
+      for(let r=c.size*0.7; r>0; r-=6){
+        fill(red(gc), green(gc), blue(gc), (0.3+glowPulse*0.35) * (1 - r/(c.size*0.7)) * 11);
+        circle(0,0, r);
+      }
+      rotate(c.rot + sway);
+      if(c.type === 'ocean'){
+        noStroke();
+        fill(255,255,255, 40 + glowPulse*20);
+        circle(0,0, c.size*0.85);
+      } else {
+        noStroke();
+        fill(0,20,10,45);
+        ellipse(0, c.size*0.42, c.size*0.7, c.size*0.16);
+      }
+      image(c.img, 0, 0, c.size, c.size * (c.img.height/c.img.width));
+      pop();
+    }
+  }
+</script>
+
+</body>
+</html>
