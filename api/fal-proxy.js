@@ -20,7 +20,7 @@
 //    request/response APIs used everywhere else on this site.
 // ─────────────────────────────────────────────────────────────────────────
 
-import * as falProxy from '@fal-ai/server-proxy';
+import * as falProxy from '@fal-ai/server-proxy/express';
 
 export const config = {
   maxDuration: 30,
@@ -30,6 +30,7 @@ export default async function handler(req, res) {
   try {
     await falProxy.handler(req, res);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('fal-proxy error:', err);
+    res.status(500).json({ error: err.message, stack: err.stack });
   }
 }
