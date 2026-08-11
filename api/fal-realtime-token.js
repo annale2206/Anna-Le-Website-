@@ -1,5 +1,3 @@
-import { getTemporaryAuthToken } from "@fal-ai/client";
-
 export const config = {
   maxDuration: 15,
 };
@@ -26,12 +24,42 @@ export default async function handler(req, res) {
   }
 
   try {
-    const token = await getTemporaryAuthToken(app, {
-      credentials: FAL_KEY,
-    });
+    const response = await fetch(
+      "https://rest.fal.ai/tokens/realtime",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Key ${FAL_KEY}`,
+        },
+        body: JSON.stringify({
+          allowed_apps: [app],
+          duration: 120,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("fal token error:", data);
+
+      return res.status(response.status).json({
+        error: data,
+      });
+    }
+
+    if (!data.token) {
+      return res.status(500).json({
+        error: "fal returned no token",
+        response: data,
+      });
+    }
 
     res.setHeader("Content-Type", "text/plain");
-    return res.status(200).send(token);
+
+    return res.status(200).send(data.token);
+
   } catch (err) {
     console.error("fal realtime token error:", err);
 
