@@ -1040,265 +1040,107 @@ drawCanvas.addEventListener(
 /* ==========================================
    FAL REALTIME
 ========================================== */
+falConnection = fal.realtime.connect(
+  "fal-ai/fast-lcm-diffusion",
+  {
+    connectionKey: "anna-live-draw",
 
-let falConnection =
-  null;
+    throttleInterval: 128,
 
-let connected =
-  false;
+    tokenProvider: async (app) => {
+      console.log("requesting realtime token for:", app);
 
-
-/*
-Keep this slightly slower
-than fal's own throttle
-for stability on mobile/iPad.
-*/
-let lastSend =
-  0;
-
-const SEND_INTERVAL_MS =
-  180;
-
-
-
-async function connectFal() {
-
-  if (
-    connected
-  ) {
-    return;
-  }
-
-
-  connectStatus.textContent =
-    "connecting…";
-
-
-  setStatus(
-    "connecting to fal.ai…"
-  );
-
-
-  try {
-
-    /*
-    Browser client.
-    The FAL_KEY is NOT here.
-    */
-
-    const { fal } =
-      await import(
-        "https://esm.sh/@fal-ai/client"
-      );
-
-
-    /*
-    IMPORTANT:
-    Realtime authentication
-    goes through our Vercel proxy.
-    */
-
-    fal.config({
-
-      proxyUrl:
-        "/api/fal-proxy"
-
-    });
-
-
-    /*
-    Persistent realtime
-    WebSocket connection.
-    */
-
-    falConnection =
-      fal.realtime.connect(
-
-        "fal-ai/fast-lcm-diffusion",
-
+      const response = await fetch(
+        "/api/fal-realtime-token",
         {
+          method: "POST",
 
-          connectionKey:
-            "anna-live-draw",
+          headers: {
+            "Content-Type": "application/json",
+          },
 
-          throttleInterval:
-            128,
-
-
-          onResult:
-            result => {
-
-              console.log(
-                "FAL RESULT:",
-                result
-              );
-
-
-              const image =
-                result
-                  ?.images
-                  ?.[0];
-
-
-              if (
-                !image
-              ) {
-                return;
-              }
-
-
-              /*
-              fal can return a URL
-              or inline base64
-              depending on sync mode.
-              */
-
-              if (
-                image.url
-              ) {
-
-                drawResultImage(
-                  image.url
-                );
-
-                return;
-              }
-
-
-              if (
-                image.content
-              ) {
-
-                const type =
-                  image.content_type ||
-                  "image/jpeg";
-
-
-                drawResultImage(
-
-                  `data:${type};base64,${image.content}`
-
-                );
-
-              }
-
-            },
-
-
-          onError:
-            error => {
-
-              console.error(
-                "FAL REALTIME ERROR:",
-                error
-              );
-
-
-              connected =
-                false;
-
-
-              connectStatus.textContent =
-                "error";
-
-
-              connectButton
-                .classList
-                .remove(
-                  "active"
-                );
-
-
-              setStatus(
-
-                "realtime error: " +
-                (
-                  error?.message ||
-                  String(error)
-                ),
-
-                true
-
-              );
-
-            }
-
+          body: JSON.stringify({
+            app,
+          }),
         }
-
       );
 
+      const text = await response.text();
 
-    connected =
-      true;
+      if (!response.ok) {
+        console.error(
+          "TOKEN ENDPOINT ERROR:",
+          response.status,
+          text
+        );
 
+        throw new Error(
+          `Realtime token request failed: ${response.status} ${text}`
+        );
+      }
 
-    connectStatus.textContent =
-      "connected";
+      console.log("realtime token received");
 
+      return text;
+    },
 
-    connectButton
-      .classList
-      .add(
-        "active"
+    tokenExpirationSeconds: 120,
+
+    onResult: (result) => {
+      console.log(
+        "FAL REALTIME RESULT:",
+        result
       );
 
+      const image =
+        result?.images?.[0];
 
-    setStatus(
-      "connected — start drawing"
-    );
+      if (!image) {
+        return;
+      }
 
+      if (image.url) {
+        drawResultImage(
+          image.url
+        );
 
-    /*
-    Send first frame so fal
-    receives initial state.
-    */
+        return;
+      }
 
-    requestGeneration(
-      true
-    );
+      if (image.content) {
+        const type =
+          image.content_type ||
+          "image/jpeg";
 
+        drawResultImage(
+          `data:${type};base64,${image.content}`
+        );
+      }
+    },
 
-  } catch (
-    error
-  ) {
+    onError: (error) => {
+      console.error(
+        "FAL REALTIME ERROR:",
+        error
+      );
 
-    console.error(
-      "FAL CONNECTION ERROR:",
-      error
-    );
+      connected = false;
 
+      connectStatus.textContent =
+        "error";
 
-    connected =
-      false;
+      connectButton
+        .classList
+        .remove("active");
 
-
-    connectStatus.textContent =
-      "not connected";
-
-
-    setStatus(
-
-      "could not connect: " +
-      (
-        error?.message ||
-        String(error)
-      ),
-
-      true
-
-    );
-
+      setStatus(
+        "realtime error: " +
+        (error?.message || String(error)),
+        true
+      );
+    },
   }
-
-}
-
-
-
-connectButton.addEventListener(
-  "click",
-  connectFal
 );
-
 
 
 /* ==========================================
