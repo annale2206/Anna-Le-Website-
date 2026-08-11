@@ -1,87 +1,173 @@
 // api/fal-proxy.js
 //
-// A hand-built proxy matching fal.ai's own documented "custom proxy, any
-// framework" contract exactly (from their proxy-setup docs):
-//   1. Accept all HTTP methods (GET, POST, PUT, DELETE, OPTIONS)
-//   2. Read the target URL from the x-fal-target-url header
-//   3. Add the real API key via the Authorization header
-//   4. Forward the request to fal and pipe the response back
+// Secure proxy for fal.ai.
+// Your FAL_KEY stays on Vercel and is never exposed in the browser.
 //
-// This replaces an earlier attempt using @fal-ai/server-proxy/express —
-// that package assumes a real Express app underneath it (route matching,
-// query parsing, etc.), which a raw Vercel serverless function doesn't
-// fully provide, and it was returning 400s in testing. This version talks
-// to fal's documented protocol directly instead, which should be more
-// robust in a plain Vercel function.
+// Required Vercel environment variable:
 //
-// ─────────────────────────────────────────────────────────────────────────
-// SETUP:
-// 1. FAL_KEY must be set in Vercel's Environment Variables.
-// 2. No special package needed for this version — just plain fetch().
-//    (@fal-ai/server-proxy can be removed from package.json if this
-//    version is kept, though leaving it there does no harm.)
-// 3. STILL NEEDS A REAL LIVE TEST — this is the second attempt at this
-//    proxy, and real-time WebSocket auth has proven to be the most
-//    particular, hardest-to-verify-blind part of this whole build.
-// ─────────────────────────────────────────────────────────────────────────
+// FAL_KEY=your_fal_key_here
 
 export const config = {
   maxDuration: 30,
 };
 
 export default async function handler(req, res) {
-  // CORS preflight — some environments send an OPTIONS request before
-  // the real one; without handling it explicitly, that preflight can
-  // itself come back as an error and block the real request.
-  if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-fal-target-url, Authorization');
+  // -----------------------------
+  // CORS / preflight
+  // -----------------------------
+  if (req.method === "OPTIONS") {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PUT, DELETE, OPTIONS"
+    );
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "Content-Type, x-fal-target-url, Authorization"
+    );
+
     return res.status(204).end();
   }
 
-  const FAL_KEY = process.env.FAL_KEY;
-  if (!FAL_KEY) {
-    return res.status(500).json({ error: 'FAL_KEY is not set in environment variables yet.' });
+  // -----------------------------
+  // Only support fal proxy methods
+  // -----------------------------
+  if (
+    !["GET", "POST", "PUT", "DELETE"].includes(req.method)
+  ) {
+    return res.status(405).json({
+      error: "Method not allowed",
+    });
   }
 
-  // fal's client library sends the real fal.ai endpoint to call in this
-  // header — check a couple of casings/variants defensively, since header
-  // handling can differ slightly across runtimes.
+  // -----------------------------
+  // Read server-side fal key
+  // -----------------------------
+  const FAL_KEY = process.env.FAL_KEY;
+
+  if (!FAL_KEY) {
+    return res.status(500).json({
+      error:
+        "FAL_KEY is missing from Vercel environment variables.",
+    });
+  }
+
+  // -----------------------------
+  // fal client tells us where
+  // the request must be forwarded
+  // -----------------------------
   const targetUrl =
-    req.headers['x-fal-target-url'] ||
-    req.headers['X-Fal-Target-Url'] ||
-    req.query['x-fal-target-url'];
+    req.headers["x-fal-target-url"];
 
   if (!targetUrl) {
     return res.status(400).json({
-      error: 'Missing x-fal-target-url header',
-      receivedHeaders: Object.keys(req.headers),
+      error: "Missing x-fal-target-url header",
+    });
+  }
+
+  // -----------------------------
+  // Security check
+  // Only proxy fal.ai / fal.run
+  // -----------------------------
+  let parsedUrl;
+
+  try {
+    parsedUrl = new URL(targetUrl);
+  } catch {
+    return res.status(412).json({
+      error: "Invalid fal target URL",
+    });
+  }
+
+  const hostname = parsedUrl.hostname;
+
+  const allowed =
+    hostname === "fal.ai" ||
+    hostname.endsWith(".fal.ai") ||
+    hostname === "fal.run" ||
+    hostname.endsWith(".fal.run");
+
+  if (!allowed) {
+    return res.status(412).json({
+      error: "Target URL is not a fal.ai domain",
     });
   }
 
   try {
-    const forwardHeaders = {
-      'Authorization': `Key ${FAL_KEY}`,
-      'Content-Type': req.headers['content-type'] || 'application/json',
+    const headers = {
+      Authorization: `Key ${FAL_KEY}`,
+      "Content-Type": "application/json",
     };
 
-    const falRes = await fetch(targetUrl, {
+    const fetchOptions = {
       method: req.method,
-      headers: forwardHeaders,
-      body: (req.method !== 'GET' && req.method !== 'HEAD')
-        ? (typeof req.body === 'string' ? req.body : JSON.stringify(req.body))
-        : undefined,
+      headers,
+    };
+
+    if (
+      req.method !== "GET" &&
+      req.method !== "HEAD"
+    ) {
+      fetchOptions.body =
+        typeof req.body === "string"
+          ? req.body
+          : JSON.stringify(req.body || {});
+    }
+
+    console.log(
+      "[fal proxy]",
+      req.method,
+      targetUrl
+    );
+
+    const falResponse =
+      await fetch(targetUrl, fetchOptions);
+
+    const responseBody =
+      await falResponse.text();
+
+    console.log(
+      "[fal proxy response]",
+      falResponse.status
+    );
+
+    // Forward useful fal response headers.
+    falResponse.headers.forEach(
+      (value, key) => {
+        if (
+          key.toLowerCase() !==
+            "content-length" &&
+          key.toLowerCase() !==
+            "content-encoding"
+        ) {
+          try {
+            res.setHeader(key, value);
+          } catch {
+            // Ignore headers unsupported by Vercel.
+          }
+        }
+      }
+    );
+
+    res.setHeader(
+      "Access-Control-Allow-Origin",
+      "*"
+    );
+
+    return res
+      .status(falResponse.status)
+      .send(responseBody);
+
+  } catch (error) {
+    console.error(
+      "[fal proxy error]",
+      error
+    );
+
+    return res.status(500).json({
+      error:
+        error?.message ||
+        "fal proxy request failed",
     });
-
-    const data = await falRes.text();
-
-    res.status(falRes.status);
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Content-Type', falRes.headers.get('content-type') || 'application/json');
-    return res.send(data);
-
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
   }
 }

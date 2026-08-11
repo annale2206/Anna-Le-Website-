@@ -1,387 +1,1522 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<meta
+  name="viewport"
+  content="width=device-width,
+  initial-scale=1,
+  maximum-scale=1,
+  user-scalable=no"
+>
+
 <title>anna_le — live draw</title>
-<link rel="stylesheet" href="style.css">
+
+<link
+  rel="stylesheet"
+  href="style.css"
+>
+
 <style>
-  .hero-sub{
-    font-family:var(--mono); color:var(--sky); font-size:1.05rem;
-    margin:-4px 0 20px;
-  }
-  .hero-sub a{ color:var(--green-dim); }
-  .statement{ max-width:68ch; font-size:1.05rem; margin-bottom:24px; }
 
-  .draw-stage{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:20px;
-    max-width:1000px;
-    margin:0 auto 24px;
-  }
-  @media (max-width:800px){ .draw-stage{ grid-template-columns:1fr; } }
+.hero-sub {
+  font-family: var(--mono);
+  color: var(--sky);
+  font-size: 1.05rem;
+  margin: -4px 0 20px;
+}
 
-  .panel{
-    border:2px solid var(--purple);
-    background:#1c2733;
-    padding:14px;
-  }
-  .panel h3{
-    font-family:var(--mono); font-size:.95rem; color:var(--green-dim);
-    margin:0 0 10px; text-transform:lowercase;
-  }
-  .canvas-frame{
-    width:100%; aspect-ratio:1;
-    background:#0d1319;
-    border:1px solid rgba(255,255,255,.15);
-    overflow:hidden;
-    position:relative;
-    touch-action:none;
-  }
-  #draw-canvas, #result-canvas{
-    width:100%; height:100%; display:block;
-  }
-  #result-canvas{ background:#000; }
+.hero-sub a {
+  color: var(--green-dim);
+}
 
-  .toolbar{
-    display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; align-items:center;
-  }
-  .tool-btn{
-    font-family:var(--mono); font-size:.9rem;
-    background:none; color:var(--cream);
-    border:1px solid var(--green-dim);
-    padding:7px 16px; border-radius:14px;
-    cursor:pointer;
-  }
-  .tool-btn:hover{ background:var(--green-dim); color:var(--bg); }
-  .tool-btn.active{ background:var(--green-dim); color:var(--bg); }
-  .swatch{
-    width:26px; height:26px; border-radius:50%;
-    border:2px solid rgba(255,255,255,.25);
-    cursor:pointer; padding:0;
-  }
-  .swatch.active{ border-color:var(--cream); }
+.statement {
+  max-width: 68ch;
+  font-size: 1.05rem;
+  margin-bottom: 24px;
+}
 
-  .prompt-row{
-    display:flex; gap:10px; margin-top:12px;
-  }
-  #draw-prompt{
-    flex:1; font-family:var(--mono); font-size:.9rem;
-    background:#0d1319; color:var(--cream);
-    border:1px solid rgba(255,255,255,.2);
-    padding:8px 12px;
-  }
+.draw-stage {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  max-width: 1000px;
+  margin: 0 auto 24px;
+}
 
-  .persona-strip{
-    max-width:1000px; margin:0 auto 40px;
-    display:flex; gap:10px; overflow-x:auto; padding-bottom:8px;
+@media (max-width: 800px) {
+  .draw-stage {
+    grid-template-columns: 1fr;
   }
-  .persona-thumb{
-    width:64px; height:64px; flex:0 0 auto;
-    border-radius:6px; object-fit:cover;
-    border:2px solid rgba(255,255,255,.15);
-    cursor:pointer; opacity:.7;
-  }
-  .persona-thumb:hover{ opacity:1; }
-  .persona-thumb.active{ border-color:var(--teal); opacity:1; }
+}
 
-  .status-line{
-    font-family:var(--mono); font-size:.85rem; color:var(--green-dim);
-    text-align:center; min-height:1.2em; margin-bottom:20px;
-  }
-  .status-line.error{ color:var(--pink); }
+.panel {
+  border: 2px solid var(--purple);
+  background: #1c2733;
+  padding: 14px;
+}
 
-  .setup-note{
-    max-width:900px; margin:0 auto 60px;
-    border:2px dashed var(--orange);
-    padding:20px 24px;
-    font-family:var(--mono); font-size:.85rem; color:#dfeee1;
-    line-height:1.7;
-  }
-  .setup-note strong{ color:var(--orange); }
-  .setup-note code{ background:#0d1319; padding:2px 6px; border-radius:3px; color:var(--sky); }
+.panel h3 {
+  font-family: var(--mono);
+  font-size: .95rem;
+  color: var(--green-dim);
+  margin: 0 0 10px;
+  text-transform: lowercase;
+}
+
+.canvas-frame {
+  width: 100%;
+  aspect-ratio: 1;
+  background: #0d1319;
+  border: 1px solid
+    rgba(255,255,255,.15);
+
+  overflow: hidden;
+  position: relative;
+
+  touch-action: none;
+}
+
+#draw-canvas,
+#result-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+#result-canvas {
+  background: #000;
+}
+
+.toolbar {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.tool-btn {
+  font-family: var(--mono);
+  font-size: .9rem;
+
+  background: none;
+  color: var(--cream);
+
+  border: 1px solid
+    var(--green-dim);
+
+  padding: 7px 16px;
+
+  border-radius: 14px;
+
+  cursor: pointer;
+}
+
+.tool-btn:hover,
+.tool-btn.active {
+  background: var(--green-dim);
+  color: var(--bg);
+}
+
+.swatch {
+  width: 26px;
+  height: 26px;
+
+  border-radius: 50%;
+
+  border: 2px solid
+    rgba(255,255,255,.25);
+
+  cursor: pointer;
+
+  padding: 0;
+}
+
+.swatch.active {
+  border-color: var(--cream);
+}
+
+.prompt-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+#draw-prompt {
+  flex: 1;
+
+  font-family: var(--mono);
+  font-size: .9rem;
+
+  background: #0d1319;
+  color: var(--cream);
+
+  border: 1px solid
+    rgba(255,255,255,.2);
+
+  padding: 8px 12px;
+}
+
+.persona-strip {
+  max-width: 1000px;
+
+  margin: 0 auto 40px;
+
+  display: flex;
+
+  gap: 10px;
+
+  overflow-x: auto;
+
+  padding-bottom: 8px;
+}
+
+.persona-thumb {
+  width: 64px;
+  height: 64px;
+
+  flex: 0 0 auto;
+
+  border-radius: 6px;
+
+  object-fit: cover;
+
+  border: 2px solid
+    rgba(255,255,255,.15);
+
+  cursor: pointer;
+
+  opacity: .7;
+}
+
+.persona-thumb:hover {
+  opacity: 1;
+}
+
+.persona-thumb.active {
+  border-color: var(--teal);
+  opacity: 1;
+}
+
+.status-line {
+  font-family: var(--mono);
+  font-size: .85rem;
+
+  color: var(--green-dim);
+
+  text-align: center;
+
+  min-height: 1.2em;
+
+  margin-bottom: 20px;
+}
+
+.status-line.error {
+  color: var(--pink);
+}
+
 </style>
+
 </head>
+
 <body data-petals="6">
 
 <header class="nav">
-  <a class="logo" href="index.html">anna<span>_</span>le</a>
+
+<a
+  class="logo"
+  href="index.html"
+>
+  anna<span>_</span>le
+</a>
+
 </header>
 
 <main class="page">
 
-  <div class="eyebrow">
-    <h1>live draw</h1>
-    <span class="path">~/anna/research/live-draw</span>
-  </div>
-  <div class="hero-sub">research: algorithmic persona — <a href="persona.html">back to persona</a></div>
+<div class="eyebrow">
 
-  <p class="statement">
-    Draw with a finger, watch a model finish the thought — sub-second, as
-    the line is still moving. Each of the fourteen personas is here as a
-    starting bias, a way of telling the machine which version of a face
-    it should be reaching for before you've drawn one at all.
-  </p>
+<h1>
+  live draw
+</h1>
 
-  <div class="draw-stage">
-    <div class="panel">
-      <h3>// your line</h3>
-      <div class="canvas-frame">
-        <canvas id="draw-canvas"></canvas>
-      </div>
-      <div class="toolbar">
-        <button class="tool-btn active" id="brush-tool">brush</button>
-        <button class="tool-btn" id="erase-tool">erase</button>
-        <button class="swatch active" style="background:#ff3d9a" data-color="#ff3d9a"></button>
-        <button class="swatch" style="background:#ff9f4d" data-color="#ff9f4d"></button>
-        <button class="swatch" style="background:#7fd4ff" data-color="#7fd4ff"></button>
-        <button class="swatch" style="background:#8a5cf6" data-color="#8a5cf6"></button>
-        <button class="swatch" style="background:#43e0c9" data-color="#43e0c9"></button>
-        <button class="swatch" style="background:#eef4ee" data-color="#eef4ee"></button>
-        <button class="tool-btn" id="clear-btn">clear</button>
-      </div>
-      <div class="prompt-row">
-        <input id="draw-prompt" type="text" placeholder="describe the style, e.g. oil painting, glowing, surreal..." />
-      </div>
-    </div>
+<span class="path">
+  ~/anna/research/live-draw
+</span>
 
-    <div class="panel">
-      <h3>// the machine's line</h3>
-      <div class="canvas-frame">
-        <canvas id="result-canvas"></canvas>
-      </div>
-      <div class="toolbar">
-        <button class="tool-btn" id="connect-btn">connect</button>
-        <span id="connect-status" style="font-family:var(--mono); font-size:.85rem; color:var(--green-dim);"></span>
-      </div>
-    </div>
-  </div>
+</div>
 
-  <div class="persona-strip" id="persona-strip"></div>
+<div class="hero-sub">
 
-  <div class="status-line" id="status-line"></div>
+research:
+algorithmic persona —
 
-  <div class="setup-note">
-    <strong>note for Anna, not visitors:</strong> this page connects
-    directly from the browser to <code>fal.ai</code> over a persistent
-    WebSocket — that's what makes sub-second updates possible, since a
-    normal request/response round trip (like the identity machine's
-    photo→portrait step) is too slow for continuous drawing. The
-    connection authenticates through <code>api/fal-proxy.js</code>, which
-    keeps your real fal.ai key server-side. You'll need to add
-    <code>FAL_KEY</code> as a Vercel environment variable — see that
-    file's comments for the exact steps. This is the one part of the
-    whole build I could not verify end-to-end against a live account, so
-    budget time to test and adjust the proxy against fal.ai's current
-    documentation before a show.
-  </div>
+<a href="persona.html">
+  back to persona
+</a>
+
+</div>
+
+<p class="statement">
+
+Draw with a finger,
+watch a model finish the thought —
+sub-second,
+as the line is still moving.
+
+Each of the fourteen personas
+is here as a starting bias,
+a way of telling the machine
+which version of a face
+it should be reaching for
+before you've drawn one at all.
+
+</p>
+
+
+<div class="draw-stage">
+
+
+<!-- ==================================
+     USER DRAWING
+=================================== -->
+
+<div class="panel">
+
+<h3>
+// your line
+</h3>
+
+<div class="canvas-frame">
+
+<canvas
+  id="draw-canvas"
+  width="512"
+  height="512"
+></canvas>
+
+</div>
+
+
+<div class="toolbar">
+
+<button
+  class="tool-btn active"
+  id="brush-tool"
+>
+brush
+</button>
+
+<button
+  class="tool-btn"
+  id="erase-tool"
+>
+erase
+</button>
+
+
+<button
+  class="swatch active"
+  style="background:#ff3d9a"
+  data-color="#ff3d9a"
+></button>
+
+<button
+  class="swatch"
+  style="background:#ff9f4d"
+  data-color="#ff9f4d"
+></button>
+
+<button
+  class="swatch"
+  style="background:#7fd4ff"
+  data-color="#7fd4ff"
+></button>
+
+<button
+  class="swatch"
+  style="background:#8a5cf6"
+  data-color="#8a5cf6"
+></button>
+
+<button
+  class="swatch"
+  style="background:#43e0c9"
+  data-color="#43e0c9"
+></button>
+
+<button
+  class="swatch"
+  style="background:#eef4ee"
+  data-color="#eef4ee"
+></button>
+
+
+<button
+  class="tool-btn"
+  id="clear-btn"
+>
+clear
+</button>
+
+</div>
+
+
+<div class="prompt-row">
+
+<input
+  id="draw-prompt"
+  type="text"
+  placeholder="describe the style, e.g. oil painting, glowing, surreal..."
+>
+
+</div>
+
+</div>
+
+
+
+<!-- ==================================
+     AI RESULT
+=================================== -->
+
+<div class="panel">
+
+<h3>
+// the machine's line
+</h3>
+
+<div class="canvas-frame">
+
+<canvas
+  id="result-canvas"
+  width="512"
+  height="512"
+></canvas>
+
+</div>
+
+
+<div class="toolbar">
+
+<button
+  class="tool-btn"
+  id="connect-btn"
+>
+connect
+</button>
+
+<span
+  id="connect-status"
+  style="
+    font-family:var(--mono);
+    font-size:.85rem;
+    color:var(--green-dim);
+  "
+></span>
+
+</div>
+
+</div>
+
+</div>
+
+
+
+<div
+  class="persona-strip"
+  id="persona-strip"
+></div>
+
+
+<div
+  class="status-line"
+  id="status-line"
+></div>
 
 </main>
 
-<footer class="site-footer">© anna_le</footer>
+
+<footer class="site-footer">
+
+© anna_le
+
+</footer>
+
+
 
 <script type="module">
-  const PERSONA_IMAGES = [
-    'persona1.png','persona2.png','persona3.png','persona4.png',
-    'persona5.png','persona6.png','persona7.png','persona8.png',
-    'persona9.png','persona10.png','persona11.png','persona12.png',
-    'persona13.png','persona14.png'
-  ];
-  const PERSONA_STYLES = [
-    'warm golden tones', 'cool blue undertones', 'high contrast dramatic',
-    'soft pastel palette', 'dark moody atmosphere', 'vivid saturated color',
-    'ethereal glowing light', 'muted desaturated tones', 'sharp graphic style',
-    'dreamy soft focus', 'bold graphic shapes', 'delicate fine detail',
-    'surreal otherworldly', 'natural candid warmth'
-  ];
 
-  const drawCanvas = document.getElementById('draw-canvas');
-  const resultCanvas = document.getElementById('result-canvas');
-  const drawCtx = drawCanvas.getContext('2d');
-  const resultCtx = resultCanvas.getContext('2d');
-  const statusLine = document.getElementById('status-line');
-  const connectStatus = document.getElementById('connect-status');
 
-  function setStatus(msg, isError){
-    statusLine.textContent = msg || '';
-    statusLine.classList.toggle('error', !!isError);
+/* ==========================================
+   PERSONAS
+========================================== */
+
+const PERSONA_IMAGES = [
+
+  "persona1.png",
+  "persona2.png",
+  "persona3.png",
+  "persona4.png",
+  "persona5.png",
+  "persona6.png",
+  "persona7.png",
+  "persona8.png",
+  "persona9.png",
+  "persona10.png",
+  "persona11.png",
+  "persona12.png",
+  "persona13.png",
+  "persona14.png"
+
+];
+
+
+const PERSONA_STYLES = [
+
+  "warm golden tones",
+  "cool blue undertones",
+  "high contrast dramatic",
+  "soft pastel palette",
+  "dark moody atmosphere",
+  "vivid saturated color",
+  "ethereal glowing light",
+  "muted desaturated tones",
+  "sharp graphic style",
+  "dreamy soft focus",
+  "bold graphic shapes",
+  "delicate fine detail",
+  "surreal otherworldly",
+  "natural candid warmth"
+
+];
+
+
+
+/* ==========================================
+   DOM
+========================================== */
+
+const drawCanvas =
+  document.getElementById(
+    "draw-canvas"
+  );
+
+const resultCanvas =
+  document.getElementById(
+    "result-canvas"
+  );
+
+const drawCtx =
+  drawCanvas.getContext("2d");
+
+const resultCtx =
+  resultCanvas.getContext("2d");
+
+const statusLine =
+  document.getElementById(
+    "status-line"
+  );
+
+const connectStatus =
+  document.getElementById(
+    "connect-status"
+  );
+
+const connectButton =
+  document.getElementById(
+    "connect-btn"
+  );
+
+
+
+/* ==========================================
+   STATUS
+========================================== */
+
+function setStatus(
+  message,
+  isError = false
+) {
+
+  statusLine.textContent =
+    message || "";
+
+  statusLine.classList.toggle(
+    "error",
+    isError
+  );
+}
+
+
+
+/* ==========================================
+   BLACK DRAWING BACKGROUND
+========================================== */
+
+function fillDrawingBackground() {
+
+  drawCtx.save();
+
+  drawCtx.globalCompositeOperation =
+    "source-over";
+
+  drawCtx.fillStyle =
+    "#0d1319";
+
+  drawCtx.fillRect(
+    0,
+    0,
+    drawCanvas.width,
+    drawCanvas.height
+  );
+
+  drawCtx.restore();
+}
+
+
+fillDrawingBackground();
+
+
+
+/* ==========================================
+   PERSONA STRIP
+========================================== */
+
+const personaStrip =
+  document.getElementById(
+    "persona-strip"
+  );
+
+
+let selectedPersonaStyle = "";
+
+
+PERSONA_IMAGES.forEach(
+  (src, index) => {
+
+    const image =
+      document.createElement("img");
+
+    image.className =
+      "persona-thumb";
+
+    image.src =
+      src;
+
+    image.alt =
+      `persona ${index + 1}`;
+
+
+    image.addEventListener(
+      "click",
+      () => {
+
+        document
+          .querySelectorAll(
+            ".persona-thumb"
+          )
+          .forEach(
+            item =>
+              item.classList.remove(
+                "active"
+              )
+          );
+
+
+        image.classList.add(
+          "active"
+        );
+
+
+        selectedPersonaStyle =
+          PERSONA_STYLES[index];
+
+
+        setStatus(
+          `persona ${index + 1} selected`
+        );
+      }
+    );
+
+
+    image.addEventListener(
+      "error",
+      () => {
+        image.style.display =
+          "none";
+      }
+    );
+
+
+    personaStrip.appendChild(
+      image
+    );
+
   }
+);
 
-  function sizeCanvas(canvas){
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height;
-  }
-  function sizeAll(){ sizeCanvas(drawCanvas); sizeCanvas(resultCanvas); }
-  window.addEventListener('resize', sizeAll);
-  sizeAll();
 
-  const personaStrip = document.getElementById('persona-strip');
-  let selectedPersonaStyle = '';
-  PERSONA_IMAGES.forEach((src, i)=>{
-    const img = document.createElement('img');
-    img.className = 'persona-thumb';
-    img.src = src;
-    img.alt = '';
-    img.addEventListener('click', ()=>{
-      document.querySelectorAll('.persona-thumb').forEach(t=>t.classList.remove('active'));
-      img.classList.add('active');
-      selectedPersonaStyle = PERSONA_STYLES[i];
-    });
-    img.addEventListener('error', ()=>{ img.style.display = 'none'; });
-    personaStrip.appendChild(img);
-  });
 
-  let drawing = false;
-  let currentColor = '#ff3d9a';
-  let erasing = false;
-  let lastX = 0, lastY = 0;
+/* ==========================================
+   BRUSH
+========================================== */
 
-  document.querySelectorAll('.swatch').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      currentColor = btn.dataset.color;
-      erasing = false;
-      document.querySelectorAll('.swatch').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById('brush-tool').classList.add('active');
-      document.getElementById('erase-tool').classList.remove('active');
-    });
-  });
-  document.getElementById('erase-tool').addEventListener('click', ()=>{
-    erasing = true;
-    document.getElementById('erase-tool').classList.add('active');
-    document.getElementById('brush-tool').classList.remove('active');
-  });
-  document.getElementById('brush-tool').addEventListener('click', ()=>{
-    erasing = false;
-    document.getElementById('brush-tool').classList.add('active');
-    document.getElementById('erase-tool').classList.remove('active');
-  });
-  document.getElementById('clear-btn').addEventListener('click', ()=>{
-    drawCtx.clearRect(0,0,drawCanvas.width,drawCanvas.height);
-  });
+let drawing =
+  false;
 
-  function getPos(e){
-    const rect = drawCanvas.getBoundingClientRect();
-    const point = e.touches ? e.touches[0] : e;
-    return {
-      x: (point.clientX - rect.left) * (drawCanvas.width/rect.width),
-      y: (point.clientY - rect.top) * (drawCanvas.height/rect.height)
-    };
-  }
+let currentColor =
+  "#ff3d9a";
 
-  function startDraw(e){
-    drawing = true;
-    const p = getPos(e);
-    lastX = p.x; lastY = p.y;
-    e.preventDefault();
-  }
-  function moveDraw(e){
-    if(!drawing) return;
-    const p = getPos(e);
-    drawCtx.lineCap = 'round';
-    drawCtx.lineJoin = 'round';
-    drawCtx.lineWidth = erasing ? 24 : 5;
-    if(erasing){
-      drawCtx.globalCompositeOperation = 'destination-out';
-      drawCtx.strokeStyle = 'rgba(0,0,0,1)';
-    } else {
-      drawCtx.globalCompositeOperation = 'source-over';
-      drawCtx.strokeStyle = currentColor;
-    }
-    drawCtx.beginPath();
-    drawCtx.moveTo(lastX,lastY);
-    drawCtx.lineTo(p.x,p.y);
-    drawCtx.stroke();
-    lastX = p.x; lastY = p.y;
-    requestGeneration();
-    e.preventDefault();
-  }
-  function endDraw(){ drawing = false; }
+let erasing =
+  false;
 
-  drawCanvas.addEventListener('mousedown', startDraw);
-  drawCanvas.addEventListener('mousemove', moveDraw);
-  window.addEventListener('mouseup', endDraw);
-  drawCanvas.addEventListener('touchstart', startDraw, {passive:false});
-  drawCanvas.addEventListener('touchmove', moveDraw, {passive:false});
-  drawCanvas.addEventListener('touchend', endDraw);
+let lastX =
+  0;
 
-  let falConnection = null;
-  let connected = false;
-  let lastSend = 0;
-  const SEND_INTERVAL_MS = 180;
+let lastY =
+  0;
 
-  document.getElementById('connect-btn').addEventListener('click', async ()=>{
-    if(connected) return;
-    connectStatus.textContent = 'connecting…';
-    try{
-      const { fal } = await import('https://esm.sh/@fal-ai/client');
-      fal.config({ proxyUrl: '/api/fal-proxy' });
 
-      falConnection = fal.realtime.connect('fal-ai/fast-lcm-diffusion', {
-        tokenProvider: async (app) => {
-          const response = await fetch('/api/fal-realtime-token', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ app })
-          });
-          if(!response.ok){
-            throw new Error('token request failed: ' + response.status);
-          }
-          return response.text();
-        },
-        tokenExpirationSeconds: 10,
-        onResult: (result) => {
-          if(result && result.images && result.images[0]){
-            drawResultImage(result.images[0].url);
-          }
-        },
-        onError: (err) => {
-          setStatus('connection error — check FAL_KEY / proxy setup', true);
+
+document
+  .querySelectorAll(
+    ".swatch"
+  )
+  .forEach(
+    button => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          currentColor =
+            button.dataset.color;
+
+          erasing =
+            false;
+
+
+          document
+            .querySelectorAll(
+              ".swatch"
+            )
+            .forEach(
+              item =>
+                item.classList.remove(
+                  "active"
+                )
+            );
+
+
+          button.classList.add(
+            "active"
+          );
+
+
+          document
+            .getElementById(
+              "brush-tool"
+            )
+            .classList.add(
+              "active"
+            );
+
+
+          document
+            .getElementById(
+              "erase-tool"
+            )
+            .classList.remove(
+              "active"
+            );
+
         }
-      });
+      );
 
-      connected = true;
-      connectStatus.textContent = 'connected';
-      document.getElementById('connect-btn').classList.add('active');
-      setStatus('draw — the result updates as you go');
-
-    } catch(err){
-      setStatus('could not connect to fal.ai — see the note below', true);
-      connectStatus.textContent = 'not connected';
     }
-  });
+  );
 
-  function drawResultImage(url){
-    const img = new Image();
-    img.onload = () => {
-      resultCtx.clearRect(0,0,resultCanvas.width,resultCanvas.height);
-      resultCtx.drawImage(img, 0,0, resultCanvas.width, resultCanvas.height);
-    };
-    img.src = url;
+
+
+document
+  .getElementById(
+    "erase-tool"
+  )
+  .addEventListener(
+    "click",
+    () => {
+
+      erasing =
+        true;
+
+      document
+        .getElementById(
+          "erase-tool"
+        )
+        .classList.add(
+          "active"
+        );
+
+      document
+        .getElementById(
+          "brush-tool"
+        )
+        .classList.remove(
+          "active"
+        );
+
+    }
+  );
+
+
+
+document
+  .getElementById(
+    "brush-tool"
+  )
+  .addEventListener(
+    "click",
+    () => {
+
+      erasing =
+        false;
+
+      document
+        .getElementById(
+          "brush-tool"
+        )
+        .classList.add(
+          "active"
+        );
+
+      document
+        .getElementById(
+          "erase-tool"
+        )
+        .classList.remove(
+          "active"
+        );
+
+    }
+  );
+
+
+
+document
+  .getElementById(
+    "clear-btn"
+  )
+  .addEventListener(
+    "click",
+    () => {
+
+      fillDrawingBackground();
+
+      resultCtx.clearRect(
+        0,
+        0,
+        resultCanvas.width,
+        resultCanvas.height
+      );
+
+    }
+  );
+
+
+
+/* ==========================================
+   POINTER POSITION
+========================================== */
+
+function getPosition(
+  event
+) {
+
+  const rect =
+    drawCanvas
+      .getBoundingClientRect();
+
+
+  return {
+
+    x:
+      (
+        event.clientX -
+        rect.left
+      )
+      *
+      (
+        drawCanvas.width /
+        rect.width
+      ),
+
+    y:
+      (
+        event.clientY -
+        rect.top
+      )
+      *
+      (
+        drawCanvas.height /
+        rect.height
+      )
+
+  };
+}
+
+
+
+/* ==========================================
+   DRAW
+========================================== */
+
+function startDraw(
+  event
+) {
+
+  drawing =
+    true;
+
+
+  const point =
+    getPosition(
+      event
+    );
+
+
+  lastX =
+    point.x;
+
+  lastY =
+    point.y;
+
+
+  drawCanvas
+    .setPointerCapture?.(
+      event.pointerId
+    );
+
+
+  event.preventDefault();
+}
+
+
+
+function moveDraw(
+  event
+) {
+
+  if (
+    !drawing
+  ) {
+    return;
   }
 
-  function requestGeneration(){
-    if(!connected || !falConnection) return;
-    const now = Date.now();
-    if(now - lastSend < SEND_INTERVAL_MS) return;
-    lastSend = now;
 
-    const typed = document.getElementById('draw-prompt').value.trim();
-    const prompt = [typed, selectedPersonaStyle].filter(Boolean).join(', ') ||
-      'a detailed painting, expressive brushwork';
+  const point =
+    getPosition(
+      event
+    );
 
-    const dataUrl = drawCanvas.toDataURL('image/png');
+
+  drawCtx.save();
+
+
+  drawCtx.lineCap =
+    "round";
+
+  drawCtx.lineJoin =
+    "round";
+
+
+  drawCtx.lineWidth =
+    erasing
+      ? 24
+      : 6;
+
+
+  if (
+    erasing
+  ) {
+
+    drawCtx.strokeStyle =
+      "#0d1319";
+
+  } else {
+
+    drawCtx.strokeStyle =
+      currentColor;
+
+  }
+
+
+  drawCtx.beginPath();
+
+  drawCtx.moveTo(
+    lastX,
+    lastY
+  );
+
+  drawCtx.lineTo(
+    point.x,
+    point.y
+  );
+
+  drawCtx.stroke();
+
+
+  drawCtx.restore();
+
+
+  lastX =
+    point.x;
+
+  lastY =
+    point.y;
+
+
+  requestGeneration();
+
+
+  event.preventDefault();
+}
+
+
+
+function endDraw(
+  event
+) {
+
+  drawing =
+    false;
+
+
+  if (
+    event?.pointerId !==
+    undefined
+  ) {
+
+    try {
+
+      drawCanvas
+        .releasePointerCapture(
+          event.pointerId
+        );
+
+    } catch {}
+
+  }
+}
+
+
+
+drawCanvas.addEventListener(
+  "pointerdown",
+  startDraw
+);
+
+drawCanvas.addEventListener(
+  "pointermove",
+  moveDraw
+);
+
+drawCanvas.addEventListener(
+  "pointerup",
+  endDraw
+);
+
+drawCanvas.addEventListener(
+  "pointercancel",
+  endDraw
+);
+
+
+
+/* ==========================================
+   FAL REALTIME
+========================================== */
+
+let falConnection =
+  null;
+
+let connected =
+  false;
+
+
+/*
+Keep this slightly slower
+than fal's own throttle
+for stability on mobile/iPad.
+*/
+let lastSend =
+  0;
+
+const SEND_INTERVAL_MS =
+  180;
+
+
+
+async function connectFal() {
+
+  if (
+    connected
+  ) {
+    return;
+  }
+
+
+  connectStatus.textContent =
+    "connecting…";
+
+
+  setStatus(
+    "connecting to fal.ai…"
+  );
+
+
+  try {
+
+    /*
+    Browser client.
+    The FAL_KEY is NOT here.
+    */
+
+    const { fal } =
+      await import(
+        "https://esm.sh/@fal-ai/client"
+      );
+
+
+    /*
+    IMPORTANT:
+    Realtime authentication
+    goes through our Vercel proxy.
+    */
+
+    fal.config({
+
+      proxyUrl:
+        "/api/fal-proxy"
+
+    });
+
+
+    /*
+    Persistent realtime
+    WebSocket connection.
+    */
+
+    falConnection =
+      fal.realtime.connect(
+
+        "fal-ai/fast-lcm-diffusion",
+
+        {
+
+          connectionKey:
+            "anna-live-draw",
+
+          throttleInterval:
+            128,
+
+
+          onResult:
+            result => {
+
+              console.log(
+                "FAL RESULT:",
+                result
+              );
+
+
+              const image =
+                result
+                  ?.images
+                  ?.[0];
+
+
+              if (
+                !image
+              ) {
+                return;
+              }
+
+
+              /*
+              fal can return a URL
+              or inline base64
+              depending on sync mode.
+              */
+
+              if (
+                image.url
+              ) {
+
+                drawResultImage(
+                  image.url
+                );
+
+                return;
+              }
+
+
+              if (
+                image.content
+              ) {
+
+                const type =
+                  image.content_type ||
+                  "image/jpeg";
+
+
+                drawResultImage(
+
+                  `data:${type};base64,${image.content}`
+
+                );
+
+              }
+
+            },
+
+
+          onError:
+            error => {
+
+              console.error(
+                "FAL REALTIME ERROR:",
+                error
+              );
+
+
+              connected =
+                false;
+
+
+              connectStatus.textContent =
+                "error";
+
+
+              connectButton
+                .classList
+                .remove(
+                  "active"
+                );
+
+
+              setStatus(
+
+                "realtime error: " +
+                (
+                  error?.message ||
+                  String(error)
+                ),
+
+                true
+
+              );
+
+            }
+
+        }
+
+      );
+
+
+    connected =
+      true;
+
+
+    connectStatus.textContent =
+      "connected";
+
+
+    connectButton
+      .classList
+      .add(
+        "active"
+      );
+
+
+    setStatus(
+      "connected — start drawing"
+    );
+
+
+    /*
+    Send first frame so fal
+    receives initial state.
+    */
+
+    requestGeneration(
+      true
+    );
+
+
+  } catch (
+    error
+  ) {
+
+    console.error(
+      "FAL CONNECTION ERROR:",
+      error
+    );
+
+
+    connected =
+      false;
+
+
+    connectStatus.textContent =
+      "not connected";
+
+
+    setStatus(
+
+      "could not connect: " +
+      (
+        error?.message ||
+        String(error)
+      ),
+
+      true
+
+    );
+
+  }
+
+}
+
+
+
+connectButton.addEventListener(
+  "click",
+  connectFal
+);
+
+
+
+/* ==========================================
+   AI RESULT
+========================================== */
+
+function drawResultImage(
+  url
+) {
+
+  const image =
+    new Image();
+
+
+  image.onload =
+    () => {
+
+      resultCtx.clearRect(
+        0,
+        0,
+        resultCanvas.width,
+        resultCanvas.height
+      );
+
+
+      resultCtx.drawImage(
+        image,
+        0,
+        0,
+        resultCanvas.width,
+        resultCanvas.height
+      );
+
+    };
+
+
+  image.onerror =
+    error => {
+
+      console.error(
+        "Could not draw fal result:",
+        error
+      );
+
+    };
+
+
+  image.src =
+    url;
+
+}
+
+
+
+/* ==========================================
+   SEND CURRENT DRAWING TO AI
+========================================== */
+
+function requestGeneration(
+  force = false
+) {
+
+  if (
+    !connected ||
+    !falConnection
+  ) {
+
+    return;
+
+  }
+
+
+  const now =
+    Date.now();
+
+
+  if (
+    !force &&
+    now - lastSend <
+      SEND_INTERVAL_MS
+  ) {
+
+    return;
+
+  }
+
+
+  lastSend =
+    now;
+
+
+  const typedPrompt =
+    document
+      .getElementById(
+        "draw-prompt"
+      )
+      .value
+      .trim();
+
+
+  const promptParts =
+    [];
+
+
+  if (
+    typedPrompt
+  ) {
+
+    promptParts.push(
+      typedPrompt
+    );
+
+  }
+
+
+  if (
+    selectedPersonaStyle
+  ) {
+
+    promptParts.push(
+      selectedPersonaStyle
+    );
+
+  }
+
+
+  /*
+  Default prompt.
+  Later we can make this
+  much stronger for faces.
+  */
+
+  if (
+    promptParts.length === 0
+  ) {
+
+    promptParts.push(
+
+      "expressive portrait, artistic face, detailed painting"
+
+    );
+
+  }
+
+
+  const prompt =
+    promptParts.join(
+      ", "
+    );
+
+
+  /*
+  Realtime docs recommend
+  base64 image data URLs.
+  */
+
+  const imageDataUrl =
+    drawCanvas.toDataURL(
+      "image/jpeg",
+      0.82
+    );
+
+
+  console.log(
+    "sending realtime frame"
+  );
+
+
+  try {
 
     falConnection.send({
+
       prompt,
-      sync_mode: true,
-      image_url: dataUrl
+
+      image_url:
+        imageDataUrl,
+
+      sync_mode:
+        true
+
     });
+
+
+  } catch (
+    error
+  ) {
+
+    console.error(
+      "FAL SEND ERROR:",
+      error
+    );
+
+
+    setStatus(
+
+      "send error: " +
+      (
+        error?.message ||
+        String(error)
+      ),
+
+      true
+
+    );
+
   }
+
+}
+
+
+
 </script>
 
-<script src="main.js" defer></script>
+
+<script
+  src="main.js"
+  defer
+></script>
+
 </body>
 </html>
