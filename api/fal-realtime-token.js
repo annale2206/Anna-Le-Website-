@@ -1,4 +1,4 @@
-import { fal } from "@fal-ai/client";
+import { getTemporaryAuthToken } from "@fal-ai/client";
 
 export const config = {
   maxDuration: 15,
@@ -26,11 +26,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    fal.config({
+    const token = await getTemporaryAuthToken(app, {
       credentials: FAL_KEY,
     });
-
-    const token = await fal.auth.getTemporaryAuthToken(app);
 
     res.setHeader("Content-Type", "text/plain");
     return res.status(200).send(token);
@@ -38,7 +36,7 @@ export default async function handler(req, res) {
     console.error("fal realtime token error:", err);
 
     return res.status(500).json({
-      error: err?.message || "Failed to create fal realtime token",
+      error: err?.message || String(err),
     });
   }
 }
