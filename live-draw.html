@@ -320,6 +320,18 @@
       fal.config({ proxyUrl: '/api/fal-proxy' });
 
       falConnection = fal.realtime.connect('fal-ai/fast-lcm-diffusion', {
+        tokenProvider: async (app) => {
+          const response = await fetch('/api/fal-realtime-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ app })
+          });
+          if(!response.ok){
+            throw new Error('token request failed: ' + response.status);
+          }
+          return response.text();
+        },
+        tokenExpirationSeconds: 10,
         onResult: (result) => {
           if(result && result.images && result.images[0]){
             drawResultImage(result.images[0].url);
