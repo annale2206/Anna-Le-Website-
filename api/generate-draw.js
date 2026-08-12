@@ -21,6 +21,17 @@
 // lets fal pick a random one each time. The actual seed used is returned
 // back to the client either way, so a visitor can lock in a result they
 // like.
+//
+// RESPONSE FORMAT: the client feeds this result back into the next
+// request as part of the drawing (see buildFeedbackFrame() in
+// live-draw.html) — it draws the returned image onto a canvas and calls
+// toDataURL() on it. If that image is loaded from a cross-origin URL
+// without permissive CORS headers, the canvas becomes "tainted" and
+// toDataURL() throws, silently breaking future generations. With
+// sync_mode: true, fal typically returns the image inline as base64 —
+// we prefer that (as a data URI, same-origin as far as the canvas is
+// concerned) and only fall back to the hosted .url if base64 isn't
+// present.
 // ─────────────────────────────────────────────────────────────────────────
 
 const MODEL_URL = 'https://fal.run/fal-ai/fast-lcm-diffusion';
@@ -69,15 +80,35 @@ export default async function handler(req, res) {
     }
 
     const data = await falRes.json();
-    const resultUrl = data.images && data.images[0] ? data.images[0].url : null;
+    const first = data.images && data.images[0] ? data.images[0] : null;
 
-    if (!resultUrl) {
+    if (!first) {
       return res.status(502).json({ error: 'No image in fal response' });
+    }
+
+    // Prefer inline base64 (returned as a data URI) over a hosted URL —
+    // this keeps the result same-origin from the browser's point of
+    // view once it's drawn back onto the feedback canvas, avoiding the
+    // CORS-taint issue described above. Field name varies across fal
+    // response shapes, so check the couple of common ones.
+    let resultImage = null;
+    if (first.content) {
+      // some fal endpoints return base64 directly in `content`
+      const mime = first.content_type || 'image/png';
+      resultImage = `data:${mime};base64,${first.content}`;
+    } else if (typeof first === 'string' && first.startsWith('data:')) {
+      resultImage = first;
+    } else if (first.url) {
+      resultImage = first.url;
+    }
+
+    if (!resultImage) {
+      return res.status(502).json({ error: 'Could not read image from fal response' });
     }
 
     // pass back whatever seed fal actually used — useful when the
     // visitor didn't set one, so they can lock in a result they liked
-    return res.status(200).json({ image: resultUrl, seed: data.seed ?? seed ?? null });
+    return res.status(200).json({ image: resultImage, seed: data.seed ?? seed ?? null });
 
   } catch (err) {
     return res.status(500).json({ error: err.message });

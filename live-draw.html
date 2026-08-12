@@ -179,7 +179,9 @@
     portrait step. It's not true sub-second real-time (an earlier
     WebSocket-based attempt at that proved too fragile to get working
     reliably without live testing access), but it's dependable, and
-    updates fast enough to feel responsive while drawing. You'll need
+    updates fast enough to feel responsive while drawing. Feedback
+    frames are sent at a fixed 512x512 as JPEG (not the on-screen canvas
+    size, not PNG) to keep payloads small and avoid 504s. You'll need
     <code>FAL_KEY</code> set as a Vercel environment variable — same key
     as before, no proxy or token setup needed for this simpler version.
   </div>
@@ -320,7 +322,12 @@
   let seedLocked = false;
   let lastResultImg = null; // the most recent AI output, used as feedback for the next generation
 
+  // fixed send resolution — independent of on-screen canvas size, matches
+  // fal's fastest input size and keeps payloads small
+  const SEND_SIZE = 512;
   const feedbackCanvas = document.createElement('canvas');
+  feedbackCanvas.width = SEND_SIZE;
+  feedbackCanvas.height = SEND_SIZE;
   const feedbackCtx = feedbackCanvas.getContext('2d');
 
   document.getElementById('randomize-seed-btn').addEventListener('click', ()=>{
@@ -352,14 +359,22 @@
     img.src = url;
   }
 
+  let feedbackBlend = 0.35; // how much of the previous AI result carries forward (0 = off, 1 = full)
+
+  document.getElementById('fluidity-slider').addEventListener('input', (e)=>{
+    feedbackBlend = Number(e.target.value) / 100;
+  });
+
   // builds the actual image sent to the AI: the previous result as a
   // base (so the model has continuity to build on), with the visitor's
   // fresh strokes drawn on top — this is what creates a fluid, evolving
-  // feel instead of a series of disconnected one-off generations
+  // feel instead of a series of disconnected one-off generations.
+  // Always rendered at a fixed 512x512 and returned as JPEG, both to
+  // keep the payload small (avoids the earlier 504s) — a full-res PNG
+  // of a photographic AI image sent every ~400ms is much heavier than
+  // raw line strokes ever were.
   function buildFeedbackFrame(){
-    const w = drawCanvas.width, h = drawCanvas.height;
-    feedbackCanvas.width = w;
-    feedbackCanvas.height = h;
+    const w = SEND_SIZE, h = SEND_SIZE;
 
     if(lastResultImg && feedbackBlend > 0){
       feedbackCtx.globalAlpha = 1;
@@ -377,27 +392,30 @@
     // the visitor's actual drawing goes on top every time
     feedbackCtx.drawImage(drawCanvas, 0, 0, w, h);
 
-    return feedbackCanvas.toDataURL('image/png');
+    return feedbackCanvas.toDataURL('image/jpeg', 0.82);
   }
-
-  let feedbackBlend = 0.35; // how much of the previous AI result carries forward (0 = off, 1 = full)
-
-  document.getElementById('fluidity-slider').addEventListener('input', (e)=>{
-    feedbackBlend = Number(e.target.value) / 100;
-  });
 
   async function sendToServer(){
     if(generating) { pendingRedraw = true; return; }
     generating = true;
 
-    const typed = document.getElementById('draw-prompt').value.trim();
-    const prompt = [typed, selectedPersonaStyle].filter(Boolean).join(', ') ||
-      'a detailed painting, expressive brushwork';
-    const dataUrl = buildFeedbackFrame();
-    const seedInput = document.getElementById('draw-seed').value.trim();
-    const seed = seedInput ? parseInt(seedInput, 10) : null;
-
+    // everything — including buildFeedbackFrame() — now lives inside the
+    // try block. If lastResultImg ever came from a cross-origin URL
+    // without permissive CORS headers, drawing it to canvas taints the
+    // canvas and toDataURL() throws a SecurityError *synchronously*.
+    // Previously that throw happened before the try/catch even started,
+    // so it was never caught: generating stayed stuck at true forever
+    // and every future stroke silently did nothing. Catching it here
+    // means a single bad frame just shows the error status and recovers
+    // on the next stroke instead of freezing the whole page.
     try{
+      const typed = document.getElementById('draw-prompt').value.trim();
+      const prompt = [typed, selectedPersonaStyle].filter(Boolean).join(', ') ||
+        'a detailed painting, expressive brushwork';
+      const dataUrl = buildFeedbackFrame();
+      const seedInput = document.getElementById('draw-seed').value.trim();
+      const seed = seedInput ? parseInt(seedInput, 10) : null;
+
       const res = await fetch('/api/generate-draw', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -412,6 +430,7 @@
       }
       setStatus('draw — the result updates as you go');
     } catch(err){
+      console.error(err); // check here for SecurityError / taint issues if drawing seems to "freeze"
       setStatus('the machine is resting — try again shortly', true);
     } finally {
       generating = false;
