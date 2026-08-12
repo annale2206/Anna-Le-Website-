@@ -516,7 +516,18 @@
         connectStatus.textContent = 'live';
         drawResultImage(img);
         if(result && result.seed != null && !seedLocked){
-          document.getElementById('draw-seed').value = result.seed;
+          // Only store the seed if it's safely representable and within
+          // fal's accepted range — a seed larger than ~2^53 loses
+          // precision as a JS number and becomes a corrupted value that
+          // fails validation on the next send (this was the actual
+          // cause of every earlier "connecting..."/silent failure: a
+          // bad seed getting echoed back and resent forever).
+          const returnedSeed = Number(result.seed);
+          if(Number.isFinite(returnedSeed) && returnedSeed >= 0 && returnedSeed <= MAX_SEED){
+            document.getElementById('draw-seed').value = returnedSeed;
+          } else {
+            document.getElementById('draw-seed').value = ''; // don't echo back something we can't safely resend
+          }
         }
         setStatus('draw — the result updates as you go');
       },
@@ -541,6 +552,8 @@
     return connection;
   }
 
+  const MAX_SEED = 2147483647; // fal's schema rejects anything past this — matches the randomize button's own range
+
   function requestGeneration(){
     const conn = ensureConnection();
 
@@ -549,10 +562,16 @@
       'a detailed painting, expressive brushwork';
     const dataUrl = buildFeedbackFrame();
     const seedInput = document.getElementById('draw-seed').value.trim();
-    const seed = seedInput ? parseInt(seedInput, 10) : null;
+    let seed = seedInput ? parseInt(seedInput, 10) : null;
+    // Guard against a corrupted/oversized seed (see extractImage's seed
+    // handling below for why this happens) — rather than send something
+    // fal will reject, just omit it and let fal pick a fresh one.
+    if(seed != null && (Number.isNaN(seed) || seed < 0 || seed > MAX_SEED)){
+      seed = null;
+    }
 
     const payload = { prompt, image_url: dataUrl, sync_mode: true };
-    if(seed != null && !Number.isNaN(seed)) payload.seed = seed;
+    if(seed != null) payload.seed = seed;
 
     conn.send(payload);
   }
