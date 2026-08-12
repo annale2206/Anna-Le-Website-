@@ -359,6 +359,15 @@
       resultCtx.drawImage(img, 0,0, resultCanvas.width, resultCanvas.height);
       lastResultImg = img; // keep this as the feedback source for the next send
     };
+    img.onerror = () => {
+      // Previously silent — if the image URL fails to load (e.g. a
+      // CORS-blocked hosted url instead of a same-origin data URI),
+      // nothing was ever drawn and nothing indicated why. Show a
+      // truncated version of the URL that failed so we can tell if
+      // it's a data URI (should always work) or a hosted fal.media
+      // URL (likely CORS-blocked when drawn to canvas).
+      connectStatus.textContent = 'image failed to load: ' + String(url).slice(0, 80);
+    };
     img.src = url;
   }
 
