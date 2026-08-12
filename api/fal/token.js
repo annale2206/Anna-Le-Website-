@@ -44,6 +44,7 @@ export default async function handler(req, res) {
         'Authorization': `Key ${FAL_KEY}`,
       },
       body: JSON.stringify({
+        app, // required — fal's endpoint validation rejects requests without this exact field
         allowed_apps: [app],
         duration: TOKEN_DURATION_SECONDS,
       }),
