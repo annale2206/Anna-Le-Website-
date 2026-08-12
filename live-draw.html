@@ -144,6 +144,16 @@
       <div class="prompt-row">
         <input id="draw-prompt" type="text" placeholder="describe the style, e.g. oil painting, glowing, surreal..." />
       </div>
+      <div class="prompt-row" style="margin-top:8px;">
+        <input id="draw-seed" type="number" placeholder="seed (blank = random)"
+          style="width:180px; font-family:var(--mono); font-size:.9rem; background:#0d1319; color:var(--cream); border:1px solid rgba(255,255,255,.2); padding:8px 12px;" />
+        <button class="tool-btn" id="randomize-seed-btn">randomize</button>
+        <button class="tool-btn" id="lock-seed-btn">lock seed</button>
+      </div>
+      <div class="prompt-row" style="margin-top:8px; align-items:center; gap:12px;">
+        <span style="font-family:var(--mono); font-size:.85rem; color:var(--green-dim);">fluidity</span>
+        <input id="fluidity-slider" type="range" min="0" max="80" value="35" style="flex:1;" />
+      </div>
     </div>
 
     <div class="panel">
@@ -257,6 +267,8 @@
   });
   document.getElementById('clear-btn').addEventListener('click', ()=>{
     drawCtx.clearRect(0,0,drawCanvas.width,drawCanvas.height);
+    resultCtx.clearRect(0,0,resultCanvas.width,resultCanvas.height);
+    lastResultImg = null;
   });
 
   function getPos(e){
@@ -305,21 +317,74 @@
   drawCanvas.addEventListener('touchend', endDraw);
 
   let generating = false;
+  let seedLocked = false;
+  let lastResultImg = null; // the most recent AI output, used as feedback for the next generation
+
+  const feedbackCanvas = document.createElement('canvas');
+  const feedbackCtx = feedbackCanvas.getContext('2d');
+
+  document.getElementById('randomize-seed-btn').addEventListener('click', ()=>{
+    const newSeed = Math.floor(Math.random() * 2147483647);
+    document.getElementById('draw-seed').value = newSeed;
+    seedLocked = false;
+    document.getElementById('lock-seed-btn').classList.remove('active');
+  });
+
+  document.getElementById('lock-seed-btn').addEventListener('click', ()=>{
+    seedLocked = !seedLocked;
+    document.getElementById('lock-seed-btn').classList.toggle('active', seedLocked);
+  });
   let lastSend = 0;
   let pendingRedraw = false;
-  const SEND_INTERVAL_MS = 500; // near-real-time — a plain REST call every ~half second
+  const SEND_INTERVAL_MS = 400; // near-real-time — a plain REST call roughly every 0.4s
 
   connectStatus.textContent = 'ready';
   setStatus('draw — the result updates as you go');
 
   function drawResultImage(url){
     const img = new Image();
+    img.crossOrigin = 'anonymous';
     img.onload = () => {
       resultCtx.clearRect(0,0,resultCanvas.width,resultCanvas.height);
       resultCtx.drawImage(img, 0,0, resultCanvas.width, resultCanvas.height);
+      lastResultImg = img; // keep this as the feedback source for the next send
     };
     img.src = url;
   }
+
+  // builds the actual image sent to the AI: the previous result as a
+  // base (so the model has continuity to build on), with the visitor's
+  // fresh strokes drawn on top — this is what creates a fluid, evolving
+  // feel instead of a series of disconnected one-off generations
+  function buildFeedbackFrame(){
+    const w = drawCanvas.width, h = drawCanvas.height;
+    feedbackCanvas.width = w;
+    feedbackCanvas.height = h;
+
+    if(lastResultImg && feedbackBlend > 0){
+      feedbackCtx.globalAlpha = 1;
+      feedbackCtx.drawImage(lastResultImg, 0, 0, w, h);
+      // fade the previous result slightly so new strokes stay visible
+      // and the image doesn't just freeze into a static loop
+      feedbackCtx.globalAlpha = 1 - feedbackBlend;
+      feedbackCtx.fillStyle = '#000';
+      feedbackCtx.fillRect(0,0,w,h);
+      feedbackCtx.globalAlpha = 1;
+    } else {
+      feedbackCtx.clearRect(0,0,w,h);
+    }
+
+    // the visitor's actual drawing goes on top every time
+    feedbackCtx.drawImage(drawCanvas, 0, 0, w, h);
+
+    return feedbackCanvas.toDataURL('image/png');
+  }
+
+  let feedbackBlend = 0.35; // how much of the previous AI result carries forward (0 = off, 1 = full)
+
+  document.getElementById('fluidity-slider').addEventListener('input', (e)=>{
+    feedbackBlend = Number(e.target.value) / 100;
+  });
 
   async function sendToServer(){
     if(generating) { pendingRedraw = true; return; }
@@ -328,17 +393,23 @@
     const typed = document.getElementById('draw-prompt').value.trim();
     const prompt = [typed, selectedPersonaStyle].filter(Boolean).join(', ') ||
       'a detailed painting, expressive brushwork';
-    const dataUrl = drawCanvas.toDataURL('image/png');
+    const dataUrl = buildFeedbackFrame();
+    const seedInput = document.getElementById('draw-seed').value.trim();
+    const seed = seedInput ? parseInt(seedInput, 10) : null;
 
     try{
       const res = await fetch('/api/generate-draw', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: dataUrl, prompt })
+        body: JSON.stringify({ image: dataUrl, prompt, seed })
       });
       if(!res.ok) throw new Error('bad response');
       const data = await res.json();
       if(data.image) drawResultImage(data.image);
+      if(data.seed != null && !seedLocked){
+        // show the seed that was actually used, so it can be locked in afterward
+        document.getElementById('draw-seed').value = data.seed;
+      }
       setStatus('draw — the result updates as you go');
     } catch(err){
       setStatus('the machine is resting — try again shortly', true);

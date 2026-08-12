@@ -12,6 +12,15 @@
 // SETUP: same FAL_KEY environment variable already set in Vercel. No fal
 // client library needed here — a plain fetch() call, same style as the
 // Replicate functions.
+//
+// SEED SUPPORT: accepts an optional `seed` from the request body. If the
+// model supports it (fast-lcm-diffusion's schema should be checked to
+// confirm the exact field name — this assumes `seed`, matching the
+// common convention across most fal image models), passing the same
+// seed with the same inputs reproduces the same result; leaving it out
+// lets fal pick a random one each time. The actual seed used is returned
+// back to the client either way, so a visitor can lock in a result they
+// like.
 // ─────────────────────────────────────────────────────────────────────────
 
 const MODEL_URL = 'https://fal.run/fal-ai/fast-lcm-diffusion';
@@ -30,23 +39,28 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'FAL_KEY is not set in environment variables yet.' });
   }
 
-  const { image, prompt } = req.body;
+  const { image, prompt, seed } = req.body;
   if (!image) {
     return res.status(400).json({ error: 'No image provided' });
   }
 
   try {
+    const requestBody = {
+      prompt: prompt || 'a detailed painting, expressive brushwork',
+      image_url: image,
+      sync_mode: true,
+    };
+    if (seed != null && !Number.isNaN(seed)) {
+      requestBody.seed = seed;
+    }
+
     const falRes = await fetch(MODEL_URL, {
       method: 'POST',
       headers: {
         'Authorization': `Key ${FAL_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        prompt: prompt || 'a detailed painting, expressive brushwork',
-        image_url: image,
-        sync_mode: true,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!falRes.ok) {
@@ -61,7 +75,9 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: 'No image in fal response' });
     }
 
-    return res.status(200).json({ image: resultUrl });
+    // pass back whatever seed fal actually used — useful when the
+    // visitor didn't set one, so they can lock in a result they liked
+    return res.status(200).json({ image: resultUrl, seed: data.seed ?? seed ?? null });
 
   } catch (err) {
     return res.status(500).json({ error: err.message });
