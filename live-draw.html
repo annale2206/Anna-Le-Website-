@@ -408,6 +408,17 @@
     // and every future stroke silently did nothing. Catching it here
     // means a single bad frame just shows the error status and recovers
     // on the next stroke instead of freezing the whole page.
+    //
+    // CLIENT TIMEOUT: fal's model runner is fast once warm, but a cold
+    // start can occasionally take much longer than the visitor should
+    // ever have to wait on a silent canvas. AbortController cuts the
+    // request off at 15s (just under the server's own 20s maxDuration)
+    // so the visitor sees a friendly "warming up" message quickly, and
+    // the next throttled stroke naturally retries — no separate retry
+    // logic needed.
+    const controller = new AbortController();
+    const abortTimer = setTimeout(() => controller.abort(), 15000);
+
     try{
       const typed = document.getElementById('draw-prompt').value.trim();
       const prompt = [typed, selectedPersonaStyle].filter(Boolean).join(', ') ||
@@ -419,7 +430,8 @@
       const res = await fetch('/api/generate-draw', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: dataUrl, prompt, seed })
+        body: JSON.stringify({ image: dataUrl, prompt, seed }),
+        signal: controller.signal
       });
       if(!res.ok) throw new Error('bad response');
       const data = await res.json();
@@ -431,8 +443,21 @@
       setStatus('draw — the result updates as you go');
     } catch(err){
       console.error(err); // check here for SecurityError / taint issues if drawing seems to "freeze"
-      setStatus('the machine is resting — try again shortly', true);
+      // Checking controller.signal.aborted rather than err.name === 'AbortError':
+      // Safari doesn't reliably throw a proper AbortError when a fetch is cut
+      // off mid-flight — it can surface as a generic TypeError or even a
+      // misleading "due to access control checks" message, even for a
+      // same-origin request. Checking the flag we set ourselves works the
+      // same across every browser regardless of how each one names the error.
+      if(controller.signal.aborted){
+        // a slow cold start, not a real failure — keep it low-key,
+        // the next stroke's request will likely land on a warm runner
+        setStatus('warming up — give it a second');
+      } else {
+        setStatus('the machine is resting — try again shortly', true);
+      }
     } finally {
+      clearTimeout(abortTimer);
       generating = false;
       if(pendingRedraw){
         pendingRedraw = false;
