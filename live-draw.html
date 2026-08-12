@@ -420,9 +420,23 @@
   function ensureConnection(){
     if(connection) return connection;
     connectStatus.textContent = 'connecting...';
+
+    // Explicit tokenProvider, replacing the deprecated default
+    // (auto-fetching a token through proxyUrl). "app" arrives as the
+    // full endpoint path, e.g. "fal-ai/fast-lcm-diffusion/realtime" —
+    // /api/fal/token.js forwards it to fal to mint a short-lived
+    // credential scoped to just that app.
+    const tokenProvider = async (app) => {
+      const response = await fetch(`/api/fal/token?app=${encodeURIComponent(app)}`);
+      const { token } = await response.json();
+      return token;
+    };
+
     connection = fal.realtime.connect('fal-ai/fast-lcm-diffusion', {
       connectionKey: 'live-draw',
       throttleInterval: 150, // client-enforced minimum gap between sends
+      tokenProvider,
+      tokenExpirationSeconds: 120, // must match the `duration` set in api/fal/token.js
       // Force plain JSON instead of fal's default msgpack binary framing.
       // msgpack is more efficient, but a version mismatch between this
       // client build and what the server sends can silently fail to
