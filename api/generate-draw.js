@@ -26,7 +26,7 @@
 const MODEL_URL = 'https://fal.run/fal-ai/fast-lcm-diffusion';
 
 export const config = {
-  maxDuration: 15,
+  maxDuration: 60,
 };
 
 export default async function handler(req, res) {
