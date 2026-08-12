@@ -56,6 +56,12 @@ export default async function handler(req, res) {
     }
 
     const data = await falRes.json();
+    if (!data.token) {
+      // The docs say fal returns { token: "..." }, but we're getting a
+      // 200 with no token field — passing the raw response back lets us
+      // see fal's actual field name instead of guessing again.
+      return res.status(502).json({ error: 'fal response missing token field', falResponse: data });
+    }
     return res.status(200).json({ token: data.token });
   } catch (err) {
     return res.status(500).json({ error: err.message });
