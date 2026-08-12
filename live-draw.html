@@ -376,13 +376,35 @@
   // `url`. Prefer inline base64 — it's same-origin, so drawing it back
   // onto the feedback canvas can't taint it the way a cross-origin url
   // could when toDataURL() runs on the next stroke.
+  // Converts a raw byte array (numbers 0-255) into a proper base64
+  // string. Chunked to avoid call-stack limits on String.fromCharCode
+  // with large arrays (a 512x512 JPEG can be tens of thousands of bytes).
+  function bytesToBase64(bytes){
+    const CHUNK_SIZE = 0x8000;
+    let binary = '';
+    for(let i = 0; i < bytes.length; i += CHUNK_SIZE){
+      const chunk = bytes.slice(i, i + CHUNK_SIZE);
+      binary += String.fromCharCode.apply(null, chunk);
+    }
+    return btoa(binary);
+  }
+
   function extractImage(result){
     try{
       const first = result && result.images && result.images[0];
       if(!first) return null;
       if(first.content){
-        const mime = first.content_type || 'image/png';
-        return `data:${mime};base64,${first.content}`;
+        const mime = first.content_type || 'image/jpeg';
+        // fal sends `content` as a raw array of byte numbers (not an
+        // already-encoded base64 string) — e.g. [255, 216, 255, 224, ...]
+        // which are literally the JPEG file signature bytes in decimal.
+        // Pasting that array directly after "base64," (what this code
+        // used to do) produces garbage the browser can't decode. It
+        // needs to actually be base64-encoded first.
+        const base64 = Array.isArray(first.content)
+          ? bytesToBase64(first.content)
+          : first.content; // already a string in some response shapes — use as-is
+        return `data:${mime};base64,${base64}`;
       }
       if(typeof first === 'string' && first.startsWith('data:')) return first;
       if(first.url) return first.url;
