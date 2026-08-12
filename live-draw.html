@@ -172,18 +172,18 @@
   <div class="status-line" id="status-line"></div>
 
   <div class="setup-note">
-    <strong>note for Anna, not visitors:</strong> this page sends each
-    drawn stroke to <code>api/generate-draw.js</code> — a plain
-    request/response call, roughly every half second while you're
-    actively drawing, same reliable pattern as the identity machine's
-    portrait step. It's not true sub-second real-time (an earlier
-    WebSocket-based attempt at that proved too fragile to get working
-    reliably without live testing access), but it's dependable, and
-    updates fast enough to feel responsive while drawing. Feedback
-    frames are sent at a fixed 512x512 as JPEG (not the on-screen canvas
-    size, not PNG) to keep payloads small and avoid 504s. You'll need
-    <code>FAL_KEY</code> set as a Vercel environment variable — same key
-    as before, no proxy or token setup needed for this simpler version.
+    <strong>note for Anna, not visitors:</strong> this page now uses fal's
+    <code>realtime</code> WebSocket mode via <code>fal.realtime.connect()</code>
+    instead of a plain REST call per stroke — a persistent connection opens
+    on the first stroke and stays warm, so there's no per-request cold
+    start or Vercel function timeout to fight anymore. Requests to
+    <code>/api/fal/proxy</code> are how the browser authenticates without
+    exposing <code>FAL_KEY</code> — that file must exist at
+    <code>api/fal/proxy.js</code> in the project (separate from the older
+    <code>api/generate-draw.js</code>, which is no longer used by this page
+    but left in place). Feedback frames are still sent at a fixed 512x512
+    JPEG to keep each message small. <code>FAL_KEY</code> must be set as a
+    Vercel environment variable, same as before.
   </div>
 
 </main>
@@ -191,6 +191,12 @@
 <footer class="site-footer">© anna_le</footer>
 
 <script type="module">
+  import { fal } from "https://cdn.jsdelivr.net/npm/@fal-ai/client/+esm";
+
+  fal.config({
+    proxyUrl: '/api/fal/proxy'
+  });
+
   const PERSONA_IMAGES = [
     'persona1.png','persona2.png','persona3.png','persona4.png',
     'persona5.png','persona6.png','persona7.png','persona8.png',
@@ -318,10 +324,6 @@
   drawCanvas.addEventListener('touchmove', moveDraw, {passive:false});
   drawCanvas.addEventListener('touchend', endDraw);
 
-  let generating = false;
-  let seedLocked = false;
-  let lastResultImg = null; // the most recent AI output, used as feedback for the next generation
-
   // fixed send resolution — independent of on-screen canvas size, matches
   // fal's fastest input size and keeps payloads small
   const SEND_SIZE = 512;
@@ -330,23 +332,24 @@
   feedbackCanvas.height = SEND_SIZE;
   const feedbackCtx = feedbackCanvas.getContext('2d');
 
+  let lastResultImg = null; // the most recent AI output, used as feedback for the next generation
+  let seedLocked = false;
+  let feedbackBlend = 0.35; // how much of the previous AI result carries forward (0 = off, 1 = full)
+
+  document.getElementById('fluidity-slider').addEventListener('input', (e)=>{
+    feedbackBlend = Number(e.target.value) / 100;
+  });
+
   document.getElementById('randomize-seed-btn').addEventListener('click', ()=>{
     const newSeed = Math.floor(Math.random() * 2147483647);
     document.getElementById('draw-seed').value = newSeed;
     seedLocked = false;
     document.getElementById('lock-seed-btn').classList.remove('active');
   });
-
   document.getElementById('lock-seed-btn').addEventListener('click', ()=>{
     seedLocked = !seedLocked;
     document.getElementById('lock-seed-btn').classList.toggle('active', seedLocked);
   });
-  let lastSend = 0;
-  let pendingRedraw = false;
-  const SEND_INTERVAL_MS = 400; // near-real-time — a plain REST call roughly every 0.4s
-
-  connectStatus.textContent = 'ready';
-  setStatus('draw — the result updates as you go');
 
   function drawResultImage(url){
     const img = new Image();
@@ -359,28 +362,35 @@
     img.src = url;
   }
 
-  let feedbackBlend = 0.35; // how much of the previous AI result carries forward (0 = off, 1 = full)
-
-  document.getElementById('fluidity-slider').addEventListener('input', (e)=>{
-    feedbackBlend = Number(e.target.value) / 100;
-  });
+  // fal's realtime result shape mirrors its REST response: an `images`
+  // array, each entry either inline base64 (`content`) or a hosted
+  // `url`. Prefer inline base64 — it's same-origin, so drawing it back
+  // onto the feedback canvas can't taint it the way a cross-origin url
+  // could when toDataURL() runs on the next stroke.
+  function extractImage(result){
+    const first = result && result.images && result.images[0];
+    if(!first) return null;
+    if(first.content){
+      const mime = first.content_type || 'image/png';
+      return `data:${mime};base64,${first.content}`;
+    }
+    if(typeof first === 'string' && first.startsWith('data:')) return first;
+    if(first.url) return first.url;
+    return null;
+  }
 
   // builds the actual image sent to the AI: the previous result as a
   // base (so the model has continuity to build on), with the visitor's
   // fresh strokes drawn on top — this is what creates a fluid, evolving
   // feel instead of a series of disconnected one-off generations.
-  // Always rendered at a fixed 512x512 and returned as JPEG, both to
-  // keep the payload small (avoids the earlier 504s) — a full-res PNG
-  // of a photographic AI image sent every ~400ms is much heavier than
-  // raw line strokes ever were.
+  // Always rendered at a fixed 512x512 and returned as JPEG to keep
+  // each WebSocket message small.
   function buildFeedbackFrame(){
     const w = SEND_SIZE, h = SEND_SIZE;
 
     if(lastResultImg && feedbackBlend > 0){
       feedbackCtx.globalAlpha = 1;
       feedbackCtx.drawImage(lastResultImg, 0, 0, w, h);
-      // fade the previous result slightly so new strokes stay visible
-      // and the image doesn't just freeze into a static loop
       feedbackCtx.globalAlpha = 1 - feedbackBlend;
       feedbackCtx.fillStyle = '#000';
       feedbackCtx.fillRect(0,0,w,h);
@@ -389,89 +399,62 @@
       feedbackCtx.clearRect(0,0,w,h);
     }
 
-    // the visitor's actual drawing goes on top every time
     feedbackCtx.drawImage(drawCanvas, 0, 0, w, h);
 
     return feedbackCanvas.toDataURL('image/jpeg', 0.82);
   }
 
-  async function sendToServer(){
-    if(generating) { pendingRedraw = true; return; }
-    generating = true;
+  // ───── realtime connection ─────
+  // Opened lazily on the first stroke rather than on page load, so a
+  // visitor who never draws never opens a WebSocket. Once open, the
+  // connection stays alive and warm for the rest of the visit — this is
+  // what replaces the old per-stroke REST call, and what removes the
+  // cold-start/timeout problem entirely: there's one connection setup
+  // cost instead of one per stroke.
+  let connection = null;
 
-    // everything — including buildFeedbackFrame() — now lives inside the
-    // try block. If lastResultImg ever came from a cross-origin URL
-    // without permissive CORS headers, drawing it to canvas taints the
-    // canvas and toDataURL() throws a SecurityError *synchronously*.
-    // Previously that throw happened before the try/catch even started,
-    // so it was never caught: generating stayed stuck at true forever
-    // and every future stroke silently did nothing. Catching it here
-    // means a single bad frame just shows the error status and recovers
-    // on the next stroke instead of freezing the whole page.
-    //
-    // CLIENT TIMEOUT: fal's model runner is fast once warm, but a cold
-    // start can occasionally take much longer than the visitor should
-    // ever have to wait on a silent canvas. AbortController cuts the
-    // request off at 15s (just under the server's own 20s maxDuration)
-    // so the visitor sees a friendly "warming up" message quickly, and
-    // the next throttled stroke naturally retries — no separate retry
-    // logic needed.
-    const controller = new AbortController();
-    const abortTimer = setTimeout(() => controller.abort(), 15000);
-
-    try{
-      const typed = document.getElementById('draw-prompt').value.trim();
-      const prompt = [typed, selectedPersonaStyle].filter(Boolean).join(', ') ||
-        'a detailed painting, expressive brushwork';
-      const dataUrl = buildFeedbackFrame();
-      const seedInput = document.getElementById('draw-seed').value.trim();
-      const seed = seedInput ? parseInt(seedInput, 10) : null;
-
-      const res = await fetch('/api/generate-draw', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: dataUrl, prompt, seed }),
-        signal: controller.signal
-      });
-      if(!res.ok) throw new Error('bad response');
-      const data = await res.json();
-      if(data.image) drawResultImage(data.image);
-      if(data.seed != null && !seedLocked){
-        // show the seed that was actually used, so it can be locked in afterward
-        document.getElementById('draw-seed').value = data.seed;
+  function ensureConnection(){
+    if(connection) return connection;
+    connectStatus.textContent = 'connecting...';
+    connection = fal.realtime.connect('fal-ai/fast-lcm-diffusion', {
+      connectionKey: 'live-draw',
+      throttleInterval: 150, // client-enforced minimum gap between sends
+      onResult: (result) => {
+        connectStatus.textContent = 'live';
+        const img = extractImage(result);
+        if(img) drawResultImage(img);
+        if(result && result.seed != null && !seedLocked){
+          document.getElementById('draw-seed').value = result.seed;
+        }
+        setStatus('draw — the result updates as you go');
+      },
+      onError: (err) => {
+        console.error(err);
+        connectStatus.textContent = 'reconnecting...';
+        setStatus('the connection hiccuped — keep drawing, it should recover', true);
       }
-      setStatus('draw — the result updates as you go');
-    } catch(err){
-      console.error(err); // check here for SecurityError / taint issues if drawing seems to "freeze"
-      // Checking controller.signal.aborted rather than err.name === 'AbortError':
-      // Safari doesn't reliably throw a proper AbortError when a fetch is cut
-      // off mid-flight — it can surface as a generic TypeError or even a
-      // misleading "due to access control checks" message, even for a
-      // same-origin request. Checking the flag we set ourselves works the
-      // same across every browser regardless of how each one names the error.
-      if(controller.signal.aborted){
-        // a slow cold start, not a real failure — keep it low-key,
-        // the next stroke's request will likely land on a warm runner
-        setStatus('warming up — give it a second');
-      } else {
-        setStatus('the machine is resting — try again shortly', true);
-      }
-    } finally {
-      clearTimeout(abortTimer);
-      generating = false;
-      if(pendingRedraw){
-        pendingRedraw = false;
-        requestGeneration();
-      }
-    }
+    });
+    return connection;
   }
 
   function requestGeneration(){
-    const now = Date.now();
-    if(now - lastSend < SEND_INTERVAL_MS) return;
-    lastSend = now;
-    sendToServer();
+    const conn = ensureConnection();
+
+    const typed = document.getElementById('draw-prompt').value.trim();
+    const prompt = [typed, selectedPersonaStyle].filter(Boolean).join(', ') ||
+      'a detailed painting, expressive brushwork';
+    const dataUrl = buildFeedbackFrame();
+    const seedInput = document.getElementById('draw-seed').value.trim();
+    const seed = seedInput ? parseInt(seedInput, 10) : null;
+
+    const payload = { prompt, image_url: dataUrl, sync_mode: true };
+    if(seed != null && !Number.isNaN(seed)) payload.seed = seed;
+
+    conn.send(payload);
   }
+
+  connectStatus.textContent = 'ready';
+  setStatus('draw — the result updates as you go');
 </script>
 
 <script src="main.js" defer></script>
