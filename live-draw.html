@@ -368,15 +368,19 @@
   // onto the feedback canvas can't taint it the way a cross-origin url
   // could when toDataURL() runs on the next stroke.
   function extractImage(result){
-    const first = result && result.images && result.images[0];
-    if(!first) return null;
-    if(first.content){
-      const mime = first.content_type || 'image/png';
-      return `data:${mime};base64,${first.content}`;
+    try{
+      const first = result && result.images && result.images[0];
+      if(!first) return null;
+      if(first.content){
+        const mime = first.content_type || 'image/png';
+        return `data:${mime};base64,${first.content}`;
+      }
+      if(typeof first === 'string' && first.startsWith('data:')) return first;
+      if(first.url) return first.url;
+      return null;
+    } catch(e){
+      return null;
     }
-    if(typeof first === 'string' && first.startsWith('data:')) return first;
-    if(first.url) return first.url;
-    return null;
   }
 
   // builds the actual image sent to the AI: the previous result as a
@@ -419,17 +423,37 @@
     connection = fal.realtime.connect('fal-ai/fast-lcm-diffusion', {
       connectionKey: 'live-draw',
       throttleInterval: 150, // client-enforced minimum gap between sends
+      // Force plain JSON instead of fal's default msgpack binary framing.
+      // msgpack is more efficient, but a version mismatch between this
+      // client build and what the server sends can silently fail to
+      // decode — which surfaced here as walls of raw byte numbers
+      // dumped to the console instead of a readable result or error.
+      // JSON is slightly heavier per-message but far easier to debug,
+      // and at 512x512 throttled sends the difference isn't meaningful.
+      encodeMessage: (input) => JSON.stringify(input),
+      decodeMessage: (data) => JSON.parse(data),
       onResult: (result) => {
-        connectStatus.textContent = 'live';
         const img = extractImage(result);
-        if(img) drawResultImage(img);
+        if(!img){
+          // Log a short, readable summary instead of the raw result —
+          // avoids flooding the console if something is still off.
+          console.warn('realtime result had no readable image:', JSON.stringify(result).slice(0, 300));
+          return;
+        }
+        connectStatus.textContent = 'live';
+        drawResultImage(img);
         if(result && result.seed != null && !seedLocked){
           document.getElementById('draw-seed').value = result.seed;
         }
         setStatus('draw — the result updates as you go');
       },
       onError: (err) => {
-        console.error(err);
+        // Guard against err being a raw binary payload (e.g. an
+        // undecoded WebSocket frame) rather than a normal Error —
+        // logging that directly is what caused the console flood.
+        const readable = (err && err.message) ? err.message :
+          (typeof err === 'string' ? err : '[unreadable error payload]');
+        console.error('realtime error:', readable);
         connectStatus.textContent = 'reconnecting...';
         setStatus('the connection hiccuped — keep drawing, it should recover', true);
       }
