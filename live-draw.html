@@ -420,24 +420,66 @@
   function ensureConnection(){
     if(connection) return connection;
     connectStatus.textContent = 'connecting...';
+
+    try {
+
+    // Explicit tokenProvider, replacing the deprecated default
+    // (auto-fetching a token through proxyUrl). "app" arrives as the
+    // full endpoint path, e.g. "fal-ai/fast-lcm-diffusion/realtime" —
+    // /api/fal/token.js forwards it to fal to mint a short-lived
+    // credential scoped to just that app.
+    //
+    // On failure, the actual status code and response body are shown
+    // directly in connectStatus on the page — this avoids needing to
+    // dig through browser devtools Network tab panels to find the
+    // error, which has been slow and error-prone to do over screenshots.
+    const tokenProvider = async (app) => {
+      let response;
+      try {
+        response = await fetch(`/api/fal/token?app=${encodeURIComponent(app)}`);
+      } catch (networkErr) {
+        connectStatus.textContent = 'token fetch network error: ' + networkErr.message;
+        throw networkErr;
+      }
+      const bodyText = await response.text();
+      if(!response.ok){
+        connectStatus.textContent = 'token error ' + response.status + ': ' + bodyText.slice(0, 200);
+        throw new Error('token fetch failed: ' + response.status);
+      }
+      let parsed;
+      try {
+        parsed = JSON.parse(bodyText);
+      } catch (parseErr) {
+        connectStatus.textContent = 'token response not JSON: ' + bodyText.slice(0, 200);
+        throw parseErr;
+      }
+      if(!parsed.token){
+        connectStatus.textContent = 'token response missing token field: ' + bodyText.slice(0, 200);
+        throw new Error('no token in response');
+      }
+      return parsed.token;
+    };
+
     connection = fal.realtime.connect('fal-ai/fast-lcm-diffusion', {
       connectionKey: 'live-draw',
       throttleInterval: 150, // client-enforced minimum gap between sends
-      // Force plain JSON instead of fal's default msgpack binary framing.
-      // msgpack is more efficient, but a version mismatch between this
-      // client build and what the server sends can silently fail to
-      // decode — which surfaced here as walls of raw byte numbers
-      // dumped to the console instead of a readable result or error.
-      // JSON is slightly heavier per-message but far easier to debug,
-      // and at 512x512 throttled sends the difference isn't meaningful.
-      encodeMessage: (input) => JSON.stringify(input),
-      decodeMessage: (data) => JSON.parse(data),
+      tokenProvider,
+      tokenExpirationSeconds: 120, // must match the `duration` set in api/fal/token.js
+      // NOTE: previously forced JSON via encodeMessage/decodeMessage here.
+      // Reverted — the WebSocket was confirmed open and receiving real
+      // data (33KB+ transferred) but nothing ever rendered, which points
+      // to the server still sending its default msgpack format regardless
+      // of our outgoing encode choice, silently failing every JSON.parse
+      // on incoming frames. Using the client's built-in default codec
+      // instead, which is designed to interoperate with the server as-is.
       onResult: (result) => {
         const img = extractImage(result);
         if(!img){
-          // Log a short, readable summary instead of the raw result —
-          // avoids flooding the console if something is still off.
-          console.warn('realtime result had no readable image:', JSON.stringify(result).slice(0, 300));
+          // Show a truncated version of the actual result shape right on
+          // the page — avoids needing devtools to see what fal sent back.
+          const summary = JSON.stringify(result).slice(0, 200);
+          connectStatus.textContent = 'result had no image: ' + summary;
+          console.warn('realtime result had no readable image:', summary);
           return;
         }
         connectStatus.textContent = 'live';
@@ -454,10 +496,17 @@
         const readable = (err && err.message) ? err.message :
           (typeof err === 'string' ? err : '[unreadable error payload]');
         console.error('realtime error:', readable);
-        connectStatus.textContent = 'reconnecting...';
+        // Show the actual message on-page, not just a generic
+        // "reconnecting..." — that generic text gave no way to tell
+        // what's actually failing without opening devtools.
+        connectStatus.textContent = 'error: ' + readable;
         setStatus('the connection hiccuped — keep drawing, it should recover', true);
       }
     });
+    } catch (setupErr) {
+      connectStatus.textContent = 'connection setup error: ' + setupErr.message;
+      throw setupErr;
+    }
     return connection;
   }
 
