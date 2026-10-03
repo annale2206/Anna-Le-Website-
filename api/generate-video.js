@@ -36,12 +36,16 @@
 
 import Replicate from 'replicate';
 
+// ASYNC UPDATE (Oct 2026): this route no longer waits for the video (Vercel
+// was timing out). It starts the job and returns { id } right away; the page
+// polls /api/prediction?id=... until the video is ready.
+
 // Video generation (Kling) commonly takes even longer than image
 // generation. With Fluid Compute enabled in Vercel's project settings,
 // the platform allows up to 300 seconds — this uses 280 to leave a small
 // safety margin under that ceiling.
 export const config = {
-  maxDuration: 280,
+  maxDuration: 30, // only starts the job now
 };
 
 const MODEL = 'kwaivgi/kling-v3-omni-video';
@@ -77,13 +81,9 @@ export default async function handler(req, res) {
       prompt: finalPrompt
     };
 
-    const output = await replicate.run(MODEL, { input });
-
-    // Replicate's Node client returns a file-like object with a .url()
-    // method for video outputs — this matches the pattern in their docs.
-    const videoUrl = typeof output.url === 'function' ? output.url() : output;
-
-    return res.status(200).json({ video: videoUrl });
+    // start the job and return right away — the page polls /api/prediction
+    const prediction = await replicate.predictions.create({ model: MODEL, input });
+    return res.status(200).json({ id: prediction.id, status: prediction.status });
 
   } catch (err) {
     return res.status(500).json({ error: err.message });

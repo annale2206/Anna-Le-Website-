@@ -1025,6 +1025,28 @@
     return res.status + ' ' + res.statusText + (body ? ' — ' + body : '');
   }
 
+  // the server starts a Replicate job and returns { id }; we check on it until it's done
+  async function waitForPrediction(id, sid, maxMinutes){
+    const deadline = Date.now() + maxMinutes*60*1000;
+    while(Date.now() < deadline){
+      await new Promise(r=>setTimeout(r, 2500));
+      if(sid !== session) return { cancelled:true };
+      let res;
+      try{ res = await fetch('/api/prediction?id=' + encodeURIComponent(id), { cache:'no-store' }); }
+      catch(e){ continue; } // brief network hiccup — keep trying
+      if(!res.ok){ const why = await describeFailure(res); throw new Error(why); }
+      const p = await res.json();
+      if(p.status === 'succeeded'){
+        if(!p.output) throw new Error('replicate finished but returned no output');
+        return { url: p.output };
+      }
+      if(p.status === 'failed' || p.status === 'canceled'){
+        throw new Error('replicate ' + p.status + (p.error ? ': ' + String(p.error).slice(0,300) : ''));
+      }
+    }
+    throw new Error('gave up after ' + maxMinutes + ' minutes — replicate is still working or queued');
+  }
+
   // ---- stage 02: portrait from the brain reading ----
   async function generateStudioPortrait(dataURL, r, sid){
     static1.stop();
@@ -1037,7 +1059,14 @@
       });
       if(!res.ok) throw new Error('http');
       const data = await res.json();
-      if(!data.image) throw new Error('server answered but sent no image: ' + JSON.stringify(data).slice(0,300));
+      let imageUrl = data.image;
+      if(!imageUrl && data.id){
+        const pr = await waitForPrediction(data.id, sid, 5);
+        if(pr.cancelled){ stopGlitch(); return null; }
+        imageUrl = pr.url;
+      }
+      if(!imageUrl) throw new Error('server answered but sent no image: ' + JSON.stringify(data).slice(0,300));
+      data.image = imageUrl;
       stopGlitch();
       if(sid !== session) return null;   // visitor reset while we were waiting
       studioScreen.querySelectorAll('img.reveal').forEach(el=>el.remove());
@@ -1071,7 +1100,14 @@
       });
       if(!res.ok) throw new Error('http');
       const data = await res.json();
-      if(!data.video) throw new Error('server answered but sent no video: ' + JSON.stringify(data).slice(0,300));
+      let videoUrl = data.video;
+      if(!videoUrl && data.id){
+        const pr = await waitForPrediction(data.id, sid, 10);
+        if(pr.cancelled){ stopGlitch(); return; }
+        videoUrl = pr.url;
+      }
+      if(!videoUrl) throw new Error('server answered but sent no video: ' + JSON.stringify(data).slice(0,300));
+      data.video = videoUrl;
       stopGlitch();
       if(sid !== session) return;
       videoScreen.querySelectorAll('video.reveal').forEach(el=>el.remove());

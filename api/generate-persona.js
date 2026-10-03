@@ -79,15 +79,21 @@
 
 import Replicate from 'replicate';
 
+// ASYNC UPDATE (Oct 2026): this route no longer waits for the image.
+// Waiting made Vercel kill the function (504 FUNCTION_INVOCATION_TIMEOUT).
+// It now STARTS the job on Replicate and immediately returns { id }.
+// The page then checks /api/prediction?id=... every few seconds until the
+// portrait is ready. No more timeouts, however long Replicate takes.
+
 // Vercel's default timeout (5-10s on the Hobby plan) is far too short for
 // AI image generation, which commonly takes 10-30+ seconds. With Fluid
 // Compute enabled in project settings, this can go up to 300 seconds —
 // 120 gives a healthy safety margin for InstantID specifically.
 export const config = {
-  maxDuration: 120,
+  maxDuration: 30, // only starts the job now, which takes a second or two
 };
 
-const MODEL = 'zsxkib/instant-id:2e4785a4d80dadf580077b2244c8d7c05d8e3faac04a04c02d8e099dd2876789';
+const VERSION = '2e4785a4d80dadf580077b2244c8d7c05d8e3faac04a04c02d8e099dd2876789'; // zsxkib/instant-id
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -135,14 +141,9 @@ export default async function handler(req, res) {
       ip_adapter_scale: 0.65
     };
 
-    const output = await replicate.run(MODEL, { input });
-
-    // InstantID returns an array of outputs — take the first
-    const resultUrl = Array.isArray(output)
-      ? (typeof output[0].url === 'function' ? output[0].url() : output[0])
-      : output;
-
-    return res.status(200).json({ image: resultUrl });
+    // start the job and return right away — the page polls /api/prediction
+    const prediction = await replicate.predictions.create({ version: VERSION, input });
+    return res.status(200).json({ id: prediction.id, status: prediction.status });
 
   } catch (err) {
     return res.status(500).json({ error: err.message });
