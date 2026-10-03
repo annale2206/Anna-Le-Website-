@@ -16,7 +16,6 @@
     user-select:none;
   }
 
-  /* faint lab grid across the whole background */
   body::before{
     content:'';
     position:fixed; inset:0;
@@ -37,10 +36,10 @@
   }
   .screen.active{ opacity:1; pointer-events:auto; }
 
-  /* ---------- dashboard bar, visible once past the gate ---------- */
+  /* ---------- dashboard ---------- */
   #dashboard{
     position:fixed; top:0; left:0; right:0;
-    display:flex; justify-content:center; gap:60px;
+    display:flex; justify-content:center; align-items:center; gap:60px;
     padding:18px 20px;
     background:#0d1114;
     border-bottom:1px solid #1e2a2e;
@@ -48,22 +47,24 @@
     opacity:0; pointer-events:none;
     transition:opacity .5s ease;
   }
-  #dashboard.active{ opacity:1; }
+  #dashboard.active{ opacity:1; pointer-events:auto; }
   .stat{ text-align:center; }
-  .stat-label{
-    font-size:11px; letter-spacing:.15em; color:#5a6f75;
-    text-transform:uppercase;
+  .stat-label{ font-size:11px; letter-spacing:.15em; color:#5a6f75; text-transform:uppercase; }
+  .stat-value{ font-size:28px; color:#43e0c9; font-weight:700; letter-spacing:.05em; }
+
+  /* signal source badge (simulated / muse) */
+  #source-badge{
+    display:flex; align-items:center; gap:8px;
+    padding:6px 12px; border:1px solid #2a3a3f; border-radius:3px;
+    background:none; color:#8a9aa0;
+    font-family:'Space Mono', monospace; font-size:11px;
+    letter-spacing:.12em; text-transform:uppercase; cursor:pointer;
   }
-  .stat-value{
-    font-size:28px; color:#43e0c9; font-weight:700;
-    letter-spacing:.05em;
-  }
+  #source-badge .led-dot{ flex:none; }
 
   /* ---------- gate ---------- */
   #gate{ flex-direction:column; gap:36px; }
-  .gate-label{
-    font-size:13px; letter-spacing:.3em; color:#5a6f75; text-transform:uppercase;
-  }
+  .gate-label{ font-size:13px; letter-spacing:.3em; color:#5a6f75; text-transform:uppercase; }
   .dots{ display:flex; gap:18px; }
   .dot{
     width:14px; height:14px; border-radius:2px;
@@ -91,7 +92,7 @@
   }
   .dots.shake{ animation:shake .4s ease; }
 
-  /* ---------- lab module framing (used for all three capture stages) ---------- */
+  /* ---------- lab modules ---------- */
   #floor{ gap:2.4vw; padding-top:70px; }
   .module{ display:flex; flex-direction:column; align-items:center; }
   .module-label{
@@ -101,35 +102,25 @@
   }
   .module-label .stage-num{
     background:#43e0c9; color:#0a0d10;
-    font-weight:700; padding:1px 7px; border-radius:2px;
-    font-size:12px;
+    font-weight:700; padding:1px 7px; border-radius:2px; font-size:12px;
   }
   .rig{
     position:relative;
     width:26vw; max-width:380px; aspect-ratio:4/3;
-    background:#0d1114;
-    border:1px solid #1e2a2e;
+    background:#0d1114; border:1px solid #1e2a2e;
   }
-  .corner{
-    position:absolute; width:18px; height:18px;
-    border-color:#43e0c9; z-index:6; pointer-events:none;
-  }
+  .corner{ position:absolute; width:18px; height:18px; border-color:#43e0c9; z-index:6; pointer-events:none; }
   .corner.tl{ top:-1px; left:-1px; border-top:2px solid; border-left:2px solid; }
   .corner.tr{ top:-1px; right:-1px; border-top:2px solid; border-right:2px solid; }
   .corner.bl{ bottom:-1px; left:-1px; border-bottom:2px solid; border-left:2px solid; }
   .corner.br{ bottom:-1px; right:-1px; border-bottom:2px solid; border-right:2px solid; }
 
-  .rig-screen{
-    position:relative; width:100%; height:100%;
-    overflow:hidden; background:#000; cursor:default;
-  }
+  .rig-screen{ position:relative; width:100%; height:100%; overflow:hidden; background:#000; cursor:default; }
   .rig-screen.tappable{ cursor:pointer; }
   .rig video, .rig-screen img, .rig-screen canvas, .rig-screen video{
     position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
   }
-  #video{
-    transform:scaleX(-1); /* mirror the live preview, like a normal mirror */
-  }
+  #video{ transform:scaleX(-1); }
   .status-led{
     display:flex; align-items:center; gap:8px;
     margin-top:10px; font-size:12px; letter-spacing:.1em; color:#5a6f75;
@@ -141,8 +132,15 @@
     transition:background .3s ease, box-shadow .3s ease;
   }
   .led-dot.on{ background:#43e0c9; box-shadow:0 0 6px #43e0c9; }
+  .led-dot.warn{ background:#f5b942; box-shadow:0 0 6px #f5b942; }
+  .led-dot.bad{ background:#ff3d5a; box-shadow:0 0 6px #ff3d5a; }
   .led-dot.pulse{ animation:led-pulse 1s ease-in-out infinite; }
   @keyframes led-pulse{ 0%,100%{ opacity:.35; } 50%{ opacity:1; } }
+
+  .reading-caption{
+    margin-top:6px; min-height:16px; max-width:min(26vw,380px);
+    font-size:11px; letter-spacing:.08em; color:#8a9aa0; text-align:center;
+  }
 
   .static-canvas{ position:absolute; inset:0; width:100%; height:100%; }
 
@@ -157,42 +155,70 @@
     50%{ transform:translate(-50%,-50%) scale(1.15); opacity:1; }
   }
 
-  .rig-screen img.reveal, .rig-screen video.reveal{
-    opacity:0; animation:reveal 1.1s ease forwards;
-  }
+  .rig-screen img.reveal, .rig-screen video.reveal{ opacity:0; animation:reveal 1.1s ease forwards; }
   @keyframes reveal{
     from{ opacity:0; filter:brightness(2) contrast(1.4); transform:scale(1.04); }
     to{ opacity:1; filter:brightness(1) contrast(1); transform:scale(1); }
   }
   .glitch-bar{ position:absolute; z-index:3; }
 
-  /* ---------- text prompt input screens ---------- */
-  .prompt-screen{ flex-direction:column; gap:24px; padding:20px; }
-  .prompt-title{
-    font-size:14px; letter-spacing:.2em; color:#43e0c9; text-transform:uppercase;
+  /* ---------- neural scan screen ---------- */
+  .panel-screen{ flex-direction:column; gap:18px; padding:90px 20px 20px; background:rgba(10,13,16,.96); z-index:5; }
+  .panel-title{ font-size:14px; letter-spacing:.2em; color:#43e0c9; text-transform:uppercase; text-align:center; }
+  .panel-sub{ font-size:12px; letter-spacing:.12em; color:#5a6f75; text-transform:uppercase; text-align:center; }
+  .scan-panel{
+    position:relative;
+    width:min(760px, 92vw);
+    background:#0d1114; border:1px solid #1e2a2e;
+    padding:16px;
   }
-  .prompt-input{
-    width:min(600px, 90vw);
-    background:#0d1114; border:1px solid #2a3a3f;
-    color:#c8d4d8; font-family:'Space Mono', monospace; font-size:16px;
-    padding:18px 20px; resize:none;
-    height:110px;
+  #wave-canvas{ display:block; width:100%; height:200px; }
+  .sensors{ display:flex; justify-content:center; gap:22px; margin:10px 0 4px; }
+  .sensor{ display:flex; align-items:center; gap:6px; font-size:11px; letter-spacing:.1em; color:#8a9aa0; }
+  .bands{ display:grid; grid-template-columns:70px 1fr 48px; gap:6px 12px; align-items:center; margin-top:12px; }
+  .band-name{ font-size:11px; letter-spacing:.12em; color:#8a9aa0; text-transform:uppercase; }
+  .band-track{ position:relative; height:10px; background:#141c20; }
+  .band-fill{ position:absolute; left:0; top:0; bottom:0; width:0; background:#43e0c9; transition:width .15s linear; }
+  .band-ref{ position:absolute; top:-3px; bottom:-3px; width:2px; background:#ff3d5a; opacity:.8; }
+  .band-val{ font-size:11px; color:#5a6f75; text-align:right; }
+  .progress{ width:min(760px, 92vw); height:4px; background:#141c20; }
+  .progress-fill{ height:100%; width:0; background:#43e0c9; }
+  .scan-hint{ font-size:11px; color:#3f4d52; letter-spacing:.08em; text-align:center; min-height:14px; }
+
+  .connect-overlay{
+    position:absolute; inset:0; display:none;
+    flex-direction:column; align-items:center; justify-content:center; gap:14px;
+    background:rgba(13,17,20,.95);
   }
-  .prompt-input:focus{ outline:none; border-color:#43e0c9; }
-  .prompt-input::placeholder{ color:#3f4d52; }
-  .prompt-submit{
+  .connect-overlay.show{ display:flex; }
+  .connect-msg{ font-size:13px; color:#8a9aa0; text-align:center; max-width:440px; line-height:1.6; }
+
+  .btn{
     padding:14px 40px;
     background:#43e0c9; border:none; color:#0a0d10;
     font-family:'Space Mono', monospace; font-size:14px; font-weight:700;
-    letter-spacing:.1em; text-transform:uppercase;
-    cursor:pointer;
+    letter-spacing:.1em; text-transform:uppercase; cursor:pointer;
   }
-  .prompt-submit:active{ background:#35b8a4; }
-  .prompt-skip{
+  .btn:active{ background:#35b8a4; }
+  .btn-link{
     background:none; border:none; color:#5a6f75;
     font-family:'Space Mono', monospace; font-size:12px;
     letter-spacing:.1em; text-decoration:underline; cursor:pointer;
   }
+
+  /* ---------- reading result screen ---------- */
+  .reading-state{
+    font-family:'VT323', monospace; font-size:64px; line-height:1;
+    color:#43e0c9; letter-spacing:.06em; text-transform:uppercase; text-align:center;
+  }
+  .reading-meta{ font-size:12px; letter-spacing:.12em; color:#8a9aa0; text-transform:uppercase; text-align:center; }
+  .prompt-box{
+    width:min(640px, 92vw);
+    border:1px solid #1e2a2e; background:#0d1114;
+    padding:12px 16px;
+  }
+  .prompt-box-label{ font-size:10px; letter-spacing:.2em; color:#5a6f75; text-transform:uppercase; margin-bottom:6px; }
+  .prompt-box-text{ font-size:13px; line-height:1.6; color:#c8d4d8; }
 
   #error-msg{
     position:fixed; inset:0;
@@ -206,9 +232,11 @@
   #error-msg span{ max-width:520px; line-height:1.6; }
 
   @media (max-width:900px){
-    #floor{ flex-direction:column; gap:5vh; padding-top:110px; }
+    #floor{ flex-direction:column; gap:4vh; padding-top:130px; }
     .rig{ width:78vw; }
-    #dashboard{ flex-wrap:wrap; gap:24px; }
+    .reading-caption{ max-width:78vw; }
+    #dashboard{ flex-wrap:wrap; gap:18px; }
+    .panel-screen{ padding-top:150px; }
   }
 </style>
 </head>
@@ -227,8 +255,10 @@
     <div class="stat-label">Videos Generated</div>
     <div class="stat-value" id="stat-videos">000</div>
   </div>
+  <button id="source-badge"><span class="led-dot" id="source-led"></span><span id="source-text">signal</span></button>
 </div>
 
+<!-- gate -->
 <div class="screen active" id="gate">
   <div class="gate-label">access code required</div>
   <div class="dots" id="dots">
@@ -250,6 +280,7 @@
   </div>
 </div>
 
+<!-- lab floor -->
 <div class="screen" id="floor">
   <div class="module">
     <div class="module-label"><span class="stage-num">01</span> subject capture</div>
@@ -258,10 +289,11 @@
       <div class="corner bl"></div><div class="corner br"></div>
       <div class="rig-screen tappable" id="capture-screen">
         <video id="video" autoplay playsinline muted></video>
-        <div class="ring" id="capture-ring"></div>
+        <div class="ring"></div>
       </div>
     </div>
     <div class="status-led"><div class="led-dot" id="led-1"></div> camera feed</div>
+    <div class="reading-caption"></div>
   </div>
 
   <div class="module">
@@ -274,6 +306,7 @@
       </div>
     </div>
     <div class="status-led"><div class="led-dot" id="led-2"></div> synthetic portrait</div>
+    <div class="reading-caption" id="cap-2"></div>
   </div>
 
   <div class="module">
@@ -286,147 +319,638 @@
       </div>
     </div>
     <div class="status-led"><div class="led-dot" id="led-3"></div> animated output</div>
+    <div class="reading-caption" id="cap-3"></div>
   </div>
 </div>
 
-<div class="screen prompt-screen" id="portrait-prompt">
-  <div class="prompt-title">describe the portrait you want to see</div>
-  <textarea class="prompt-input" id="portrait-prompt-input"
-    placeholder="e.g. renaissance oil painting, dramatic candlelight, velvet clothing..."></textarea>
-  <button class="prompt-submit" id="portrait-prompt-submit">generate</button>
-  <button class="prompt-skip" id="portrait-prompt-skip">use default instead</button>
+<!-- neural scan (replaces the typed prompt screens) -->
+<div class="screen panel-screen" id="scan">
+  <div class="panel-title">neural scan</div>
+  <div class="panel-sub" id="scan-instruction">relax · eyes open · stay still</div>
+  <div class="scan-panel">
+    <canvas id="wave-canvas"></canvas>
+    <div class="sensors" id="sensors"></div>
+    <div class="bands" id="bands"></div>
+    <div class="connect-overlay" id="connect-overlay">
+      <div class="connect-msg" id="connect-msg">headset not connected. turn on the Muse, then press connect.</div>
+      <button class="btn" id="connect-btn">connect muse</button>
+      <button class="btn-link" id="use-sim-btn">use simulated signal instead</button>
+    </div>
+  </div>
+  <div class="progress"><div class="progress-fill" id="scan-progress"></div></div>
+  <div class="scan-hint" id="scan-hint"></div>
 </div>
 
-<div class="screen prompt-screen" id="video-prompt">
-  <div class="prompt-title">describe how it should move</div>
-  <textarea class="prompt-input" id="video-prompt-input"
-    placeholder="e.g. slow zoom in, hair blowing in wind, eyes glowing..."></textarea>
-  <button class="prompt-submit" id="video-prompt-submit">animate</button>
-  <button class="prompt-skip" id="video-prompt-skip">use default instead</button>
+<!-- reading result -->
+<div class="screen panel-screen" id="reading">
+  <div class="panel-sub">signal interpreted as</div>
+  <div class="reading-state" id="reading-state">—</div>
+  <div class="reading-meta" id="reading-meta"></div>
+  <div class="prompt-box">
+    <div class="prompt-box-label">portrait prompt</div>
+    <div class="prompt-box-text" id="reading-portrait"></div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-box-label">motion prompt</div>
+    <div class="prompt-box-text" id="reading-motion"></div>
+  </div>
+  <div class="panel-sub" id="reading-countdown"></div>
 </div>
 
 <div id="error-msg"><span id="error-text"></span></div>
-
 <canvas id="hidden-canvas" style="display:none;"></canvas>
 
-<script>
+<script type="module">
+  /* =====================================================================
+     SETTINGS — edit these
+     ===================================================================== */
   const CODE = '2206';
-  let entered = '';
-  let latestPortraitUrl = null;
-  let pendingCaptureDataURL = null;
+  const params = new URLSearchParams(location.search);
+  // ?muse=1  → use the real Muse 2 headset. Default is simulated signal.
+  let USE_MUSE = params.get('muse') === '1';
+  // ?scan=20 → scan length in seconds
+  const SCAN_SECONDS = Math.max(5, Number(params.get('scan')) || 15);
+  const READING_SECONDS = 5;          // how long the "signal interpreted as" screen stays up
+  const BLINK_THRESHOLD_UV = 120;     // peak-to-peak on AF7/AF8 that counts as a blink
+  const MUSE_LIB = './muse.bundle.js'; // local bundle (keep next to this html)
+  const MUSE_LIB_CDN = 'https://cdn.jsdelivr.net/npm/muse-js@3.3.0/+esm'; // fallback
 
-  const dotsEl = document.getElementById('dots');
+  // Typical relative band power. The kiosk blends this with the average of
+  // past visitors, so each person is read *relative to everyone before them*.
+  const REF = { delta:.30, theta:.22, alpha:.25, beta:.17, gamma:.06 };
+  if(params.get('resetbaseline') === '1'){ try{ localStorage.removeItem('im-baseline'); }catch(e){} }
+
+  /* =====================================================================
+     BRAIN STATE → PROMPT VOCABULARY — edit freely
+     ===================================================================== */
+  const VOCAB = {
+    delta:{
+      state:'submerged',
+      portrait:'submerged in deep indigo water, bioluminescent glow, heavy-lidded stillness, dark velvet shadows',
+      accent:'faint bioluminescent particles',
+      motion:'very slow breathing motion, drifting as if underwater, eyes slowly closing',
+      motionAccent:'tiny particles floating upward'
+    },
+    theta:{
+      state:'dreaming',
+      portrait:'surreal dreamscape portrait, iridescent fog, soft double exposure, floating petals, pastel haze',
+      accent:'a soft dreamlike double exposure',
+      motion:'dreamlike floating motion, fog slowly swirling, petals drifting around the face',
+      motionAccent:'a slow dissolve shimmer'
+    },
+    alpha:{
+      state:'calm',
+      portrait:'serene portrait in soft pastel daylight, gentle diffused glow, calm expression, airy pale background',
+      accent:'gentle pastel light',
+      motion:'gentle slow zoom in, soft breeze through the hair, a calm slow blink',
+      motionAccent:'light softly breathing'
+    },
+    beta:{
+      state:'focused',
+      portrait:'sharp high-contrast portrait, electric cyan rim light, precise geometric shadows, direct intense gaze',
+      accent:'crisp cyan rim light',
+      motion:'subject turns toward the camera with intent, light flickers, quick focus pull',
+      motionAccent:'a sharp light flicker'
+    },
+    gamma:{
+      state:'hyperaware',
+      portrait:'hyperreal portrait, prismatic holographic light, chromatic aberration, crystalline reflections on skin',
+      accent:'prismatic holographic reflections',
+      motion:'rapid prismatic shimmer, light refracting across the face, energetic pulses',
+      motionAccent:'holographic flares sweeping across'
+    }
+  };
+  const BANDS = ['delta','theta','alpha','beta','gamma'];
+  const BAND_HZ = { delta:[1,4], theta:[4,8], alpha:[8,13], beta:[13,30], gamma:[30,45] };
+
+  /* =====================================================================
+     DOM
+     ===================================================================== */
+  const $ = id => document.getElementById(id);
+  const dotsEl = $('dots');
   const dots = Array.from(dotsEl.children);
-  const keypad = document.getElementById('keypad');
-  const gateScreen = document.getElementById('gate');
-  const floorScreen = document.getElementById('floor');
-  const portraitPromptScreen = document.getElementById('portrait-prompt');
-  const videoPromptScreen = document.getElementById('video-prompt');
-  const dashboard = document.getElementById('dashboard');
-  const video = document.getElementById('video');
-  const captureScreen = document.getElementById('capture-screen');
-  const studioScreen = document.getElementById('studio-screen');
-  const videoScreen = document.getElementById('video-screen');
-  const staticCanvas1 = document.getElementById('static-canvas-1');
-  const staticCanvas2 = document.getElementById('static-canvas-2');
-  const hiddenCanvas = document.getElementById('hidden-canvas');
-  const errorMsg = document.getElementById('error-msg');
-  const errorText = document.getElementById('error-text');
-  const led1 = document.getElementById('led-1');
-  const led2 = document.getElementById('led-2');
-  const led3 = document.getElementById('led-3');
+  const gateScreen = $('gate'), floorScreen = $('floor'), scanScreen = $('scan'), readingScreen = $('reading');
+  const dashboard = $('dashboard');
+  const video = $('video');
+  const captureScreen = $('capture-screen'), studioScreen = $('studio-screen'), videoScreen = $('video-screen');
+  const hiddenCanvas = $('hidden-canvas');
+  const errorMsg = $('error-msg'), errorText = $('error-text');
+  const led1 = $('led-1'), led2 = $('led-2'), led3 = $('led-3');
 
   function showScreen(el){
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
     el.classList.add('active');
   }
-  function flashError(msg){
+  // set SHOW_ERROR_DETAILS to false before exhibiting, so visitors only see the poetic line
+  const SHOW_ERROR_DETAILS = true;
+  function flashError(msg, detail){
     errorText.textContent = msg;
+    if(detail && SHOW_ERROR_DETAILS){
+      const d = document.createElement('div');
+      d.style.cssText = 'margin-top:16px;font-size:12px;color:#8a9aa0;letter-spacing:0;word-break:break-word;';
+      d.textContent = detail;
+      errorText.appendChild(d);
+    }
     errorMsg.classList.add('show');
   }
   errorMsg.addEventListener('click', ()=> errorMsg.classList.remove('show'));
 
-  function updateDots(){
-    dots.forEach((d,i)=> d.classList.toggle('filled', i < entered.length));
-  }
-  function resetGate(){ entered = ''; updateDots(); }
-
-  keypad.addEventListener('click', e=>{
+  /* =====================================================================
+     GATE
+     ===================================================================== */
+  let entered = '';
+  function updateDots(){ dots.forEach((d,i)=> d.classList.toggle('filled', i < entered.length)); }
+  $('keypad').addEventListener('click', e=>{
     const btn = e.target.closest('.key');
     if(!btn || btn.classList.contains('blank')) return;
     const k = btn.dataset.k;
     if(k === 'back'){ entered = entered.slice(0,-1); updateDots(); return; }
     if(entered.length >= 4) return;
-    entered += k;
-    updateDots();
+    entered += k; updateDots();
     if(entered.length === 4){
-      if(entered === CODE){
-        setTimeout(()=> enterMachine(), 200);
-      } else {
+      if(entered === CODE){ setTimeout(enterMachine, 200); }
+      else{
         dotsEl.classList.add('shake');
         dots.forEach(d=>d.classList.add('err'));
         setTimeout(()=>{
           dotsEl.classList.remove('shake');
           dots.forEach(d=>d.classList.remove('err'));
-          resetGate();
+          entered = ''; updateDots();
         }, 420);
       }
     }
   });
 
-  // ---- static / "no signal" noise on the two downstream rigs ----
-  function drawStatic(canvas, isRunningRef){
-    function frame(){
-      if(!isRunningRef.on) return;
-      const ctx = canvas.getContext('2d');
-      const w = canvas.width = canvas.clientWidth;
-      const h = canvas.height = canvas.clientHeight;
-      const imgData = ctx.createImageData(w,h);
-      for(let i=0;i<imgData.data.length;i+=4){
-        const v = Math.random()*255;
-        imgData.data[i]=v; imgData.data[i+1]=v; imgData.data[i+2]=v; imgData.data[i+3]=35;
-      }
-      ctx.putImageData(imgData,0,0);
-      requestAnimationFrame(frame);
+  /* =====================================================================
+     EEG BUFFERS + ANALYSIS (shared by simulated and Muse sources)
+     ===================================================================== */
+  const FS = 256, NCH = 4, BUF = 512;
+  const CH_NAMES = ['TP9','AF7','AF8','TP10'];
+  const eeg = {
+    buf: Array.from({length:NCH}, ()=>new Float32Array(BUF)),
+    idx: new Array(NCH).fill(0),
+    count: new Array(NCH).fill(0),
+    lastSampleAt: 0
+  };
+  function pushSamples(ch, samples){
+    if(ch < 0 || ch >= NCH) return;
+    for(const s of samples){
+      if(!Number.isFinite(s)) continue;
+      eeg.buf[ch][eeg.idx[ch]] = s;
+      eeg.idx[ch] = (eeg.idx[ch] + 1) % BUF;
+      eeg.count[ch]++;
     }
-    frame();
+    eeg.lastSampleAt = performance.now();
   }
-  const s1 = { on:true }, s2 = { on:true };
+  function lastN(ch, n){
+    const out = new Float32Array(n);
+    const start = eeg.idx[ch] - n;
+    for(let i=0;i<n;i++) out[i] = eeg.buf[ch][(start + i + BUF*2) % BUF];
+    return out;
+  }
+  function signalLive(){ return performance.now() - eeg.lastSampleAt < 1000 && eeg.count[0] >= 256; }
 
-  // ---- dashboard: fetch and display live stats ----
+  // in-place radix-2 FFT
+  function fft(re, im){
+    const n = re.length;
+    for(let i=1, j=0; i<n; i++){
+      let bit = n >> 1;
+      for(; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit;
+      if(i < j){ [re[i],re[j]] = [re[j],re[i]]; [im[i],im[j]] = [im[j],im[i]]; }
+    }
+    for(let len=2; len<=n; len<<=1){
+      const ang = -2*Math.PI/len, wr = Math.cos(ang), wi = Math.sin(ang), half = len>>1;
+      for(let i=0; i<n; i+=len){
+        let cr = 1, ci = 0;
+        for(let k=0; k<half; k++){
+          const a = i+k, b = a+half;
+          const br = re[b]*cr - im[b]*ci, bi = re[b]*ci + im[b]*cr;
+          re[b] = re[a]-br; im[b] = im[a]-bi;
+          re[a] += br;      im[a] += bi;
+          const t = cr*wr - ci*wi; ci = cr*wi + ci*wr; cr = t;
+        }
+      }
+    }
+  }
+  const HANN = Float32Array.from({length:256}, (_,i)=> 0.5 - 0.5*Math.cos(2*Math.PI*i/255));
+
+  // returns { rel:{delta..gamma}, quality:['good'|'noisy'|'flat'] x4 }
+  function analyze(){
+    const quality = [], rels = [];
+    for(let ch=0; ch<NCH; ch++){
+      if(eeg.count[ch] < 256){ quality.push('flat'); continue; }
+      const x = lastN(ch, 256);
+      let mean = 0; for(const v of x) mean += v; mean /= 256;
+      let varSum = 0;
+      const re = new Float32Array(256), im = new Float32Array(256);
+      for(let i=0;i<256;i++){ const v = x[i]-mean; varSum += v*v; re[i] = v*HANN[i]; }
+      const sd = Math.sqrt(varSum/256);
+      quality.push(sd < 1.5 ? 'flat' : sd > 100 ? 'noisy' : 'good');
+      fft(re, im);
+      const p = {}; let total = 0;
+      for(const b of BANDS){
+        const [lo,hi] = BAND_HZ[b]; let s = 0;
+        for(let k=lo; k<hi; k++) s += re[k]*re[k] + im[k]*im[k]; // 1 Hz per bin
+        p[b] = s; total += s;
+      }
+      if(total > 0){
+        const r = {}; for(const b of BANDS) r[b] = p[b]/total;
+        rels.push({ r, good: quality[ch] === 'good' });
+      }
+    }
+    const use = rels.some(o=>o.good) ? rels.filter(o=>o.good) : rels;
+    const rel = {}; for(const b of BANDS) rel[b] = use.length ? use.reduce((s,o)=>s+o.r[b],0)/use.length : 0;
+    return { rel, quality };
+  }
+
+  // blink = big swing on the forehead sensors (AF7 + AF8)
+  let lastBlinkAt = 0;
+  function detectBlink(){
+    if(eeg.count[1] < 64) return false;
+    const a = lastN(1, 40), b = lastN(2, 40);
+    let mn = Infinity, mx = -Infinity;
+    for(let i=0;i<40;i++){ const v = (a[i]+b[i])/2; if(v<mn) mn=v; if(v>mx) mx=v; }
+    const now = performance.now();
+    if(mx - mn > BLINK_THRESHOLD_UV && now - lastBlinkAt > 400){ lastBlinkAt = now; return true; }
+    return false;
+  }
+
+  /* =====================================================================
+     SIGNAL SOURCE 1: SIMULATED EEG
+     Each scan picks a random "mood" so different visitors get different
+     readings. During a scan press D / T / A / B / G to push it toward a band.
+     ===================================================================== */
+  const sim = {
+    running:false, t:0, generated:0, startedAt:0,
+    amp:{}, target:{}, comps:[], force:null, nextBlinkT:2,
+    start(){
+      if(this.running) return;
+      this.running = true;
+      // 3 sine components per band, per channel, with random freq/phase
+      this.comps = [];
+      for(let ch=0; ch<NCH; ch++){
+        for(const b of BANDS){
+          const [lo,hi] = BAND_HZ[b];
+          for(let k=0;k<3;k++) this.comps.push({ ch, b, f: lo + Math.random()*(hi-lo), ph: Math.random()*Math.PI*2, drift: (Math.random()-.5)*.4 });
+        }
+      }
+      this.newMood();
+      for(const b of BANDS) this.amp[b] = this.target[b];
+      this.startedAt = performance.now();
+      this.generated = 0;
+      this.timer = setInterval(()=> this.tick(), 40);
+    },
+    stop(){ this.running = false; clearInterval(this.timer); },
+    newMood(){
+      const pw = { ...REF };
+      const dom = this.force || BANDS[Math.floor(Math.random()*BANDS.length)];
+      let sec; do{ sec = BANDS[Math.floor(Math.random()*BANDS.length)]; } while(sec === dom);
+      pw[dom] *= 2.2 + Math.random()*1.2;
+      pw[sec] *= 1.3 + Math.random()*.4;
+      // amplitude in µV so total std ≈ 20 µV
+      for(const b of BANDS) this.target[b] = Math.sqrt(pw[b]*800/3);
+    },
+    tick(){
+      const due = Math.floor((performance.now() - this.startedAt) * FS / 1000);
+      let n = Math.min(due - this.generated, BUF);
+      if(n <= 0) return;
+      this.generated = due;
+      // ease toward target amplitudes
+      for(const b of BANDS) this.amp[b] += (this.target[b] - this.amp[b]) * 0.04;
+      const out = Array.from({length:NCH}, ()=>new Float32Array(n));
+      for(let i=0;i<n;i++){
+        const t = this.t; this.t += 1/FS;
+        const wobble = 1 + 0.25*Math.sin(t*0.9);
+        for(const c of this.comps){
+          out[c.ch][i] += this.amp[c.b] * wobble * Math.sin(2*Math.PI*(c.f + c.drift*Math.sin(t*.3))*t + c.ph);
+        }
+        for(let ch=0; ch<NCH; ch++) out[ch][i] += (Math.random()-.5)*4;
+        // occasional blink on the forehead channels
+        if(t >= this.nextBlinkT){
+          const dt = t - this.nextBlinkT;
+          if(dt < 0.18){ const s = Math.sin(Math.PI*dt/0.18) * 180; out[1][i] += s; out[2][i] += s; }
+          else this.nextBlinkT = t + 1.5 + Math.random()*5;
+        }
+      }
+      for(let ch=0; ch<NCH; ch++) pushSamples(ch, out[ch]);
+    }
+  };
+  window.addEventListener('keydown', e=>{
+    if(USE_MUSE || !scanScreen.classList.contains('active')) return;
+    const map = { d:'delta', t:'theta', a:'alpha', b:'beta', g:'gamma' };
+    const band = map[e.key.toLowerCase()];
+    if(band){ sim.force = band; sim.newMood(); $('scan-hint').textContent = `simulating: ${band}`; }
+  });
+
+  /* =====================================================================
+     SIGNAL SOURCE 2: MUSE 2 over Web Bluetooth (muse-js)
+     ===================================================================== */
+  const muse = { client:null, connected:false, connecting:false, libPromise:null };
+  function loadMuseLib(){
+    if(!muse.libPromise){
+      muse.libPromise = import(MUSE_LIB).catch(()=> import(MUSE_LIB_CDN));
+    }
+    return muse.libPromise;
+  }
+  if(USE_MUSE) loadMuseLib(); // preload so the connect click stays a direct user gesture
+
+  async function connectMuse(){
+    if(muse.connected || muse.connecting) return;
+    if(!navigator.bluetooth){
+      flashError('this browser has no Bluetooth access — open the page in Chrome or Edge');
+      return;
+    }
+    muse.connecting = true; updateSourceUI();
+    $('connect-msg').textContent = 'pick the Muse in the browser popup…';
+    try{
+      const { MuseClient } = await loadMuseLib();
+      const client = new MuseClient();
+      await client.connect();
+      await client.start();
+      client.eegReadings.subscribe(r => pushSamples(r.electrode, r.samples)); // 0 TP9, 1 AF7, 2 AF8, 3 TP10 (4 = aux, ignored)
+      client.connectionStatus.subscribe(ok => {
+        muse.connected = ok; updateSourceUI();
+        if(!ok && scanScreen.classList.contains('active')) showConnectOverlay('headset disconnected. turn it back on and reconnect.');
+      });
+      muse.client = client;
+      muse.connected = true;
+    } catch(err){
+      console.error(err);
+      $('connect-msg').textContent = 'could not connect (' + (err && err.message ? err.message : 'cancelled') + '). make sure the Muse is on and not paired to the phone app, then try again.';
+    }
+    muse.connecting = false; updateSourceUI();
+  }
+
+  function updateSourceUI(){
+    const led = $('source-led'), txt = $('source-text');
+    led.className = 'led-dot';
+    if(!USE_MUSE){ txt.textContent = 'signal: simulated'; led.classList.add('warn'); return; }
+    if(muse.connected){ txt.textContent = 'muse 2: connected'; led.classList.add('on'); }
+    else if(muse.connecting){ txt.textContent = 'muse 2: connecting…'; led.classList.add('warn','pulse'); }
+    else { txt.textContent = 'muse 2: tap to connect'; led.classList.add('bad'); }
+  }
+  $('source-badge').addEventListener('click', ()=>{ if(USE_MUSE) connectMuse(); });
+  updateSourceUI();
+
+  /* =====================================================================
+     NEURAL SCAN SCREEN
+     ===================================================================== */
+  // build sensor dots + band bars once
+  $('sensors').innerHTML = CH_NAMES.map((n,i)=>`<div class="sensor"><span class="led-dot" id="sensor-${i}"></span>${n}</div>`).join('');
+  $('bands').innerHTML = BANDS.map(b=>`
+    <div class="band-name">${b}</div>
+    <div class="band-track"><div class="band-fill" id="fill-${b}"></div><div class="band-ref" id="ref-${b}"></div></div>
+    <div class="band-val" id="val-${b}">—</div>`).join('');
+
+  const waveCanvas = $('wave-canvas');
+  const scan = { active:false, phase:'idle', startAt:0, frames:[], blinks:0, resolve:null, raf:0 };
+
+  function showConnectOverlay(msg){
+    $('connect-msg').textContent = msg || 'headset not connected. turn on the Muse, then press connect.';
+    $('connect-overlay').classList.add('show');
+    scan.phase = 'waiting';
+  }
+  $('connect-btn').addEventListener('click', connectMuse);
+  $('use-sim-btn').addEventListener('click', ()=>{
+    USE_MUSE = false; updateSourceUI(); sim.start();
+    $('connect-overlay').classList.remove('show');
+  });
+
+  function drawWaves(){
+    const w = waveCanvas.clientWidth, h = waveCanvas.clientHeight;
+    const dpr = window.devicePixelRatio || 1;
+    if(waveCanvas.width !== Math.round(w*dpr)){ waveCanvas.width = Math.round(w*dpr); waveCanvas.height = Math.round(h*dpr); }
+    const ctx = waveCanvas.getContext('2d');
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,w,h);
+    const lane = h / NCH;
+    for(let ch=0; ch<NCH; ch++){
+      const mid = lane*ch + lane/2;
+      ctx.strokeStyle = '#1e2a2e'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0,mid); ctx.lineTo(w,mid); ctx.stroke();
+      ctx.fillStyle = '#3f4d52'; ctx.font = '10px Space Mono, monospace';
+      ctx.fillText(CH_NAMES[ch], 4, lane*ch + 12);
+      if(eeg.count[ch] < 8) continue;
+      const x = lastN(ch, BUF);
+      let mean = 0; for(const v of x) mean += v; mean /= BUF;
+      const scale = (lane/2) / 100; // ±100 µV fills the lane
+      ctx.strokeStyle = ch === 1 || ch === 2 ? '#43e0c9' : '#2fa894';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      for(let i=0;i<BUF;i++){
+        const px = i / (BUF-1) * w;
+        const py = mid - Math.max(-lane/2, Math.min(lane/2, (x[i]-mean)*scale));
+        i ? ctx.lineTo(px,py) : ctx.moveTo(px,py);
+      }
+      ctx.stroke();
+    }
+  }
+
+  function updateBars(rel, ref){
+    for(const b of BANDS){
+      $(`fill-${b}`).style.width = Math.min(100, rel[b]/0.6*100) + '%';
+      $(`ref-${b}`).style.left = Math.min(100, ref[b]/0.6*100) + '%';
+      $(`val-${b}`).textContent = (rel[b]*100).toFixed(0) + '%';
+    }
+  }
+
+  // runs the scan; resolves with the averaged reading
+  function runScan(){
+    return new Promise(resolve=>{
+      scan.active = true; scan.frames = []; scan.blinks = 0; scan.resolve = resolve;
+      $('scan-progress').style.width = '0%';
+      $('scan-hint').textContent = USE_MUSE ? '' : 'simulated signal · press D T A B G to steer it';
+      $('scan-instruction').textContent = 'relax · eyes open · stay still';
+      $('connect-overlay').classList.remove('show');
+      showScreen(scanScreen);
+
+      if(USE_MUSE && !muse.connected) showConnectOverlay();
+      else { if(!USE_MUSE){ sim.force = null; sim.newMood(); } scan.phase = 'settling'; scan.startAt = performance.now(); }
+
+      const ref = currentBaseline();
+      const loop = ()=>{
+        if(!scan.active) return;
+        drawWaves();
+        const { rel, quality } = analyze();
+        quality.forEach((q,i)=>{
+          const d = $(`sensor-${i}`);
+          d.className = 'led-dot ' + (q === 'good' ? 'on' : q === 'noisy' ? 'warn' : 'bad');
+        });
+        updateBars(rel, ref);
+
+        // once the headset is connected, leave the overlay
+        if(scan.phase === 'waiting' && ((USE_MUSE && muse.connected && signalLive()) || (!USE_MUSE && signalLive()))){
+          $('connect-overlay').classList.remove('show');
+          scan.phase = 'settling'; scan.startAt = performance.now();
+        }
+        const now = performance.now();
+        // 1.5 s settling so the buffer is full of fresh data before recording
+        if(scan.phase === 'settling' && now - scan.startAt > 1500){ scan.phase = 'recording'; scan.startAt = now; }
+        if(scan.phase === 'recording'){
+          if(!signalLive()){
+            $('scan-instruction').textContent = 'waiting for signal…';
+          } else {
+            $('scan-instruction').textContent = quality.filter(q=>q==='good').length < 2
+              ? 'adjust the headband — sensors need skin contact'
+              : 'relax · eyes open · stay still';
+            scan.frames.push(rel);
+            if(detectBlink()) scan.blinks++;
+          }
+          const p = (now - scan.startAt) / (SCAN_SECONDS*1000);
+          $('scan-progress').style.width = Math.min(100, p*100) + '%';
+          if(p >= 1){
+            scan.active = false;
+            resolve(summarize(scan.frames, scan.blinks));
+            return;
+          }
+        }
+        scan.raf = requestAnimationFrame(loop);
+      };
+      loop();
+    });
+  }
+
+  /* =====================================================================
+     READING → PROMPTS
+     ===================================================================== */
+  function currentBaseline(){
+    let hist = [];
+    try{ hist = JSON.parse(localStorage.getItem('im-baseline') || '[]'); }catch(e){}
+    if(hist.length < 3) return { ...REF };
+    const avg = {}; for(const b of BANDS) avg[b] = hist.reduce((s,h)=>s+h[b],0)/hist.length;
+    const out = {}; for(const b of BANDS) out[b] = 0.5*REF[b] + 0.5*avg[b];
+    return out;
+  }
+  function addToBaseline(rel){
+    try{
+      const hist = JSON.parse(localStorage.getItem('im-baseline') || '[]');
+      hist.push(rel); while(hist.length > 30) hist.shift();
+      localStorage.setItem('im-baseline', JSON.stringify(hist));
+    }catch(e){}
+  }
+
+  function summarize(frames, blinks){
+    const avg = {}; for(const b of BANDS) avg[b] = 0;
+    if(!frames.length){ for(const b of BANDS) avg[b] = REF[b]; }
+    else for(const f of frames) for(const b of BANDS) avg[b] += f[b]/frames.length;
+    // stability: how much alpha+theta wandered during the scan
+    let cv = 0;
+    if(frames.length > 10){
+      const s = frames.map(f=>f.alpha + f.theta);
+      const m = s.reduce((a,v)=>a+v,0)/s.length;
+      const sd = Math.sqrt(s.reduce((a,v)=>a+(v-m)**2,0)/s.length);
+      cv = m ? sd/m : 0;
+    }
+    return { avg, blinks, variability: cv, seconds: SCAN_SECONDS };
+  }
+
+  function interpret(reading){
+    const ref = currentBaseline();
+    const scores = BANDS.map(b=>({ b, s: reading.avg[b]/ref[b] })).sort((x,y)=>y.s-x.s);
+    const dom = scores[0], sec = scores[1];
+    const strength = dom.s >= 1.6 ? 'intensely' : dom.s >= 1.2 ? '' : 'subtly';
+    const blinkPerMin = reading.blinks / (reading.seconds/60);
+    const glitchy = blinkPerMin > 25;
+    const shifting = reading.variability > 0.25;
+
+    let portrait = `${VOCAB[dom.b].portrait}, accented by ${VOCAB[sec.b].accent}`;
+    if(strength === 'subtly') portrait = 'muted, understated ' + portrait;
+    if(strength === 'intensely') portrait = 'saturated, heightened ' + portrait;
+    if(glitchy) portrait += ', fragmented by digital glitch artifacts and scanlines';
+    if(shifting) portrait += ', layered translucent double exposure of shifting selves';
+
+    let motion = `${VOCAB[dom.b].motion}, ${VOCAB[sec.b].motionAccent}`;
+    if(glitchy) motion += ', occasional glitch flicker';
+
+    const state = [strength, VOCAB[dom.b].state].filter(Boolean).join(' ');
+    return { state, dominant: dom.b, secondary: sec.b, portrait, motion,
+             meta: `${dom.b} ↑ ${dom.s.toFixed(2)}× · ${sec.b} ${sec.s.toFixed(2)}× · ${reading.blinks} blinks` };
+  }
+
+  function showReading(r){
+    return new Promise(resolve=>{
+      $('reading-state').textContent = r.state;
+      $('reading-meta').textContent = r.meta;
+      $('reading-portrait').textContent = r.portrait;
+      $('reading-motion').textContent = r.motion;
+      showScreen(readingScreen);
+      let left = READING_SECONDS;
+      const tick = ()=>{ $('reading-countdown').textContent = `synthesizing in ${left}… (tap to skip)`; };
+      tick();
+      const iv = setInterval(()=>{ left--; if(left <= 0) done(); else tick(); }, 1000);
+      const done = ()=>{ clearInterval(iv); readingScreen.removeEventListener('click', done); resolve(); };
+      readingScreen.addEventListener('click', done);
+    });
+  }
+
+  /* =====================================================================
+     STATIC NOISE (one loop per canvas, never stacks)
+     ===================================================================== */
+  function makeStatic(canvas){
+    const st = { on:false, running:false };
+    st.start = ()=>{
+      st.on = true;
+      if(st.running) return;
+      st.running = true;
+      const ctx = canvas.getContext('2d');
+      let img = null;
+      const frame = ()=>{
+        if(!st.on){ st.running = false; return; }
+        const w = canvas.clientWidth|0, h = canvas.clientHeight|0;
+        if(w && h){
+          if(canvas.width !== w || canvas.height !== h){ canvas.width = w; canvas.height = h; img = null; }
+          if(!img) img = ctx.createImageData(w,h);
+          const d = img.data;
+          for(let i=0;i<d.length;i+=4){ const v = Math.random()*255; d[i]=v; d[i+1]=v; d[i+2]=v; d[i+3]=35; }
+          ctx.putImageData(img,0,0);
+        }
+        requestAnimationFrame(frame);
+      };
+      frame();
+    };
+    st.stop = ()=>{ st.on = false; };
+    return st;
+  }
+  const static1 = makeStatic($('static-canvas-1'));
+  const static2 = makeStatic($('static-canvas-2'));
+
+  /* =====================================================================
+     DASHBOARD
+     ===================================================================== */
   async function refreshStats(){
     try{
       const res = await fetch('/api/stats');
+      if(!res.ok) return;
       const data = await res.json();
-      document.getElementById('stat-participants').textContent = String(data.participants).padStart(3,'0');
-      document.getElementById('stat-portraits').textContent = String(data.portraits).padStart(3,'0');
-      document.getElementById('stat-videos').textContent = String(data.videos).padStart(3,'0');
-    } catch(err){ /* dashboard just shows whatever it last had */ }
+      $('stat-participants').textContent = String(data.participants ?? 0).padStart(3,'0');
+      $('stat-portraits').textContent = String(data.portraits ?? 0).padStart(3,'0');
+      $('stat-videos').textContent = String(data.videos ?? 0).padStart(3,'0');
+    } catch(err){}
   }
   function logSession(stage, url){
     fetch('/api/log-session', {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json' },
+      method:'POST', headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({ stage, url })
     }).then(refreshStats).catch(()=>{});
   }
 
+  /* =====================================================================
+     MAIN FLOW
+     ===================================================================== */
+  let session = 0;      // bumps on reset, so late results from an old visitor are ignored
+  let busy = false;
+
   async function enterMachine(){
     showScreen(floorScreen);
     dashboard.classList.add('active');
-    drawStatic(staticCanvas1, s1);
-    drawStatic(staticCanvas2, s2);
+    static1.start(); static2.start();
+    if(!USE_MUSE) sim.start();
     logSession('participant');
     refreshStats();
 
-    if(!window.isSecureContext){
-      flashError('this page needs to run on https:// (or localhost) — camera won\'t work opened directly from a file.');
-      return;
-    }
-    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-      flashError('this browser has no camera API available');
-      return;
-    }
+    if(!window.isSecureContext){ flashError('this page needs to run on https:// (or localhost) — camera won\'t work opened directly from a file.'); return; }
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ flashError('this browser has no camera API available'); return; }
     try{
       const stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user' } });
       video.srcObject = stream;
@@ -436,148 +960,149 @@
     }
   }
 
-  captureScreen.addEventListener('click', ()=>{
+  captureScreen.addEventListener('click', async ()=>{
+    if(busy) return;
     const w = video.videoWidth, h = video.videoHeight;
     if(!w || !h) return;
-    hiddenCanvas.width = w;
-    hiddenCanvas.height = h;
-    hiddenCanvas.getContext('2d').drawImage(video, 0, 0, w, h);
-    pendingCaptureDataURL = hiddenCanvas.toDataURL('image/jpeg', 0.92);
-    document.getElementById('portrait-prompt-input').value = '';
-    showScreen(portraitPromptScreen);
+    busy = true;
+    const sid = session;
+
+    // capture mirrored, so the portrait matches what the visitor saw
+    hiddenCanvas.width = w; hiddenCanvas.height = h;
+    const ctx = hiddenCanvas.getContext('2d');
+    ctx.save(); ctx.translate(w,0); ctx.scale(-1,1);
+    ctx.drawImage(video, 0, 0, w, h);
+    ctx.restore();
+    const dataURL = hiddenCanvas.toDataURL('image/jpeg', 0.92);
+
+    const reading = await runScan();
+    const r = interpret(reading);
+    addToBaseline(reading.avg);
+    await showReading(r);
+    if(sid !== session){ busy = false; return; }
+
+    showScreen(floorScreen);
+    $('cap-2').textContent = `read as: ${r.state}`;
+    $('cap-3').textContent = '';
+    const portraitUrl = await generateStudioPortrait(dataURL, r, sid);
+    if(portraitUrl && sid === session) await generateVideo(portraitUrl, r, sid);
+    if(sid === session) busy = false;
   });
 
-  document.getElementById('portrait-prompt-submit').addEventListener('click', ()=>{
-    const typed = document.getElementById('portrait-prompt-input').value;
-    showScreen(floorScreen);
-    generateStudioPortrait(pendingCaptureDataURL, typed);
-  });
-  document.getElementById('portrait-prompt-skip').addEventListener('click', ()=>{
-    showScreen(floorScreen);
-    generateStudioPortrait(pendingCaptureDataURL, '');
-  });
-
+  const activeGlitches = new Set();
   function runGlitch(container, led){
     led.classList.add('pulse');
     const iv = setInterval(()=>{
       const bar = document.createElement('div');
       bar.className = 'glitch-bar';
-      const w = 10 + Math.random()*80;
-      const h = 1 + Math.random()*3;
-      const x = Math.random()*100;
-      const y = Math.random()*100;
-      bar.style.width = w+'%';
-      bar.style.height = h+'px';
+      bar.style.width = (10 + Math.random()*80)+'%';
+      bar.style.height = (1 + Math.random()*3)+'px';
       bar.style.left = '0';
-      bar.style.top = y+'%';
-      bar.style.transform = `translateX(${x-50}%)`;
+      bar.style.top = (Math.random()*100)+'%';
+      bar.style.transform = `translateX(${Math.random()*100-50}%)`;
       bar.style.background = Math.random() > 0.5 ? '#43e0c9' : '#ff3d5a';
       bar.style.opacity = (0.3 + Math.random()*0.6).toString();
       container.appendChild(bar);
-      if(container.querySelectorAll('.glitch-bar').length > 30){
-        container.querySelector('.glitch-bar').remove();
-      }
+      if(container.querySelectorAll('.glitch-bar').length > 30) container.querySelector('.glitch-bar').remove();
     }, 60);
-    return () => {
+    const stop = ()=>{
       clearInterval(iv);
+      activeGlitches.delete(stop);
       led.classList.remove('pulse');
       container.querySelectorAll('.glitch-bar').forEach(b=>b.remove());
     };
+    activeGlitches.add(stop);
+    return stop;
   }
 
-  // ---- stage 02: professional studio portrait ----
-  async function generateStudioPortrait(dataURL, typedPrompt){
-    s1.on = false;
+  // turns a failed fetch into a readable reason (shown under the error message + in the console)
+  async function describeFailure(res, err){
+    if(!res) return 'network error: ' + (err && err.message ? err.message : 'could not reach the server');
+    let body = '';
+    try{ body = (await res.text()).slice(0, 300); }catch(e){}
+    if([404,405,501].includes(res.status) || /^\s*<!doctype html/i.test(body)) return res.status + ' — the /api route was not found. Are you running the page with Live Server or opening the file? API routes only run on Vercel or with `vercel dev`.';
+    if(res.status === 413) return '413 — the photo was too large for the server.';
+    return res.status + ' ' + res.statusText + (body ? ' — ' + body : '');
+  }
+
+  // ---- stage 02: portrait from the brain reading ----
+  async function generateStudioPortrait(dataURL, r, sid){
+    static1.stop();
     const stopGlitch = runGlitch(studioScreen, led2);
-
+    let res = null;
     try{
-      const res = await fetch('/api/generate-persona', {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify({ image: dataURL, prompt: typedPrompt })
+      res = await fetch('/api/generate-persona', {
+        method:'POST', headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ image: dataURL, prompt: r.portrait, eeg: { state:r.state, dominant:r.dominant, secondary:r.secondary } })
       });
-      if(!res.ok) throw new Error('bad response');
+      if(!res.ok) throw new Error('http');
       const data = await res.json();
-      if(!data.image) throw new Error('no image');
-
+      if(!data.image) throw new Error('server answered but sent no image: ' + JSON.stringify(data).slice(0,300));
       stopGlitch();
+      if(sid !== session) return null;   // visitor reset while we were waiting
       studioScreen.querySelectorAll('img.reveal').forEach(el=>el.remove());
       const img = document.createElement('img');
       img.className = 'reveal';
       img.src = data.image;
       studioScreen.insertBefore(img, studioScreen.firstChild);
       led2.classList.add('on');
-      latestPortraitUrl = data.image;
       logSession('portrait', data.image);
-
-      // now let the visitor describe how it should move
-      document.getElementById('video-prompt-input').value = '';
-      showScreen(videoPromptScreen);
-
+      return data.image;
     } catch(err){
       stopGlitch();
-      s1.on = true;
-      drawStatic(staticCanvas1, s1);
-      flashError('the machine is resting — try again shortly');
+      if(sid !== session) return null;
+      static1.start();
+      const why = err.message === 'http' ? await describeFailure(res) : (res ? err.message : await describeFailure(null, err));
+      console.error('[generate-persona]', why);
+      flashError('the machine is resting — try again shortly', why);
+      return null;
     }
   }
 
-  document.getElementById('video-prompt-submit').addEventListener('click', ()=>{
-    const typed = document.getElementById('video-prompt-input').value;
-    showScreen(floorScreen);
-    generateVideo(latestPortraitUrl, typed);
-  });
-  document.getElementById('video-prompt-skip').addEventListener('click', ()=>{
-    showScreen(floorScreen);
-    generateVideo(latestPortraitUrl, '');
-  });
-
-
-  // ---- stage 03: animate the studio portrait ----
-  async function generateVideo(portraitUrl, typedPrompt){
-    s2.on = false;
+  // ---- stage 03: animate it with the motion prompt ----
+  async function generateVideo(portraitUrl, r, sid){
+    static2.stop();
     const stopGlitch = runGlitch(videoScreen, led3);
-
+    let res = null;
     try{
-      const res = await fetch('/api/generate-video', {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify({ image: portraitUrl, prompt: typedPrompt })
+      res = await fetch('/api/generate-video', {
+        method:'POST', headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ image: portraitUrl, prompt: r.motion, eeg: { state:r.state, dominant:r.dominant, secondary:r.secondary } })
       });
-      if(!res.ok) throw new Error('bad response');
+      if(!res.ok) throw new Error('http');
       const data = await res.json();
-      if(!data.video) throw new Error('no video');
-
+      if(!data.video) throw new Error('server answered but sent no video: ' + JSON.stringify(data).slice(0,300));
       stopGlitch();
+      if(sid !== session) return;
       videoScreen.querySelectorAll('video.reveal').forEach(el=>el.remove());
       const vid = document.createElement('video');
       vid.className = 'reveal';
       vid.src = data.video;
-      vid.autoplay = true;
-      vid.loop = true;
-      vid.muted = true;
-      vid.playsInline = true;
+      vid.autoplay = true; vid.loop = true; vid.muted = true; vid.playsInline = true;
       videoScreen.insertBefore(vid, videoScreen.firstChild);
       led3.classList.add('on');
+      $('cap-3').textContent = `moving as: ${r.state}`;
       logSession('video', data.video);
-
     } catch(err){
       stopGlitch();
-      s2.on = true;
-      drawStatic(staticCanvas2, s2);
-      flashError('the video isn\'t ready yet — the portrait is still here');
+      if(sid !== session) return;
+      static2.start();
+      const why = err.message === 'http' ? await describeFailure(res) : (res ? err.message : await describeFailure(null, err));
+      console.error('[generate-video]', why);
+      flashError('the video isn\'t ready yet — the portrait is still here', why);
     }
   }
 
-  // tap the final (video) screen to reset for the next visitor —
-  // camera on stage 01 keeps running the entire time
+  // tap stage 03 to reset for the next visitor
   videoScreen.addEventListener('click', ()=>{
-    studioScreen.querySelectorAll('img.reveal').forEach(el=>el.remove());
-    videoScreen.querySelectorAll('video.reveal').forEach(el=>el.remove());
-    led2.classList.remove('on');
-    led3.classList.remove('on');
-    s1.on = true; drawStatic(staticCanvas1, s1);
-    s2.on = true; drawStatic(staticCanvas2, s2);
+    session++;
+    busy = false;
+    [...activeGlitches].forEach(stop=>stop());
+    studioScreen.querySelectorAll('img.reveal, .glitch-bar').forEach(el=>el.remove());
+    videoScreen.querySelectorAll('video.reveal, .glitch-bar').forEach(el=>el.remove());
+    [led2, led3].forEach(l=>l.classList.remove('on','pulse'));
+    $('cap-2').textContent = ''; $('cap-3').textContent = '';
+    static1.start(); static2.start();
   });
 </script>
 
