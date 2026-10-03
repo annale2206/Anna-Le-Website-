@@ -48,7 +48,18 @@ export const config = {
   maxDuration: 30, // only starts the job now
 };
 
-const MODEL = 'kwaivgi/kling-v3-omni-video';
+// MODEL SWITCH (Oct 2026): Kling → Google Veo 3.1 Fast on Replicate.
+// Same REPLICATE_API_TOKEN, no new key needed. To go back to Kling, set
+// MODEL back to 'kwaivgi/kling-v3-omni-video' and use `start_image` instead
+// of `image` in the input below (Kling also used duration 5).
+const MODEL = 'google/veo-3.1-fast';
+
+// Veo options: duration 4, 6 or 8 seconds · resolution '720p' or '1080p'
+// aspect_ratio '16:9' or '9:16'. Veo can also make matching sound — the
+// kiosk page plays videos muted, so it's off here; set to true to try it.
+const DURATION = 6;
+const RESOLUTION = '720p';
+const GENERATE_AUDIO = false;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -76,9 +87,13 @@ export default async function handler(req, res) {
     const replicate = new Replicate();
 
     const input = {
-      start_image: image,
-      duration: 5,
-      prompt: finalPrompt
+      image: image,                 // the portrait from stage 02 = first frame
+      prompt: finalPrompt,
+      duration: DURATION,
+      resolution: RESOLUTION,
+      aspect_ratio: '16:9',
+      generate_audio: GENERATE_AUDIO,
+      negative_prompt: 'distorted face, warped features, extra limbs, text, watermark'
     };
 
     // start the job and return right away — the page polls /api/prediction
