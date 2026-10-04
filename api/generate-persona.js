@@ -34,17 +34,17 @@ const ASPECT_RATIO = '4:3';
 // inventing a stranger.
 function buildPrompt(style) {
   return (
-    'Transform this photo into a striking, high-resolution portrait of the same person. ' +
-    'Keep their face, facial features, skin tone and identity clearly recognizable. ' +
-    'Style: ' + style + '. ' +
-    'Head-and-shoulders framing, sharp focus on the eyes, rich detail, professional photography quality. ' +
-    'No text, no watermark.'
+    'Turn this photo into a hyperrealistic, high-resolution natural portrait photograph of the same person outdoors in nature. ' +
+    'Keep their face, facial features, skin tone and identity exactly as they are. ' +
+    'Show their natural beauty with flattering soft natural light and healthy real skin texture — ' +
+    'no makeup added, no filters, no skin smoothing, no reshaping, no fantasy or special effects. ' +
+    'Setting and light: ' + style + '. ' +
+    'Head-and-shoulders framing, sharp focus on the eyes, true-to-life colors, like a professional outdoor portrait photograph. No text, no watermark.'
   );
 }
 
 const DEFAULT_STYLE =
-  'instagram beauty filter aesthetic, glowing dewy skin, subtle glam makeup, ' +
-  'soft romantic lighting, warm golden hour glow, blurred bokeh background, editorial beauty photography';
+  'in a quiet green garden, soft overcast daylight, relaxed natural expression';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
