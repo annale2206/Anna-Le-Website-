@@ -444,7 +444,15 @@
     }
   };
   // Added to every portrait so it stays a real-looking photograph
-  const REALISM = 'hyperrealistic natural photograph, natural beauty, real skin texture, true-to-life features and colors, no makeup added, no filter, no special effects, shot on a full-frame camera with a 85mm lens';
+  const REALISM = 'hyperrealistic natural photograph, true-to-life features and colors, no special effects, shot on a full-frame camera with a 85mm lens';
+
+  // Beauty filter strength: 'off' | 'soft' | 'strong'
+  const BEAUTY_FILTER_LEVEL = 'soft';
+  const BEAUTY_FILTERS = {
+    off:    'real unretouched skin texture with visible pores, no makeup, no filter',
+    soft:   'subtle natural beauty filter: lightly smoothed even skin that still shows real texture, soft healthy glow, gently brightened eyes, no visible makeup',
+    strong: 'social media beauty filter: smooth flawless glowing skin, bright sparkling eyes, softly blurred background, polished glamorous look'
+  };
   const BANDS = ['delta','theta','alpha','beta','gamma'];
   const BAND_HZ = { delta:[1,4], theta:[4,8], alpha:[8,13], beta:[13,30], gamma:[30,45] };
 
@@ -884,7 +892,7 @@
     if(strength === 'intensely') portrait += ', bright clear light';
     if(glitchy) portrait += ', light rain falling';
     if(shifting) portrait += ', shifting dappled light through moving leaves';
-    portrait += `. ${REALISM}`;
+    portrait += `. ${REALISM}. ${BEAUTY_FILTERS[BEAUTY_FILTER_LEVEL] || ''}`;
 
     let motion = `${VOCAB[dom.b].motion}, ${VOCAB[sec.b].motionAccent}`;
     if(glitchy) motion += ', light rain falling';

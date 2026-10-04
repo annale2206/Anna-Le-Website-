@@ -36,8 +36,9 @@ function buildPrompt(style) {
   return (
     'Turn this photo into a hyperrealistic, high-resolution natural portrait photograph of the same person outdoors in nature. ' +
     'Keep their face, facial features, skin tone and identity exactly as they are. ' +
-    'Show their natural beauty with flattering soft natural light and healthy real skin texture — ' +
-    'no makeup added, no filters, no skin smoothing, no reshaping, no fantasy or special effects. ' +
+    'Show their natural beauty with flattering soft natural light. ' +
+    'Do not reshape the face or change their features; no fantasy or special effects. ' +
+    'Any skin retouching or beauty filter should follow the style notes below. ' +
     'Setting and light: ' + style + '. ' +
     'Head-and-shoulders framing, sharp focus on the eyes, true-to-life colors, like a professional outdoor portrait photograph. No text, no watermark.'
   );
