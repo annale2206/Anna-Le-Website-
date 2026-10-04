@@ -198,24 +198,6 @@
     body{ justify-content:center; min-height:100vh; padding-top:60px; }
   }
 
-  /* ---- phone menu: on small screens the tree is tiny, so every flower
-     link is also listed as a tappable button under the tree ---- */
-  .mobile-links{ display:none; width:100%; max-width:420px; z-index:2; margin-top:6px; }
-  .mobile-links h2{
-    font-family:var(--mono); font-size:1.05rem; font-weight:400; letter-spacing:.06em;
-    margin:18px 0 8px; text-transform:lowercase;
-  }
-  .mobile-links .row{ display:flex; flex-wrap:wrap; gap:8px; }
-  .mobile-links a{
-    display:inline-flex; align-items:center; gap:6px;
-    padding:9px 13px; border:1px solid currentColor; border-radius:999px;
-    font-family:var(--mono); font-size:1.1rem; text-decoration:none;
-    background:rgba(255,255,255,.03);
-  }
-  .mobile-links a::before{ content:'✿'; }
-  @media (max-width:700px){
-    .mobile-links{ display:block; }
-  }
 
   /* ---- season-specific behavior, driven by a class on <body> ---- */
 
@@ -537,32 +519,6 @@
 
 <h1 style="margin-top:20px;">anna<span style="color:var(--pink)">_</span>le</h1>
 
-<nav class="mobile-links" aria-label="site pages">
-  <div class="row">
-    <a href="about.html" style="color:var(--orange)">about</a>
-    <a href="cv.html" style="color:var(--purple)">cv</a>
-  </div>
-  <h2 style="color:var(--pink)">projects</h2>
-  <div class="row">
-    <a href="project1.html" style="color:var(--yellow)">manifesto fiction</a>
-    <a href="project2.html" style="color:var(--orange)">Threads of Becoming</a>
-    <a href="project3.html" style="color:var(--teal)">Us</a>
-    <a href="project4.html" style="color:var(--sky)">Color of Love</a>
-    <a href="3d-persona.html" style="color:var(--purple)">3d persona</a>
-  </div>
-  <h2 style="color:var(--sky)">research</h2>
-  <div class="row">
-    <a href="persona.html" style="color:var(--purple)">persona</a>
-    <a href="cindy-sherman.html" style="color:var(--teal)">Cindy Sherman</a>
-    <a href="identity-machine.html" style="color:var(--yellow)">identity machine</a>
-  </div>
-  <h2 style="color:var(--green)">art practice</h2>
-  <div class="row">
-    <a href="interactive.html" style="color:var(--pink)">interactive</a>
-    <a href="sculptures.html" style="color:var(--yellow)">sculptures</a>
-    <a href="collaboration.html" style="color:var(--teal)">collaboration</a>
-  </div>
-</nav>
 
 <!-- background music -->
 <audio id="bg-music" loop></audio>
