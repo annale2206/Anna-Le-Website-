@@ -42,7 +42,8 @@
     display:flex; flex-direction:column; align-items:center;
     padding:130px 20px 80px;
     position:relative;
-    overflow:hidden;
+    overflow-x:hidden;   /* keep falling leaves etc. from making a sideways scrollbar */
+    overflow-y:auto;     /* allow scrolling down on shorter screens */
   }
   h1{
     font-family:var(--display); font-size:1.3rem; color:var(--green);
@@ -66,7 +67,8 @@
   .season-dial .hub{ fill:var(--cream); }
   .season-dial .rim{ fill:none; stroke:var(--bg); stroke-width:2; }
 
-  .stage{ position:relative; width:100%; max-width:1180px; z-index:2; }
+  /* tree shrinks to fit the window height, so the whole tree shows on a laptop */
+  .stage{ position:relative; width:100%; max-width:min(1180px, calc((100vh - 170px) * 1.5)); z-index:2; }
   svg{ width:100%; height:auto; display:block; overflow:visible; }
   #flower-canvas{
     position:absolute; left:0; top:0;
