@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>identity machine — research lab</title>
+<title>identity machine: research lab</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=VT323&family=Space+Mono:wght@400;700&display=swap');
 
@@ -364,7 +364,7 @@
 <!-- reading result -->
 <div class="screen panel-screen" id="reading">
   <div class="panel-sub">signal interpreted as</div>
-  <div class="reading-state" id="reading-state">—</div>
+  <div class="reading-state" id="reading-state">·</div>
   <div class="reading-meta" id="reading-meta"></div>
   <div class="prompt-box">
     <div class="prompt-box-label">portrait prompt</div>
@@ -382,7 +382,7 @@
 
 <script type="module">
   /* =====================================================================
-     SETTINGS — edit these
+     SETTINGS, edit these
      ===================================================================== */
   const CODE = '2206';
   const params = new URLSearchParams(location.search);
@@ -402,7 +402,7 @@
   if(params.get('resetbaseline') === '1'){ try{ localStorage.removeItem('im-baseline'); }catch(e){} }
 
   /* =====================================================================
-     BRAIN STATE → PROMPT VOCABULARY — edit freely
+     BRAIN STATE → PROMPT VOCABULARY, edit freely
      ===================================================================== */
   // Natural, hyperrealistic looks: each brain state picks a place in nature
   // and a quality of natural light. No filters, no makeup, no effects.
@@ -695,7 +695,7 @@
   async function connectMuse(){
     if(muse.connected || muse.connecting) return;
     if(!navigator.bluetooth){
-      flashError('this browser has no Bluetooth access — open the page in Chrome or Edge');
+      flashError('this browser has no Bluetooth access, open the page in Chrome or Edge');
       return;
     }
     muse.connecting = true; updateSourceUI();
@@ -738,7 +738,7 @@
   $('bands').innerHTML = BANDS.map(b=>`
     <div class="band-name">${b}</div>
     <div class="band-track"><div class="band-fill" id="fill-${b}"></div><div class="band-ref" id="ref-${b}"></div></div>
-    <div class="band-val" id="val-${b}">—</div>`).join('');
+    <div class="band-val" id="val-${b}">·</div>`).join('');
 
   const waveCanvas = $('wave-canvas');
   const scan = { active:false, phase:'idle', startAt:0, frames:[], blinks:0, resolve:null, raf:0 };
@@ -829,7 +829,7 @@
             $('scan-instruction').textContent = 'waiting for signal…';
           } else {
             $('scan-instruction').textContent = quality.filter(q=>q==='good').length < 2
-              ? 'adjust the headband — sensors need skin contact'
+              ? 'adjust the headband, sensors need skin contact'
               : 'relax · eyes open · stay still';
             scan.frames.push(rel);
             if(detectBlink()) scan.blinks++;
@@ -988,14 +988,14 @@
     logSession('participant');
     refreshStats();
 
-    if(!window.isSecureContext){ flashError('this page needs to run on https:// (or localhost) — camera won\'t work opened directly from a file.'); return; }
+    if(!window.isSecureContext){ flashError('this page needs to run on https:// (or localhost), camera won\'t work opened directly from a file.'); return; }
     if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ flashError('this browser has no camera API available'); return; }
     try{
       const stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user' } });
       video.srcObject = stream;
       led1.classList.add('on');
     } catch(err){
-      flashError('camera permission was blocked — check your browser\'s site settings');
+      flashError('camera permission was blocked, check your browser\'s site settings');
     }
   }
 
@@ -1097,9 +1097,9 @@
     if(!res) return 'network error: ' + (err && err.message ? err.message : 'could not reach the server');
     let body = '';
     try{ body = (await res.text()).slice(0, 300); }catch(e){}
-    if([404,405,501].includes(res.status) || /^\s*<!doctype html/i.test(body)) return res.status + ' — the /api route was not found. Are you running the page with Live Server or opening the file? API routes only run on Vercel or with `vercel dev`.';
-    if(res.status === 413) return '413 — the photo was too large for the server.';
-    return res.status + ' ' + res.statusText + (body ? ' — ' + body : '');
+    if([404,405,501].includes(res.status) || /^\s*<!doctype html/i.test(body)) return res.status + ', the /api route was not found. Are you running the page with Live Server or opening the file? API routes only run on Vercel or with `vercel dev`.';
+    if(res.status === 413) return '413: the photo was too large for the server.';
+    return res.status + ' ' + res.statusText + (body ? ', ' + body : '');
   }
 
   // the server starts a Replicate job and returns { id }; we check on it until it's done
@@ -1110,7 +1110,7 @@
       if(sid !== session) return { cancelled:true };
       let res;
       try{ res = await fetch('/api/prediction?id=' + encodeURIComponent(id), { cache:'no-store' }); }
-      catch(e){ continue; } // brief network hiccup — keep trying
+      catch(e){ continue; } // brief network hiccup, keep trying
       if(!res.ok){ const why = await describeFailure(res); throw new Error(why); }
       const p = await res.json();
       if(p.status === 'succeeded'){
@@ -1121,7 +1121,7 @@
         throw new Error('replicate ' + p.status + (p.error ? ': ' + String(p.error).slice(0,300) : ''));
       }
     }
-    throw new Error('gave up after ' + maxMinutes + ' minutes — replicate is still working or queued');
+    throw new Error('gave up after ' + maxMinutes + ' minutes, replicate is still working or queued');
   }
 
   // ---- stage 02: portrait from the brain reading ----
@@ -1160,7 +1160,7 @@
       static1.start();
       const why = err.message === 'http' ? await describeFailure(res) : (res ? err.message : await describeFailure(null, err));
       console.error('[generate-persona]', why);
-      flashError('the machine is resting — try again shortly', why);
+      flashError('the machine is resting, try again shortly', why);
       return null;
     }
   }
@@ -1210,7 +1210,7 @@
       showStage(2);   // the portrait is still there to look at
       const why = err.message === 'http' ? await describeFailure(res) : (res ? err.message : await describeFailure(null, err));
       console.error('[generate-video]', why);
-      flashError('the video isn\'t ready yet — the portrait is still here', why);
+      flashError('the video isn\'t ready yet, the portrait is still here', why);
     }
   }
 

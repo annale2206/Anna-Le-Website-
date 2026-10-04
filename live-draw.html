@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>anna_le — live draw</title>
+<title>anna_le: live draw</title>
 <link rel="stylesheet" href="style.css">
 <style>
   .hero-sub{
@@ -115,10 +115,10 @@
     <h1>live draw</h1>
     <span class="path">~/anna/research/live-draw</span>
   </div>
-  <div class="hero-sub">research: algorithmic persona — <a href="persona.html">back to persona</a></div>
+  <div class="hero-sub">research: algorithmic persona, <a href="persona.html">back to persona</a></div>
 
   <p class="statement">
-    Draw with a finger, watch a model finish the thought — sub-second, as
+    Draw with a finger, watch a model finish the thought, sub-second, as
     the line is still moving. Each of the fourteen personas is here as a
     starting bias, a way of telling the machine which version of a face
     it should be reaching for before you've drawn one at all.
@@ -174,11 +174,11 @@
   <div class="setup-note">
     <strong>note for Anna, not visitors:</strong> this page now uses fal's
     <code>realtime</code> WebSocket mode via <code>fal.realtime.connect()</code>
-    instead of a plain REST call per stroke — a persistent connection opens
+    instead of a plain REST call per stroke: a persistent connection opens
     on the first stroke and stays warm, so there's no per-request cold
     start or Vercel function timeout to fight anymore. Requests to
     <code>/api/fal/proxy</code> are how the browser authenticates without
-    exposing <code>FAL_KEY</code> — that file must exist at
+    exposing <code>FAL_KEY</code>, that file must exist at
     <code>api/fal/proxy.js</code> in the project (separate from the older
     <code>api/generate-draw.js</code>, which is no longer used by this page
     but left in place). Feedback frames are still sent at a fixed 512x512
@@ -403,7 +403,7 @@
         // needs to actually be base64-encoded first.
         const base64 = Array.isArray(first.content)
           ? bytesToBase64(first.content)
-          : first.content; // already a string in some response shapes — use as-is
+          : first.content; // already a string in some response shapes, use as-is
         return `data:${mime};base64,${base64}`;
       }
       if(typeof first === 'string' && first.startsWith('data:')) return first;
@@ -529,7 +529,7 @@
             document.getElementById('draw-seed').value = ''; // don't echo back something we can't safely resend
           }
         }
-        setStatus('draw — the result updates as you go');
+        setStatus('draw, the result updates as you go');
       },
       onError: (err) => {
         // Guard against err being a raw binary payload (e.g. an
@@ -542,7 +542,7 @@
         // "reconnecting..." — that generic text gave no way to tell
         // what's actually failing without opening devtools.
         connectStatus.textContent = 'error: ' + readable;
-        setStatus('the connection hiccuped — keep drawing, it should recover', true);
+        setStatus('the connection hiccuped, keep drawing, it should recover', true);
       }
     });
     } catch (setupErr) {
@@ -552,7 +552,7 @@
     return connection;
   }
 
-  const MAX_SEED = 2147483647; // fal's schema rejects anything past this — matches the randomize button's own range
+  const MAX_SEED = 2147483647; // fal's schema rejects anything past this, matches the randomize button's own range
 
   function requestGeneration(){
     const conn = ensureConnection();
@@ -577,7 +577,7 @@
   }
 
   connectStatus.textContent = 'ready';
-  setStatus('draw — the result updates as you go');
+  setStatus('draw, the result updates as you go');
 </script>
 
 <script src="main.js" defer></script>
