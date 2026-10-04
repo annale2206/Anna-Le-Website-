@@ -409,6 +409,7 @@
       state:'submerged',
       portrait:'submerged in deep indigo water, bioluminescent glow, heavy-lidded stillness, dark velvet shadows',
       accent:'faint bioluminescent particles',
+      makeup:'dark berry lips, wet-look glossy skin, smudged indigo eyeshadow, tiny glowing freckles across the cheeks',
       motion:'very slow breathing motion, drifting as if underwater, eyes slowly closing',
       motionAccent:'tiny particles floating upward'
     },
@@ -416,6 +417,7 @@
       state:'dreaming',
       portrait:'surreal dreamscape portrait, iridescent fog, soft double exposure, floating petals, pastel haze',
       accent:'a soft dreamlike double exposure',
+      makeup:'iridescent pastel eyeshadow, scattered silver glitter on the cheekbones, pearl highlighter, soft lilac lips',
       motion:'dreamlike floating motion, fog slowly swirling, petals drifting around the face',
       motionAccent:'a slow dissolve shimmer'
     },
@@ -423,6 +425,7 @@
       state:'calm',
       portrait:'serene portrait in soft pastel daylight, gentle diffused glow, calm expression, airy pale background',
       accent:'gentle pastel light',
+      makeup:'soft pink blush, dewy glass skin, natural brushed brows, sheer peach lip tint',
       motion:'gentle slow zoom in, soft breeze through the hair, a calm slow blink',
       motionAccent:'light softly breathing'
     },
@@ -430,6 +433,7 @@
       state:'focused',
       portrait:'sharp high-contrast portrait, electric cyan rim light, precise geometric shadows, direct intense gaze',
       accent:'crisp cyan rim light',
+      makeup:'sharp graphic winged eyeliner, matte flawless skin, sculpted contour, bold defined lips',
       motion:'subject turns toward the camera with intent, light flickers, quick focus pull',
       motionAccent:'a sharp light flicker'
     },
@@ -437,10 +441,14 @@
       state:'hyperaware',
       portrait:'hyperreal portrait, prismatic holographic light, chromatic aberration, crystalline reflections on skin',
       accent:'prismatic holographic reflections',
+      makeup:'holographic chrome highlighter, small gem and rhinestone accents around the eyes, metallic duochrome lids',
       motion:'rapid prismatic shimmer, light refracting across the face, energetic pulses',
       motionAccent:'holographic flares sweeping across'
     }
   };
+  // The "beauty filter" layer added to every portrait — the smoothing, glowing
+  // social-media look. Set to '' to turn it off.
+  const BEAUTY_FILTER = 'social media beauty filter look: smoothed poreless skin, soft glow, slightly enlarged bright eyes, subtle face slimming';
   const BANDS = ['delta','theta','alpha','beta','gamma'];
   const BAND_HZ = { delta:[1,4], theta:[4,8], alpha:[8,13], beta:[13,30], gamma:[30,45] };
 
@@ -880,6 +888,8 @@
     if(strength === 'intensely') portrait = 'saturated, heightened ' + portrait;
     if(glitchy) portrait += ', fragmented by digital glitch artifacts and scanlines';
     if(shifting) portrait += ', layered translucent double exposure of shifting selves';
+    portrait += `. Makeup: ${VOCAB[dom.b].makeup}`;
+    if(BEAUTY_FILTER) portrait += `. ${BEAUTY_FILTER}`;
 
     let motion = `${VOCAB[dom.b].motion}, ${VOCAB[sec.b].motionAccent}`;
     if(glitchy) motion += ', occasional glitch flicker';
