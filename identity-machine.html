@@ -446,12 +446,16 @@
   // Added to every portrait so it stays a real-looking photograph
   const REALISM = 'hyperrealistic natural photograph, true-to-life features and colors, no special effects, shot on a full-frame camera with a 85mm lens';
 
-  // Beauty filter strength: 'off' | 'soft' | 'strong'
-  const BEAUTY_FILTER_LEVEL = 'soft';
+  // Beauty filter: 'kbeauty' | 'soft' | 'strong' | 'off'
+  const BEAUTY_FILTER_LEVEL = 'kbeauty';
   const BEAUTY_FILTERS = {
-    off:    'real unretouched skin texture with visible pores, no makeup, no filter',
-    soft:   'subtle natural beauty filter: lightly smoothed even skin that still shows real texture, soft healthy glow, gently brightened eyes, no visible makeup',
-    strong: 'social media beauty filter: smooth flawless glowing skin, bright sparkling eyes, softly blurred background, polished glamorous look'
+    kbeauty: 'soft natural Korean-style makeup and beauty look: clear luminous dewy "glass skin" that still looks real, ' +
+             'soft straight natural brows, a light peachy-pink blush high on the cheeks, a sheer rosy gradient lip tint, ' +
+             'subtle soft-brown eyeshadow with a faint shimmer under the eyes, a thin natural lash line, ' +
+             'fresh youthful glow, soft diffused flattering light, gentle and elegant, never heavy or overdone',
+    soft:    'subtle natural beauty filter: lightly smoothed even skin that still shows real texture, soft healthy glow, gently brightened eyes, no visible makeup',
+    strong:  'social media beauty filter: smooth flawless glowing skin, bright sparkling eyes, softly blurred background, polished glamorous look',
+    off:     'real unretouched skin texture with visible pores, no makeup, no filter'
   };
   const BANDS = ['delta','theta','alpha','beta','gamma'];
   const BAND_HZ = { delta:[1,4], theta:[4,8], alpha:[8,13], beta:[13,30], gamma:[30,45] };
