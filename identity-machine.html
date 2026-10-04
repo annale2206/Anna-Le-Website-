@@ -93,8 +93,25 @@
   .dots.shake{ animation:shake .4s ease; }
 
   /* ---------- lab modules ---------- */
-  #floor{ gap:2.4vw; padding-top:70px; }
-  .module{ display:flex; flex-direction:column; align-items:center; }
+  /* one big stage at a time: 01 capture → 02 portrait → 03 video */
+  #floor{ flex-direction:column; gap:14px; padding:84px 16px 16px; }
+  .steps{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  .step{
+    display:flex; align-items:center; gap:8px;
+    padding:6px 12px; border:1px solid #1e2a2e; border-radius:2px; background:none;
+    color:#3f4d52; font-family:'Space Mono', monospace; font-size:12px;
+    letter-spacing:.15em; text-transform:uppercase; cursor:default;
+    transition:color .3s ease, border-color .3s ease;
+  }
+  .step .stage-num{ background:#1e2a2e; color:#5a6f75; padding:1px 7px; border-radius:2px; font-weight:700; }
+  .step.reached{ color:#8a9aa0; cursor:pointer; }
+  .step.current{ color:#43e0c9; border-color:#43e0c9; }
+  .step.current .stage-num{ background:#43e0c9; color:#0a0d10; }
+  .module{ display:none; flex-direction:column; align-items:center; }
+  .module.current{ display:flex; animation:stage-in .6s ease; }
+  @keyframes stage-in{ from{ opacity:0; transform:scale(.985); } to{ opacity:1; transform:none; } }
+  .module .module-label{ display:none; }
+  .rig-screen img.ghost-portrait{ opacity:.35; filter:grayscale(.3) blur(1px); }
   .module-label{
     font-size:13px; letter-spacing:.15em; color:#43e0c9;
     text-transform:uppercase; margin-bottom:10px;
@@ -106,7 +123,7 @@
   }
   .rig{
     position:relative;
-    width:26vw; max-width:380px; aspect-ratio:4/3;
+    width:min(90vw, calc((100vh - 230px) * 4 / 3)); aspect-ratio:4/3;
     background:#0d1114; border:1px solid #1e2a2e;
   }
   .corner{ position:absolute; width:18px; height:18px; border-color:#43e0c9; z-index:6; pointer-events:none; }
@@ -138,8 +155,8 @@
   @keyframes led-pulse{ 0%,100%{ opacity:.35; } 50%{ opacity:1; } }
 
   .reading-caption{
-    margin-top:6px; min-height:16px; max-width:min(26vw,380px);
-    font-size:11px; letter-spacing:.08em; color:#8a9aa0; text-align:center;
+    margin-top:6px; min-height:16px; max-width:min(90vw, 900px);
+    font-size:12px; letter-spacing:.08em; color:#8a9aa0; text-align:center;
   }
 
   .static-canvas{ position:absolute; inset:0; width:100%; height:100%; }
@@ -232,9 +249,7 @@
   #error-msg span{ max-width:520px; line-height:1.6; }
 
   @media (max-width:900px){
-    #floor{ flex-direction:column; gap:4vh; padding-top:130px; }
-    .rig{ width:78vw; }
-    .reading-caption{ max-width:78vw; }
+    #floor{ padding-top:130px; }
     #dashboard{ flex-wrap:wrap; gap:18px; }
     .panel-screen{ padding-top:150px; }
   }
@@ -282,7 +297,12 @@
 
 <!-- lab floor -->
 <div class="screen" id="floor">
-  <div class="module">
+  <div class="steps">
+    <button class="step" id="step-1" data-step="1"><span class="stage-num">01</span> subject capture</button>
+    <button class="step" id="step-2" data-step="2"><span class="stage-num">02</span> identity synthesis</button>
+    <button class="step" id="step-3" data-step="3"><span class="stage-num">03</span> motion generation</button>
+  </div>
+  <div class="module current" id="m1">
     <div class="module-label"><span class="stage-num">01</span> subject capture</div>
     <div class="rig">
       <div class="corner tl"></div><div class="corner tr"></div>
@@ -293,10 +313,10 @@
       </div>
     </div>
     <div class="status-led"><div class="led-dot" id="led-1"></div> camera feed</div>
-    <div class="reading-caption"></div>
+    <div class="reading-caption" id="cap-1">tap the camera to begin</div>
   </div>
 
-  <div class="module">
+  <div class="module" id="m2">
     <div class="module-label"><span class="stage-num">02</span> identity synthesis</div>
     <div class="rig">
       <div class="corner tl"></div><div class="corner tr"></div>
@@ -305,11 +325,11 @@
         <canvas class="static-canvas" id="static-canvas-1"></canvas>
       </div>
     </div>
-    <div class="status-led"><div class="led-dot" id="led-2"></div> synthetic portrait</div>
+    <div class="status-led"><div class="led-dot" id="led-2"></div> <span id="status-2">synthetic portrait</span></div>
     <div class="reading-caption" id="cap-2"></div>
   </div>
 
-  <div class="module">
+  <div class="module" id="m3">
     <div class="module-label"><span class="stage-num">03</span> motion generation</div>
     <div class="rig">
       <div class="corner tl"></div><div class="corner tr"></div>
@@ -318,7 +338,7 @@
         <canvas class="static-canvas" id="static-canvas-2"></canvas>
       </div>
     </div>
-    <div class="status-led"><div class="led-dot" id="led-3"></div> animated output</div>
+    <div class="status-led"><div class="led-dot" id="led-3"></div> <span id="status-3">animated output</span></div>
     <div class="reading-caption" id="cap-3"></div>
   </div>
 </div>
@@ -370,7 +390,8 @@
   let USE_MUSE = params.get('muse') === '1';
   // ?scan=20 → scan length in seconds
   const SCAN_SECONDS = Math.max(5, Number(params.get('scan')) || 15);
-  const READING_SECONDS = 5;          // how long the "signal interpreted as" screen stays up
+  const READING_SECONDS = 5;
+  const PORTRAIT_HOLD_SECONDS = 6;    // how long the finished portrait stays up before switching to the video screen          // how long the "signal interpreted as" screen stays up
   const BLINK_THRESHOLD_UV = 120;     // peak-to-peak on AF7/AF8 that counts as a blink
   const MUSE_LIB = './muse.bundle.js'; // local bundle (keep next to this html)
   const MUSE_LIB_CDN = 'https://cdn.jsdelivr.net/npm/muse-js@3.3.0/+esm'; // fallback
@@ -943,6 +964,7 @@
 
   async function enterMachine(){
     showScreen(floorScreen);
+    showStage(1);
     dashboard.classList.add('active');
     static1.start(); static2.start();
     if(!USE_MUSE) sim.start();
@@ -982,16 +1004,53 @@
     if(sid !== session){ busy = false; return; }
 
     showScreen(floorScreen);
+    showStage(2);
     $('cap-2').textContent = `read as: ${r.state}`;
     $('cap-3').textContent = '';
     const portraitUrl = await generateStudioPortrait(dataURL, r, sid);
-    if(portraitUrl && sid === session) await generateVideo(portraitUrl, r, sid);
+    if(!portraitUrl){
+      if(sid === session){ maxStage = 1; showStage(1); busy = false; }
+      return;
+    }
+    if(sid !== session) return;
+    // start the video right away, but let the visitor look at the portrait first
+    const videoDone = generateVideo(portraitUrl, r, sid);
+    await new Promise(res=>setTimeout(res, PORTRAIT_HOLD_SECONDS*1000));
+    if(sid === session) showStage(3);
+    await videoDone;
     if(sid === session) busy = false;
   });
 
+  // ---- one-stage-at-a-time view ----
+  let maxStage = 1;
+  function showStage(n){
+    maxStage = Math.max(maxStage, n);
+    [1,2,3].forEach(i=>{
+      $('m'+i).classList.toggle('current', i === n);
+      $('step-'+i).classList.toggle('current', i === n);
+      $('step-'+i).classList.toggle('reached', i <= maxStage);
+    });
+  }
+  document.querySelectorAll('.step').forEach(b=> b.addEventListener('click', ()=>{
+    const n = Number(b.dataset.step);
+    if(n <= maxStage) showStage(n);   // look back at earlier stages
+  }));
+
+  // elapsed-time counter on a status label, e.g. "synthesizing · 0:23"
+  function startTimer(el, label){
+    const base = el.dataset.base || el.textContent;
+    el.dataset.base = base;
+    const t0 = Date.now();
+    const upd = ()=>{ const t = Math.floor((Date.now()-t0)/1000); el.textContent = `${label} · ${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`; };
+    upd();
+    const iv = setInterval(upd, 1000);
+    return ()=>{ clearInterval(iv); el.textContent = base; };
+  }
+
   const activeGlitches = new Set();
-  function runGlitch(container, led){
+  function runGlitch(container, led, statusEl, label){
     led.classList.add('pulse');
+    const stopTimer = statusEl ? startTimer(statusEl, label) : ()=>{};
     const iv = setInterval(()=>{
       const bar = document.createElement('div');
       bar.className = 'glitch-bar';
@@ -1007,6 +1066,7 @@
     }, 60);
     const stop = ()=>{
       clearInterval(iv);
+      stopTimer();
       activeGlitches.delete(stop);
       led.classList.remove('pulse');
       container.querySelectorAll('.glitch-bar').forEach(b=>b.remove());
@@ -1050,7 +1110,7 @@
   // ---- stage 02: portrait from the brain reading ----
   async function generateStudioPortrait(dataURL, r, sid){
     static1.stop();
-    const stopGlitch = runGlitch(studioScreen, led2);
+    const stopGlitch = runGlitch(studioScreen, led2, $('status-2'), 'synthesizing');
     let res = null;
     try{
       res = await fetch('/api/generate-persona', {
@@ -1091,7 +1151,13 @@
   // ---- stage 03: animate it with the motion prompt ----
   async function generateVideo(portraitUrl, r, sid){
     static2.stop();
-    const stopGlitch = runGlitch(videoScreen, led3);
+    // show the portrait faintly behind the static while the video is made
+    videoScreen.querySelectorAll('img.ghost-portrait').forEach(el=>el.remove());
+    const ghost = document.createElement('img');
+    ghost.className = 'ghost-portrait';
+    ghost.src = portraitUrl;
+    videoScreen.insertBefore(ghost, videoScreen.firstChild);
+    const stopGlitch = runGlitch(videoScreen, led3, $('status-3'), 'animating');
     let res = null;
     try{
       res = await fetch('/api/generate-video', {
@@ -1110,36 +1176,43 @@
       data.video = videoUrl;
       stopGlitch();
       if(sid !== session) return;
-      videoScreen.querySelectorAll('video.reveal').forEach(el=>el.remove());
+      videoScreen.querySelectorAll('video.reveal, img.ghost-portrait').forEach(el=>el.remove());
       const vid = document.createElement('video');
       vid.className = 'reveal';
       vid.src = data.video;
       vid.autoplay = true; vid.loop = true; vid.muted = true; vid.playsInline = true;
       videoScreen.insertBefore(vid, videoScreen.firstChild);
       led3.classList.add('on');
-      $('cap-3').textContent = `moving as: ${r.state}`;
+      $('cap-3').textContent = `moving as: ${r.state} · tap to finish`;
       logSession('video', data.video);
     } catch(err){
       stopGlitch();
       if(sid !== session) return;
       static2.start();
+      videoScreen.querySelectorAll('img.ghost-portrait').forEach(el=>el.remove());
+      showStage(2);   // the portrait is still there to look at
       const why = err.message === 'http' ? await describeFailure(res) : (res ? err.message : await describeFailure(null, err));
       console.error('[generate-video]', why);
       flashError('the video isn\'t ready yet — the portrait is still here', why);
     }
   }
 
-  // tap stage 03 to reset for the next visitor
-  videoScreen.addEventListener('click', ()=>{
+  // tap stage 03 to reset for the next visitor (once the video is done).
+  // double-tap forces a reset even while something is still generating.
+  videoScreen.addEventListener('click', ()=>{ if(!busy) resetForNextVisitor(); });
+  videoScreen.addEventListener('dblclick', resetForNextVisitor);
+  function resetForNextVisitor(){
     session++;
     busy = false;
     [...activeGlitches].forEach(stop=>stop());
     studioScreen.querySelectorAll('img.reveal, .glitch-bar').forEach(el=>el.remove());
-    videoScreen.querySelectorAll('video.reveal, .glitch-bar').forEach(el=>el.remove());
+    videoScreen.querySelectorAll('video.reveal, img.ghost-portrait, .glitch-bar').forEach(el=>el.remove());
     [led2, led3].forEach(l=>l.classList.remove('on','pulse'));
     $('cap-2').textContent = ''; $('cap-3').textContent = '';
     static1.start(); static2.start();
-  });
+    maxStage = 1;
+    showStage(1);
+  }
 </script>
 
 </body>
