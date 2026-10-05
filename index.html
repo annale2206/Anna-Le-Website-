@@ -234,26 +234,19 @@
   .peek-sub{ font-family:var(--body); font-size:.72rem; color:#4c5a63; line-height:1.3; margin-top:2px; }
   .peek-bar{ height:3px; margin-top:7px; }
 
-  /* ---- seasonal play: visitors add something to the tree each season ---- */
-  .play{
-    width:100%; max-width:900px; z-index:2; margin:8px 0 24px;
-    display:flex; flex-direction:column; align-items:center; gap:10px;
+  /* ---- crochet the tree: each visitor adds one stitch ---- */
+  .crochet{
+    z-index:2; margin:6px 0 22px; display:flex; flex-direction:column; align-items:center; gap:8px;
+    font-family:var(--mono); text-align:center;
   }
-  .play-title{ font-family:var(--display); font-size:1rem; color:var(--green); letter-spacing:.04em; margin:0; }
-  .play-steps{ font-family:var(--mono); font-size:1.1rem; color:var(--green-dim); text-align:center; min-height:1.3em; transition:color .3s ease; }
-  .play-picker{ display:flex; flex-wrap:wrap; justify-content:center; gap:8px; }
-  .seed{
-    display:flex; flex-direction:column; align-items:center; gap:2px;
-    width:98px; padding:6px 4px 5px; background:rgba(255,255,255,.04);
-    border:1.5px solid #2c3a46; border-radius:10px; cursor:pointer;
-    color:var(--cream); font-family:var(--mono); font-size:.9rem;
-    transition:border-color .2s ease, transform .2s ease, background .2s ease;
+  #stitch-btn{
+    font-family:var(--mono); font-size:1.15rem; letter-spacing:.04em;
+    color:var(--bg); background:var(--green); border:none; border-radius:999px;
+    padding:8px 20px; cursor:pointer; transition:transform .15s ease, background .2s ease;
   }
-  .seed canvas{ width:44px; height:52px; }
-  .seed:hover{ transform:translateY(-2px); border-color:var(--green-dim); }
-  .seed.chosen{ border-color:var(--green); background:rgba(157,255,158,.10); }
-  .play-count{ font-family:var(--mono); font-size:1rem; color:var(--green-dim); }
-  @media (max-width:700px){ .seed{ width:80px; } }
+  #stitch-btn:hover{ transform:translateY(-2px); background:#c4ffc5; }
+  #stitch-btn:active{ transform:scale(.97); }
+  #stitch-note{ font-size:1.05rem; color:var(--green-dim); min-height:1.3em; }
 
   /* ---- quiet text menu: every page as a plain link (keyboard + screen readers) ---- */
   .text-menu{
@@ -538,12 +531,10 @@
   <div id="canvas-holder"></div>
 </div>
 
-<section class="play" id="play" aria-label="add to the tree">
-  <h2 class="play-title" id="play-title"></h2>
-  <div class="play-steps" id="play-steps"></div>
-  <div class="play-picker" id="play-picker"></div>
-  <div class="play-count" id="play-count"></div>
-</section>
+<div class="crochet" id="crochet">
+  <button id="stitch-btn" type="button">✿ add a stitch</button>
+  <div id="stitch-note">every visitor crochets one stitch onto this tree</div>
+</div>
 
 <div class="season-clock" id="season-clock">
   <svg class="season-dial" viewBox="0 0 90 90">
@@ -629,9 +620,11 @@
       return { d: d+' Z', center: c };
     }
 
+    const WRAP = [];   // trunk and main limbs, for the visitors' crochet
     function add(pts, w0, w1, delay, opts={}){
       const seed = pts[0][0]*0.13 + pts[pts.length-1][1]*0.07;
       const { d, center } = limbPath(pts, w0, w1, seed, opts.flare || 0);
+      if(opts.wrap !== undefined) WRAP[opts.wrap] = { center, w0, w1 };
       const grp = document.createElementNS(NS, 'g');
       grp.setAttribute('class', 'limb'); grp.style.animationDelay = delay + 's';
       const body = document.createElementNS(NS, 'path');
@@ -676,14 +669,14 @@
     add([[600,780],[585,792],[566,799]], 10, 2, 0.08);
     add([[602,780],[622,793],[640,799]], 10, 2, 0.08);
     // trunk (wide flared base, gentle S curve) up to the fork
-    add([[600,796],[592,720],[608,640],[596,575],[600,515]], 66, 32, 0, { flare: 0.6 });
+    add([[600,796],[592,720],[608,640],[596,575],[600,515]], 66, 32, 0, { flare: 0.6, wrap: 0 });
 
     // five main limbs: ends sit on about, projects, research, art practice, cv
-    add([[596,548],[520,478],[420,446],[300,420],[170,398],[50,380]], 22, 3, 0.45);
-    add([[594,545],[548,452],[478,360],[400,262],[330,205],[270,160]], 26, 7, 0.5);
-    add([[600,545],[606,440],[594,350],[604,250],[600,140]], 22, 6, 0.55);
-    add([[606,545],[652,452],[722,360],[800,262],[870,205],[930,160]], 25, 7, 0.6);
-    add([[604,548],[680,478],[780,446],[900,420],[1030,398],[1150,380]], 21, 3, 0.65);
+    add([[596,548],[520,478],[420,446],[300,420],[170,398],[50,380]], 22, 3, 0.45, { wrap: 4 });
+    add([[594,545],[548,452],[478,360],[400,262],[330,205],[270,160]], 26, 7, 0.5, { wrap: 2 });
+    add([[600,545],[606,440],[594,350],[604,250],[600,140]], 22, 6, 0.55, { wrap: 1 });
+    add([[606,545],[652,452],[722,360],[800,262],[870,205],[930,160]], 25, 7, 0.6, { wrap: 3 });
+    add([[604,548],[680,478],[780,446],[900,420],[1030,398],[1150,380]], 21, 3, 0.65, { wrap: 5 });
 
     // twigs from each hub to its small flowers
     const twig = (from, to, bend, delay)=>{
@@ -701,6 +694,7 @@
      [[455,342],[420,318],[398,300]], [[745,342],[780,318],[800,298]],
      [[598,300],[570,270],[552,255]], [[602,240],[630,212],[648,200]]]
       .forEach((pts,i)=> add(pts, 5, 1.2, 1.0 + i*0.05));
+    window.TREE_WRAP = WRAP;
   })();
 </script>
 
@@ -1126,74 +1120,6 @@
   // ---- click: open the page ----
   function bloomTo(f){ hidePeek(); window.location.href = f.href; }
 
-  // ============================================================
-  // SEASONAL PLAY: each season visitors add one thing to the tree,
-  // and it comes back every time that season returns.
-  //   spring → plant a flower on the ground
-  //   summer → add a green leaf to the branches
-  //   fall   → hang a fruit on the branches
-  //   winter → put a snowball or snowman on the snowy ground
-  // Saved through /api/garden: season, item, spot (no personal data).
-  // ============================================================
-  const PLAY = {
-    spring:{ i:0, where:'ground', title:'grow a flower', verb:'choose a flower, then tap the ground under the tree',
-             items:['daisy','tulip','sunflower','rose','lavender','cherry blossom','bluebell'],
-             done: n=>`your ${n} is growing ✿ it will bloom here every spring` },
-    summer:{ i:1, where:'tree', title:'add a leaf', verb:'choose a leaf, then tap a branch of the tree',
-             items:['oak','maple','birch','linden'],
-             done: n=>`your ${n} leaf joined the tree ✿ it returns every summer` },
-    fall:  { i:2, where:'tree', title:'hang a fruit', verb:'choose a fruit, then tap a branch of the tree',
-             items:['cherries','apple','pear','persimmon','orange','lemon','plum','peach','pomegranate','fig','grapes','strawberry','bananas','mango','blueberries','lychee'],
-             done: n=>`your ${n} is hanging on the tree ✿ it returns every fall` },
-    winter:{ i:3, where:'ground', title:'build a snowman', verb:'choose some snow, then tap the snowy ground',
-             items:['snowball','snowman','snowman with hat'],
-             done: n=>`your ${n} is standing in the snow ✿ it returns every winter` },
-  };
-  const SEASON_NAMES = ['spring','summer','fall','winter'];
-  const ZONES = {
-    ground:{ top:750, bottom:798, left:30, right:1170, trunkL:548, trunkR:652 },
-    tree:  { top:40,  bottom:610, left:60, right:1140 },
-  };
-  const PLAY_LIMIT = 50;         // when a season reaches 50 items, it starts fresh
-  let playItems = [];            // { s, c, x, y, t, born }
-  let chosenItem = null;
-  let playSeasonShown = null;
-  const playSteps = document.getElementById('play-steps');
-  const playPicker = document.getElementById('play-picker');
-
-  function inZone(where, mx, my){
-    const z = ZONES[where];
-    if(my < z.top || my > z.bottom || mx < z.left || mx > z.right) return false;
-    if(where === 'ground' && mx > z.trunkL && mx < z.trunkR) return false;
-    return true;
-  }
-
-  // ---------- drawing (plain canvas 2D, used for the tree and the buttons) ----------
-  function ell(c, x, y, rx, ry, rot, color){ c.fillStyle = color; c.beginPath(); c.ellipse(x, y, rx, ry, rot||0, 0, Math.PI*2); c.fill(); }
-  function circ(c, x, y, r, color){ c.fillStyle = color; c.beginPath(); c.arc(x, y, r, 0, Math.PI*2); c.fill(); }
-  function petalRing(c, x, y, n, len, wid, color, rot){
-    for(let i=0;i<n;i++){ const a = rot + i*Math.PI*2/n; ell(c, x+Math.cos(a)*len*0.55, y+Math.sin(a)*len*0.55, len*0.55, wid, a, color); }
-  }
-  function drawSpring(c, k, bx, by, h, sway){                 // flower growing up from (bx, by)
-    c.strokeStyle = '#3f9a52'; c.lineWidth = Math.max(1.5, h*0.06); c.lineCap = 'round';
-    c.beginPath(); c.moveTo(bx, by); c.quadraticCurveTo(bx+sway*0.3, by-h*0.5, bx+sway, by-h); c.stroke();
-    ell(c, bx+h*0.12+sway*0.2, by-h*0.35, h*0.16, h*0.06, -0.6, '#4fb563');
-    const x = bx+sway, y = by-h, r = h*0.22;
-    switch(k){
-      case 0: petalRing(c,x,y,12,r*1.1,r*0.22,'#ffffff',0); circ(c,x,y,r*0.38,'#ffd23f'); break;
-      case 1: c.fillStyle='#ff4f7b'; c.beginPath(); c.moveTo(x-r*0.8,y-r*0.2);
-              c.quadraticCurveTo(x-r*0.9,y+r*0.9,x,y+r*0.8); c.quadraticCurveTo(x+r*0.9,y+r*0.9,x+r*0.8,y-r*0.2);
-              c.lineTo(x+r*0.4,y-r*0.9); c.lineTo(x,y-r*0.3); c.lineTo(x-r*0.4,y-r*0.9); c.closePath(); c.fill(); break;
-      case 2: petalRing(c,x,y,14,r*1.25,r*0.3,'#ffcc1f',0.1); circ(c,x,y,r*0.55,'#6b3f1d'); break;
-      case 3: circ(c,x,y,r*0.85,'#e8355a'); c.strokeStyle='#a3163a'; c.lineWidth=Math.max(1,r*0.12);
-              c.beginPath(); c.arc(x,y,r*0.55,0.3,5.2); c.stroke(); c.beginPath(); c.arc(x+r*0.08,y,r*0.25,2.5,7.5); c.stroke(); break;
-      case 4: for(let i=0;i<7;i++) ell(c, x+(i%2? r*0.18:-r*0.18), y-i*r*0.32+r*0.6, r*0.22, r*0.16, 0, '#9a7bf0'); break;
-      case 5: petalRing(c,x,y,5,r*0.95,r*0.42,'#ffb7d5',-Math.PI/2); circ(c,x,y,r*0.22,'#ff6fa8'); break;
-      case 6: c.fillStyle='#6fa8ff'; [[-0.5,0.2],[0.45,0.45],[0,-0.35]].forEach(([dx,dy])=>{
-                c.beginPath(); c.arc(x+dx*r, y+dy*r+r*0.3, r*0.38, Math.PI, 0);
-                c.lineTo(x+dx*r+r*0.38, y+dy*r+r*0.55); c.lineTo(x+dx*r-r*0.38, y+dy*r+r*0.55); c.closePath(); c.fill(); }); break;
-    }
-  }
   // ---------- nicer leaves and fruits (shared by the tree links and visitor items) ----------
   // Every shape hangs from its attach point (0,0) and is about `s` tall.
   function shade(hex, amt){                  // lighten (+) or darken (-) a #rrggbb color
@@ -1470,118 +1396,124 @@
     }
   }
 
-  const LEAF_GREENS = ['#3f9a52','#2fbf5f','#5fae6a','#4fb563'];
-  function drawSummer(c, k, x, y, s, sway){                   // leaf hanging from (x, y)
-    c.save(); c.translate(x, y); c.rotate(0.35 + sway*0.05);
-    drawLeafArt(c, k, s, LEAF_GREENS[k]);
-    c.restore();
-  }
-  function drawFall(c, k, x, y, s, sway){                     // fruit hanging from (x, y)
-    c.save(); c.translate(x, y); c.rotate(sway*0.04);
-    drawFruitArt(c, k, s);
-    c.restore();
-  }
-  function drawWinter(c, k, bx, by, s){                       // snow standing on (bx, by)
-    const snow = '#f6fbff', shade = '#d4e6f2';
-    if(k === 0){ circ(c,bx,by-s*0.28,s*0.3,shade); circ(c,bx-s*0.04,by-s*0.31,s*0.27,snow); return; }
-    circ(c,bx,by-s*0.3,s*0.32,shade); circ(c,bx-s*0.03,by-s*0.32,s*0.29,snow);       // body
-    circ(c,bx,by-s*0.78,s*0.22,shade); circ(c,bx-s*0.02,by-s*0.8,s*0.2,snow);        // head
-    circ(c,bx-s*0.07,by-s*0.84,s*0.03,'#1c2733'); circ(c,bx+s*0.06,by-s*0.84,s*0.03,'#1c2733');
-    c.fillStyle='#ff8a2a'; c.beginPath(); c.moveTo(bx,by-s*0.79); c.lineTo(bx+s*0.18,by-s*0.76); c.lineTo(bx,by-s*0.74); c.fill();
-    c.fillStyle='#ff3d9a'; c.fillRect(bx-s*0.2,by-s*0.6,s*0.4,s*0.07);                 // scarf
-    if(k === 2){ c.fillStyle='#2a1750'; c.fillRect(bx-s*0.2,by-s*1.02,s*0.4,s*0.05); c.fillRect(bx-s*0.13,by-s*1.22,s*0.26,s*0.21); }
-  }
-  function drawPlayItem(c, s, k, x, y, size, sway){
-    if(s === 0) drawSpring(c, k, x, y, size, sway);
-    else if(s === 1) drawSummer(c, k, x, y, size*0.95, sway);
-    else if(s === 2) drawFall(c, k, x, y, size*0.95, sway);
-    else drawWinter(c, k, x, y, size);
-  }
+  // ============================================================
+  // CROCHET THE TREE: every visitor adds one stitch. The yarn wraps
+  // the trunk first, then climbs the main limbs. When the tree is
+  // fully wrapped, a new round of yarn starts on top of the old one.
+  // Only a running count is stored (api/stitch.js).
+  // ============================================================
+  const YARN = ['#ff9fd0','#ffd23f','#7fd4ff','#9dff9e','#ff9f4d','#b39dff','#43e0c9','#ff6fae','#f4f1e6'];
+  const STITCH_GAP = 7;          // distance between stitches along the yarn
+  let stitchCount = 0, stitchSpots = null, stitchLayer = null, bakedCount = -1;
+  let newStitch = null;          // { i, at } the stitch this visitor just made
+  const stitchNote = document.getElementById('stitch-note');
 
-  // ---------- panel under the tree ----------
-  function buildPicker(seasonName){
-    const P = PLAY[seasonName];
-    chosenItem = null;
-    document.getElementById('play-title').textContent = P.title;
-    playSteps.textContent = P.verb;
-    playPicker.innerHTML = '';
-    P.items.forEach((name, k)=>{
-      const b = document.createElement('button');
-      b.className = 'seed'; b.type = 'button'; b.setAttribute('aria-label', 'choose ' + name);
-      const cv = document.createElement('canvas'); cv.width = 88; cv.height = 104;
-      const c2 = cv.getContext('2d');
-      if(P.where === 'ground') drawPlayItem(c2, P.i, k, 44, 98, P.i === 3 ? 80 : 72, 0);
-      else if(P.i === 1) drawPlayItem(c2, P.i, k, 54, 4, 86, 0);
-      else drawPlayItem(c2, P.i, k, 44, 4, 98, 0);
-      b.appendChild(cv); b.appendChild(document.createTextNode(name));
-      b.addEventListener('click', ()=>{
-        chosenItem = k;
-        playPicker.querySelectorAll('.seed').forEach(x=>x.classList.remove('chosen'));
-        b.classList.add('chosen');
-        playSteps.textContent = P.where === 'ground'
-          ? `now tap the ground under the tree to place your ${name}`
-          : `now tap a branch of the tree to add your ${name}`;
-      });
-      playPicker.appendChild(b);
+  // every visible spot along a spiral wrap, in order (front side of each limb only)
+  function buildStitchSpots(){
+    const parts = (window.TREE_WRAP || []).filter(Boolean);
+    const spots = [];
+    parts.forEach((part, pi)=>{
+      const c = part.center, n = c.length;
+      const pitch = pi === 0 ? 28 : 15;          // how far the yarn climbs per turn
+      let s = 0, travelled = 0, prev = null;
+      for(let k=1;k<n;k++){
+        const a = c[k-1], b = c[k];
+        const segLen = Math.hypot(b[0]-a[0], b[1]-a[1]);
+        const steps = Math.max(1, Math.ceil(segLen));
+        for(let q=0;q<steps;q++){
+          const f = q/steps, x0 = a[0] + (b[0]-a[0])*f, y0 = a[1] + (b[1]-a[1])*f;
+          s += segLen/steps;
+          const tt = Math.min(1, (k-1+f)/(n-1));
+          const w = (part.w0 + (part.w1-part.w0)*Math.pow(tt, 0.75)) * 0.5 * 0.92;
+          if(w < 2.2) continue;                      // too thin to wrap
+          const th = 2*Math.PI*s/pitch;
+          const dx = (b[0]-a[0])/segLen, dy = (b[1]-a[1])/segLen;
+          const px = x0 - dy*w*Math.sin(th), py = y0 + dx*w*Math.sin(th);
+          const front = Math.cos(th) > 0.08;
+          if(prev){ travelled += Math.hypot(px-prev[0], py-prev[1]) + (front ? 0 : 0); }
+          prev = [px, py];
+          if(front && travelled >= STITCH_GAP){
+            travelled = 0;
+            const ang = Math.atan2(dy*1 + dx*Math.cos(th)*0.9, dx*1 - dy*Math.cos(th)*0.9);
+            spots.push({ x:px, y:py, a:ang, r: Math.max(3, Math.min(4.4, w*0.42)) });
+          }
+        }
+      }
     });
-    updatePlayCount(seasonName);
-  }
-  function updatePlayCount(seasonName){
-    const P = PLAY[seasonName];
-    const n = playItems.filter(it=>it.s === P.i).length;
-    const what = ['flowers','leaves','fruits','snow friends'][P.i];
-    document.getElementById('play-count').textContent =
-      n ? `${n} / ${PLAY_LIMIT} ${what} on the tree this ${seasonName}` : `be the first to add something this ${seasonName}`;
+    return spots;
   }
 
-  fetch('/api/garden', { cache:'no-store' }).then(r=>r.json()).then(d=>{
-    playItems = (d.flowers || []).filter(it=>Number.isInteger(it.s) && it.s>=0 && it.s<4)
-      .map((it,i)=>({ ...it, born: -1 - i*0.02 }));
-    if(playSeasonShown) updatePlayCount(playSeasonShown);
-  }).catch(()=>{});
-
-  function tryPlace(mx, my){
-    const seasonName = p5Season().name, P = PLAY[seasonName];
-    if(!inZone(P.where, mx, my)) return false;
-    if(chosenItem === null) return true;          // nothing chosen yet: do nothing
-    // the 51st item clears the season and starts a fresh tree
-    let fresh = false;
-    if(playItems.filter(it=>it.s === P.i).length >= PLAY_LIMIT){
-      playItems = playItems.filter(it=>it.s !== P.i);
-      fresh = true;
-    }
-    const item = { s:P.i, c:chosenItem, x: mx/1200, y: my/800, t: Date.now(), born: millis()/1000 };
-    playItems.push(item);
-    fetch('/api/garden', { method:'POST', headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify({ s:item.s, c:item.c, x:item.x, y:item.y }) }).catch(()=>{});
-    updatePlayCount(seasonName);
-    return true;
-  }
-
-  function drawPlay(t){
-    const seasonName = p5Season().name;
-    if(seasonName !== playSeasonShown){ playSeasonShown = seasonName; buildPicker(seasonName); }
-    const P = PLAY[seasonName];
-    const c = drawingContext;
-    const k = isSmallScreen() ? 1.6 : 1;
-    const mine = playItems.filter(it=>it.s === P.i);
-    if(P.where === 'ground') mine.sort((a,b)=>a.y-b.y);
-    mine.forEach((it, i)=>{
-      const age = it.born < 0 ? (millis()/1000 - 3 + it.born) : (t - it.born);
-      const g = Math.min(1, Math.max(0, age/1.0)), e = 1 - Math.pow(1-g, 3);
-      if(e <= 0) return;
-      const sway = Math.sin(t*1.1 + (it.t % 97)) * 3;
-      const depth = P.where === 'ground' ? 0.8 + (it.y*800 - 750)/48*0.4 : 1;
-      drawPlayItem(c, P.i, it.c, it.x*1200, it.y*800, 34*k*depth*e, sway*e);
-    });
-    // faint preview of the chosen item under the cursor
-    if(canHover && chosenItem !== null && inZone(P.where, mouseX, mouseY)){
-      c.save(); c.globalAlpha = 0.55;
-      drawPlayItem(c, P.i, chosenItem, mouseX, mouseY, 34*k, 0);
+  // one chain stitch: two leaning loops of yarn
+  function drawStitch(c, x, y, ang, r, col, glow){
+    c.save(); c.translate(x, y); c.rotate(ang);
+    if(glow){ c.shadowColor = col; c.shadowBlur = glow; }
+    for(const side of [-1, 1]){
+      c.save(); c.rotate(side*0.38);
+      c.beginPath(); c.ellipse(side*r*0.32, 0, r*1.05, r*0.55, 0, 0, Math.PI*2);
+      c.fillStyle = col; c.fill();
+      c.lineWidth = Math.max(0.7, r*0.22); c.strokeStyle = 'rgba(40,20,50,.45)'; c.stroke();
+      c.beginPath(); c.ellipse(side*r*0.32 - r*0.2, -r*0.15, r*0.45, r*0.16, 0, 0, Math.PI*2);
+      c.fillStyle = 'rgba(255,255,255,.35)'; c.fill();
       c.restore();
     }
+    c.restore();
+  }
+  function stitchStyle(i){
+    const per = stitchSpots.length || 1;
+    const round = Math.floor(i / per), k = i % per;
+    const sp = stitchSpots[k];
+    const shift = round * 2.2;                     // each new round sits a little to the side
+    const col = YARN[(Math.floor(k / 14) + round*3) % YARN.length];   // striped like a granny wrap
+    return { x: sp.x + Math.cos(sp.a + Math.PI/2)*shift, y: sp.y + Math.sin(sp.a + Math.PI/2)*shift, a: sp.a, r: sp.r, col };
+  }
+  function bakeStitches(){
+    if(!stitchSpots || !stitchSpots.length) return;
+    if(!stitchLayer){ stitchLayer = createGraphics(1200, 800); stitchLayer.pixelDensity(Math.min(2, window.devicePixelRatio || 1)); }
+    stitchLayer.clear();
+    const c = stitchLayer.drawingContext;
+    const per = stitchSpots.length;
+    const upto = newStitch ? newStitch.i : stitchCount;     // the newest one animates separately
+    const from = Math.max(0, upto - per*2);                  // show the last two rounds
+    for(let i=from;i<upto;i++){ const st = stitchStyle(i); drawStitch(c, st.x, st.y, st.a, st.r, st.col, 0); }
+    bakedCount = stitchCount;
+  }
+  function stitchText(){
+    return stitchCount > 0
+      ? `${stitchCount.toLocaleString()} stitches crocheted onto this tree by visitors`
+      : 'every visitor crochets one stitch onto this tree';
   }
 
+  fetch('/api/stitch', { cache:'no-store' }).then(r=>r.json()).then(d=>{
+    stitchCount = Number(d.count) || 0; bakedCount = -1; stitchNote.textContent = stitchText();
+  }).catch(()=>{});
+
+  document.getElementById('stitch-btn').addEventListener('click', ()=>{
+    if(!stitchSpots) return;
+    newStitch = { i: stitchCount, at: millis()/1000 };
+    stitchCount++; bakedCount = -1;
+    stitchNote.textContent = `your stitch is no. ${stitchCount.toLocaleString()} ✿ thank you for crocheting with me`;
+    fetch('/api/stitch', { method:'POST' }).then(r=>r.json()).then(d=>{
+      if(Number(d.count) > stitchCount){ stitchCount = Number(d.count); bakedCount = -1; }
+    }).catch(()=>{});
+    setTimeout(()=>{ stitchNote.textContent = stitchText(); }, 6000);
+  });
+
+  function drawStitches(t){
+    if(!stitchSpots && window.TREE_WRAP) stitchSpots = buildStitchSpots();
+    if(!stitchSpots || !stitchSpots.length) return;
+    const fade = Math.min(1, Math.max(0, (millis() - p5PageStart)/1000 - 1.6));   // appear after the tree
+    if(fade <= 0) return;
+    if(bakedCount !== stitchCount) bakeStitches();
+    drawingContext.save(); drawingContext.globalAlpha = fade;
+    if(stitchLayer) image(stitchLayer, 0, 0, 1200, 800);
+    if(newStitch){
+      const age = t - newStitch.at, st = stitchStyle(newStitch.i);
+      const grow = Math.min(1, age/0.6), pulse = age < 2.5 ? 14*(1 - age/2.5) : 0;
+      drawStitch(drawingContext, st.x, st.y, st.a, st.r*(0.4 + 0.6*grow)*(1 + 0.6*Math.max(0, 1-age)), st.col, pulse);
+      if(age > 2.5){ newStitch = null; bakedCount = -1; }
+    }
+    drawingContext.restore();
+  }
 
   // on phones the whole tree is only ~350px wide, so flowers are drawn
   // bigger and are easier to tap
@@ -1692,15 +1624,11 @@
     drawingContext.setTransform(1,0,0,1,0,0);
     drawingContext.clearRect(0, 0, drawingContext.canvas.width, drawingContext.canvas.height);
     drawingContext.restore();
-    drawPlay(millis()/1000);
+    drawStitches(millis()/1000);
     if(canHover){
       const hf = flowerAtMouse();
       if(hf){ showPeek(hf); document.body.style.cursor = 'pointer'; }
-      else {
-        if(peekHref) hidePeek();
-        const P = PLAY[p5Season().name];
-        document.body.style.cursor = (chosenItem !== null && inZone(P.where, mouseX, mouseY)) ? 'pointer' : '';
-      }
+      else if(peekHref){ hidePeek(); document.body.style.cursor = ''; }
     }
     const t = millis()/1000;
 
@@ -1745,9 +1673,7 @@
     const birdBox = { x1:132, y1:300, x2:248, y2:415 };
     if(mouseX>=birdBox.x1 && mouseX<=birdBox.x2 && mouseY>=birdBox.y1 && mouseY<=birdBox.y2){
       document.getElementById('tree-bird').dispatchEvent(new Event('click'));
-      return;
     }
-    tryPlace(mouseX, mouseY);
   }
 </script>
 
