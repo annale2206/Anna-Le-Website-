@@ -7,6 +7,8 @@
 //   GET  /api/stitch   → { count }
 //   POST /api/stitch   → { count }   (adds one stitch)
 //
+// The count lives under 'stitches_v2' (changing this name starts again from 0).
+//
 // Uses the same Upstash Redis connection as stats.js / log-session.js
 // (KV_REST_API_URL + KV_REST_API_TOKEN, already set in Vercel).
 
@@ -21,10 +23,10 @@ export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   try {
     if (req.method === 'GET') {
-      return res.status(200).json({ count: Number(await redis.get('stitches')) || 0 });
+      return res.status(200).json({ count: Number(await redis.get('stitches_v2')) || 0 });
     }
     if (req.method === 'POST') {
-      return res.status(200).json({ count: await redis.incr('stitches') });
+      return res.status(200).json({ count: await redis.incr('stitches_v2') });
     }
     return res.status(405).json({ error: 'Use GET or POST' });
   } catch (err) {

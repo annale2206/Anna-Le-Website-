@@ -1399,7 +1399,7 @@
   // ============================================================
   // CROCHET THE TREE: every visitor adds one stitch. The yarn wraps
   // the trunk first, then climbs the main limbs. When the tree is
-  // fully wrapped, a new round of yarn starts on top of the old one.
+  // fully wrapped, the yarn comes off and the next stitch starts a new tree.
   // Only a running count is stored (api/stitch.js).
   // ============================================================
   const YARN = ['#ff9fd0','#ffd23f','#7fd4ff','#9dff9e','#ff9f4d','#b39dff','#43e0c9','#ff6fae','#f4f1e6'];
@@ -1462,9 +1462,8 @@
     const per = stitchSpots.length || 1;
     const round = Math.floor(i / per), k = i % per;
     const sp = stitchSpots[k];
-    const shift = round * 2.2;                     // each new round sits a little to the side
-    const col = YARN[(Math.floor(k / 14) + round*3) % YARN.length];   // striped like a granny wrap
-    return { x: sp.x + Math.cos(sp.a + Math.PI/2)*shift, y: sp.y + Math.sin(sp.a + Math.PI/2)*shift, a: sp.a, r: sp.r, col };
+    const col = YARN[(Math.floor(k / 14) + round*3) % YARN.length];   // striped like a granny wrap; new colors each round
+    return { x: sp.x, y: sp.y, a: sp.a, r: sp.r, col };
   }
   function bakeStitches(){
     if(!stitchSpots || !stitchSpots.length) return;
@@ -1473,14 +1472,14 @@
     const c = stitchLayer.drawingContext;
     const per = stitchSpots.length;
     const upto = newStitch ? newStitch.i : stitchCount;     // the newest one animates separately
-    const from = Math.max(0, upto - per*2);                  // show the last two rounds
+    const from = Math.floor(Math.max(0, stitchCount - 1) / per) * per;   // only the current round
     for(let i=from;i<upto;i++){ const st = stitchStyle(i); drawStitch(c, st.x, st.y, st.a, st.r, st.col, 0); }
     bakedCount = stitchCount;
   }
   function stitchText(){
-    return stitchCount > 0
-      ? `${stitchCount.toLocaleString()} stitches crocheted onto this tree by visitors`
-      : 'every visitor crochets one stitch onto this tree';
+    if(stitchCount <= 0 || !stitchSpots) return 'every visitor crochets one stitch onto this tree';
+    const per = stitchSpots.length, inRound = ((stitchCount - 1) % per) + 1, tree = Math.floor((stitchCount - 1) / per) + 1;
+    return `${inRound} / ${per} stitches on this tree` + (tree > 1 ? ` · tree no. ${tree} crocheted by visitors` : '');
   }
 
   fetch('/api/stitch', { cache:'no-store' }).then(r=>r.json()).then(d=>{
@@ -1491,7 +1490,10 @@
     if(!stitchSpots) return;
     newStitch = { i: stitchCount, at: millis()/1000 };
     stitchCount++; bakedCount = -1;
-    stitchNote.textContent = `your stitch is no. ${stitchCount.toLocaleString()} ✿ thank you for crocheting with me`;
+    const per = stitchSpots.length, inRound = ((stitchCount - 1) % per) + 1;
+    stitchNote.textContent = inRound === 1 && stitchCount > 1
+      ? 'the tree was fully wrapped, so your stitch starts a new one ✿'
+      : `your stitch is no. ${inRound} on this tree ✿ thank you for crocheting with me`;
     fetch('/api/stitch', { method:'POST' }).then(r=>r.json()).then(d=>{
       if(Number(d.count) > stitchCount){ stitchCount = Number(d.count); bakedCount = -1; }
     }).catch(()=>{});
@@ -1499,7 +1501,7 @@
   });
 
   function drawStitches(t){
-    if(!stitchSpots && window.TREE_WRAP) stitchSpots = buildStitchSpots();
+    if(!stitchSpots && window.TREE_WRAP){ stitchSpots = buildStitchSpots(); if(!newStitch) stitchNote.textContent = stitchText(); }
     if(!stitchSpots || !stitchSpots.length) return;
     const fade = Math.min(1, Math.max(0, (millis() - p5PageStart)/1000 - 1.6));   // appear after the tree
     if(fade <= 0) return;
