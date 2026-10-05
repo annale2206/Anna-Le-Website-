@@ -1278,11 +1278,70 @@
     p5PageStart = millis();
   }
 
+  // each season the link flowers on the tree turn into something else:
+  // spring flowers, summer green leaves, fall fruits, winter snowflakes
+  const LINK_GREENS = ['#3fbf5f','#5fae6a','#2fa84f','#7bc98a'];
+  const LINK_FRUITS = ['#c8102e','#d6283e','#c9d65a','#f28a1e'];   // cherries, apple, pear, persimmon
   function flowerColor(f){
-    const s = p5Season();
-    if(s.name === 'fall') return '#f2d356';
-    if(s.name === 'winter') return '#f4faff';
+    const s = p5Season(), i = ALL_FLOWERS.indexOf(f);
+    if(s.name === 'summer') return LINK_GREENS[i % 4];
+    if(s.name === 'fall')   return LINK_FRUITS[i % 4];
+    if(s.name === 'winter') return '#eaf6ff';
     return f.color;
+  }
+
+  function drawLinkShape(f, i, x, y, size, rotDeg){
+    const season = p5Season().name;
+    if(season === 'spring'){ drawFlowerShape(x, y, size, flowerColor(f), rotDeg); return; }
+    const c = drawingContext, r = size/2;
+    c.save(); c.translate(x, y); c.rotate(rotDeg*Math.PI/180);
+    if(season === 'summer'){
+      // a green leaf with a vein
+      const g = LINK_GREENS[i % 4];
+      c.rotate(-0.6);
+      c.fillStyle = g;
+      c.beginPath(); c.moveTo(0, r*1.05);
+      c.bezierCurveTo(-r*0.85, r*0.4, -r*0.7, -r*0.7, 0, -r*1.05);
+      c.bezierCurveTo(r*0.7, -r*0.7, r*0.85, r*0.4, 0, r*1.05); c.fill();
+      c.strokeStyle = 'rgba(15,60,25,.55)'; c.lineWidth = Math.max(1, r*0.07); c.lineCap = 'round';
+      c.beginPath(); c.moveTo(0, r*1.05); c.lineTo(0, -r*0.85);
+      for(const k of [0.45, 0.05, -0.35]){ c.moveTo(0, r*k); c.lineTo(-r*0.38, r*(k-0.25)); c.moveTo(0, r*k); c.lineTo(r*0.38, r*(k-0.25)); }
+      c.stroke();
+    } else if(season === 'fall'){
+      // a fruit: cherries, apple, pear or persimmon
+      const kind = i % 4;
+      c.strokeStyle = '#6b4a2b'; c.lineWidth = Math.max(1.2, r*0.09); c.lineCap = 'round';
+      const dot = (px,py,pr,col)=>{ c.fillStyle = col; c.beginPath(); c.arc(px,py,pr,0,Math.PI*2); c.fill(); };
+      if(kind === 0){
+        c.beginPath(); c.moveTo(0,-r*0.9); c.quadraticCurveTo(-r*0.3,-r*0.3,-r*0.42,r*0.2); c.moveTo(0,-r*0.9); c.quadraticCurveTo(r*0.3,-r*0.3,r*0.4,r*0.25); c.stroke();
+        dot(-r*0.42, r*0.45, r*0.38, '#c8102e'); dot(r*0.4, r*0.5, r*0.38, '#d41e3a');
+        dot(-r*0.52, r*0.33, r*0.1, 'rgba(255,255,255,.6)');
+      } else {
+        c.beginPath(); c.moveTo(0,-r*0.55); c.lineTo(0,-r*0.95); c.stroke();
+        if(kind === 1){ dot(0, r*0.1, r*0.72, '#d6283e'); dot(-r*0.25, -r*0.12, r*0.15, 'rgba(255,255,255,.45)'); }
+        if(kind === 2){ dot(0, -r*0.25, r*0.38, '#c9d65a'); dot(0, r*0.3, r*0.62, '#c9d65a'); dot(-r*0.2, r*0.12, r*0.12, 'rgba(255,255,255,.4)'); }
+        if(kind === 3){ c.fillStyle = '#f28a1e'; c.beginPath(); c.ellipse(0, r*0.15, r*0.75, r*0.62, 0, 0, Math.PI*2); c.fill();
+                        c.fillStyle = '#4f8a3a'; c.beginPath(); c.ellipse(0, -r*0.45, r*0.42, r*0.13, 0, 0, Math.PI*2); c.fill(); }
+        c.fillStyle = '#4fb563'; c.beginPath(); c.ellipse(r*0.28, -r*0.8, r*0.3, r*0.12, -0.5, 0, Math.PI*2); c.fill();
+      }
+    } else {
+      // a snowflake with six branched arms
+      c.rotate(millis()/9000);
+      c.strokeStyle = '#eaf6ff'; c.lineWidth = Math.max(1.2, r*0.11); c.lineCap = 'round';
+      c.beginPath();
+      for(let a=0; a<6; a++){
+        const ang = a*Math.PI/3, ca = Math.cos(ang), sa = Math.sin(ang);
+        c.moveTo(0,0); c.lineTo(ca*r, sa*r);
+        for(const d of [0.45, 0.72]){
+          const bx = ca*r*d, by = sa*r*d, br = r*0.26;
+          c.moveTo(bx,by); c.lineTo(bx + Math.cos(ang+0.7)*br, by + Math.sin(ang+0.7)*br);
+          c.moveTo(bx,by); c.lineTo(bx + Math.cos(ang-0.7)*br, by + Math.sin(ang-0.7)*br);
+        }
+      }
+      c.stroke();
+      c.fillStyle = '#ffffff'; c.beginPath(); c.arc(0,0,r*0.16,0,Math.PI*2); c.fill();
+    }
+    c.restore();
   }
 
   function drawFlowerShape(x,y,size,hex,rotDeg){
@@ -1346,7 +1405,7 @@
         leanDeg = (mouseX - f.cx >= 0 ? 1 : -1) * MAX_LEAN * strength;
       }
 
-      drawFlowerShape(f.cx, f.cy, f.size*s*flowerScale(), flowerColor(f), swayDeg+leanDeg);
+      drawLinkShape(f, i, f.cx, f.cy, f.size*s*flowerScale(), swayDeg+leanDeg);
 
     }
 
