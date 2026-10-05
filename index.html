@@ -1059,7 +1059,7 @@
     ground:{ top:750, bottom:798, left:30, right:1170, trunkL:548, trunkR:652 },
     tree:  { top:40,  bottom:610, left:60, right:1140 },
   };
-  const PLAY_COOLDOWN_MS = 30*1000;
+  const PLAY_LIMIT = 50;         // when a season reaches 50 items, it starts fresh
   let playItems = [];            // { s, c, x, y, t, born }
   let chosenItem = null;
   let playSeasonShown = null;
@@ -1180,7 +1180,7 @@
     const n = playItems.filter(it=>it.s === P.i).length;
     const what = ['flowers','leaves','fruits','snow friends'][P.i];
     document.getElementById('play-count').textContent =
-      n ? `${n} ${what} added by visitors this ${seasonName}` : `be the first to add something this ${seasonName}`;
+      n ? `${n} / ${PLAY_LIMIT} ${what} on the tree this ${seasonName}` : `be the first to add something this ${seasonName}`;
   }
   function sayPlay(text, flash){ playSteps.textContent = text; playSteps.classList.toggle('flash', !!flash); }
 
@@ -1197,19 +1197,18 @@
       sayPlay(`first choose ${P.where === 'ground' ? 'what to place' : 'what to add'} below ✿`, true);
       return true;
     }
-    let last = 0;
-    try{ last = Number(localStorage.getItem('play-last')) || 0; }catch(e){}
-    if(Date.now() - last < PLAY_COOLDOWN_MS){ sayPlay('yours is still settling in: try again in a few seconds', true); return true; }
+    // the 51st item clears the season and starts a fresh tree
+    let fresh = false;
+    if(playItems.filter(it=>it.s === P.i).length >= PLAY_LIMIT){
+      playItems = playItems.filter(it=>it.s !== P.i);
+      fresh = true;
+    }
     const item = { s:P.i, c:chosenItem, x: mx/1200, y: my/800, t: Date.now(), born: millis()/1000 };
     playItems.push(item);
-    try{ localStorage.setItem('play-last', String(Date.now())); }catch(e){}
-    sayPlay(P.done(P.items[chosenItem]), true);
+    sayPlay(fresh ? `the tree was full, so it starts fresh with your ${P.items[chosenItem]} ✿` : P.done(P.items[chosenItem]), true);
     fetch('/api/garden', { method:'POST', headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({ s:item.s, c:item.c, x:item.x, y:item.y }) }).catch(()=>{});
-    chosenItem = null;
-    playPicker.querySelectorAll('.seed').forEach(x=>x.classList.remove('chosen'));
     updatePlayCount(seasonName);
-    setTimeout(()=>{ if(playSeasonShown === seasonName && chosenItem === null) sayPlay(P.verb); }, 4500);
     return true;
   }
 
