@@ -221,13 +221,35 @@
   .peek-sub{ font-family:var(--body); font-size:.72rem; color:#4c5a63; line-height:1.3; margin-top:2px; }
   .peek-bar{ height:3px; margin-top:7px; }
 
-  /* ---- visitor garden note under the tree ---- */
-  .garden-note{
-    font-family:var(--mono); font-size:1.05rem; color:var(--green-dim);
-    letter-spacing:.03em; text-align:center; margin:6px 0 16px; z-index:2;
-    min-height:1.3em; transition:color .4s ease;
+  /* ---- grow a flower: a small garden bed under the tree ---- */
+  .grow{
+    width:100%; max-width:min(900px, 100%); z-index:2; margin:4px 0 26px;
+    display:flex; flex-direction:column; align-items:center; gap:12px;
   }
-  .garden-note.flash{ color:var(--pink); }
+  .grow-title{ font-family:var(--display); font-size:1rem; color:var(--green); letter-spacing:.04em; margin:0; }
+  .grow-steps{ font-family:var(--mono); font-size:1.1rem; color:var(--green-dim); text-align:center; min-height:1.3em; transition:color .3s ease; }
+  .grow-steps.flash{ color:var(--pink); }
+  .grow-picker{ display:flex; flex-wrap:wrap; justify-content:center; gap:8px; }
+  .seed{
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+    width:78px; padding:6px 4px 5px; background:rgba(255,255,255,.04);
+    border:1.5px solid #2c3a46; border-radius:10px; cursor:pointer;
+    color:var(--cream); font-family:var(--mono); font-size:.95rem;
+    transition:border-color .2s ease, transform .2s ease, background .2s ease;
+  }
+  .seed canvas{ width:44px; height:52px; }
+  .seed:hover{ transform:translateY(-2px); border-color:var(--green-dim); }
+  .seed.chosen{ border-color:var(--green); background:rgba(157,255,158,.10); }
+  .bed-wrap{ position:relative; width:100%; }
+  #flower-bed{
+    display:block; width:100%; height:190px; border-radius:16px;
+    box-shadow:inset 0 0 0 1.5px #2c3a46; touch-action:manipulation;
+  }
+  #flower-bed.ready{ cursor:pointer; }
+  .grow-count{ font-family:var(--mono); font-size:1rem; color:var(--green-dim); }
+  @media (max-width:700px){
+    .seed{ width:70px; } #flower-bed{ height:160px; }
+  }
 
   /* ---- page transition: the clicked flower blooms over the screen ---- */
   .bloom-out{
@@ -555,7 +577,13 @@
   <div id="canvas-holder"></div>
 </div>
 
-<div class="garden-note" id="garden-note">click the grass to plant a flower: it stays here for the next visitor</div>
+<section class="grow" id="grow" aria-label="grow a flower">
+  <h2 class="grow-title">grow a flower</h2>
+  <div class="grow-steps" id="grow-steps">1 · choose a flower &nbsp;&nbsp; 2 · tap the grass to plant it</div>
+  <div class="grow-picker" id="grow-picker"></div>
+  <div class="bed-wrap"><canvas id="flower-bed"></canvas></div>
+  <div class="grow-count" id="grow-count"></div>
+</section>
 
 <div class="season-clock" id="season-clock">
   <svg class="season-dial" viewBox="0 0 90 90">
@@ -1012,83 +1040,6 @@
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     setTimeout(()=>{ window.location.href = f.href; }, reduce ? 0 : 700);
   }
-  // ---- visitor garden: flowers planted in the grass by past visitors ----
-  const GARDEN_COLORS = ['#ff9fd0','#ffe07a','#b39dff','#8fe3ff','#b6ff9e','#ff9f4d','#ff3d9a'];
-  const GARDEN_ZONE = { top:742, bottom:800, left:30, right:1170, trunkL:548, trunkR:652 };
-  const COOLDOWN_MS = 60*1000;
-  let garden = [];          // [{x, c, s, t, born}]
-  let gardenTotal = 0;
-  let myColor = Math.floor(Math.random()*GARDEN_COLORS.length);
-  const noteEl = document.getElementById('garden-note');
-  const NOTE_DEFAULT = noteEl.textContent;
-
-  function gardenPos(f){
-    // spread flowers into the grass; the height comes from the planting time so it never jumps around
-    const x = GARDEN_ZONE.left + f.x*(GARDEN_ZONE.right-GARDEN_ZONE.left);
-    const y = 754 + ((f.t % 997) / 997) * 32;
-    return { x, y };
-  }
-  function inGardenZone(mx, my){
-    return my >= GARDEN_ZONE.top && my <= GARDEN_ZONE.bottom &&
-           mx >= GARDEN_ZONE.left && mx <= GARDEN_ZONE.right &&
-           !(mx > GARDEN_ZONE.trunkL && mx < GARDEN_ZONE.trunkR);
-  }
-  function setNote(text, flash){
-    noteEl.textContent = text;
-    noteEl.classList.toggle('flash', !!flash);
-  }
-  function countText(){
-    return gardenTotal > 0 ? ` · ${gardenTotal} planted so far` : '';
-  }
-
-  fetch('/api/garden', { cache:'no-store' })
-    .then(r=>r.json())
-    .then(d=>{
-      garden = (d.flowers || []).map(f=>({ ...f, born:-10 }));
-      gardenTotal = d.total || garden.length;
-      setNote(NOTE_DEFAULT + countText());
-    })
-    .catch(()=>{});
-
-  function plantAt(mx){
-    let last = 0;
-    try{ last = Number(localStorage.getItem('garden-last')) || 0; }catch(e){}
-    if(Date.now() - last < COOLDOWN_MS){
-      setNote('your flower is growing: you can plant another in a minute', true);
-      setTimeout(()=> setNote(NOTE_DEFAULT + countText()), 2600);
-      return;
-    }
-    const x = (mx - GARDEN_ZONE.left) / (GARDEN_ZONE.right - GARDEN_ZONE.left);
-    const flower = { x: Math.max(0, Math.min(1, x)), c: myColor, s: 18, t: Date.now(), born: millis()/1000 };
-    garden.push(flower);                       // show it right away
-    gardenTotal++;
-    try{ localStorage.setItem('garden-last', String(Date.now())); }catch(e){}
-    setNote('planted ✿ thank you for growing this garden' + countText(), true);
-    setTimeout(()=> setNote(NOTE_DEFAULT + countText()), 3500);
-    myColor = (myColor + 1) % GARDEN_COLORS.length;
-    fetch('/api/garden', {
-      method:'POST', headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify({ x: flower.x, c: flower.c })
-    }).then(r=>r.json()).then(d=>{ if(d.ok && d.flower){ flower.s = d.flower.s; flower.t = d.flower.t; } })
-      .catch(()=>{});
-  }
-
-  function drawGarden(t){
-    for(let i=0;i<garden.length;i++){
-      const f = garden[i];
-      const { x, y } = gardenPos(f);
-      const age = t - f.born;
-      const grow = f.born < 0 ? bloomScale(3.2 + (i%20)*0.04) : Math.min(1, Math.max(0, age/0.8));
-      if(grow <= 0) continue;
-      const sway = (noise(i*7.3, t*0.25) - 0.5) * 10;
-      const size = f.s * grow * (isSmallScreen() ? 1.5 : 1);
-      // a little stem
-      stroke('#5fae6a'); strokeWeight(1.5);
-      line(x, y + size*0.3, x + sway*0.3, y + size*1.1);
-      drawFlowerShape(x, y, size, GARDEN_COLORS[f.c % GARDEN_COLORS.length], sway);
-    }
-  }
-
   // coming back with the Back button: clear the color layer
   window.addEventListener('pageshow', ()=>{
     leaving = false;
@@ -1159,21 +1110,10 @@
 
   function draw(){
     clear();
-    drawGarden(millis()/1000);
     if(canHover){
       const hf = flowerAtMouse();
       if(hf){ showPeek(hf); document.body.style.cursor = 'pointer'; }
-      else {
-        if(peekHref) hidePeek();
-        if(inGardenZone(mouseX, mouseY)){
-          document.body.style.cursor = 'pointer';
-          // faint "ghost" of the flower you would plant
-          const g = color(GARDEN_COLORS[myColor]); g.setAlpha(120);
-          drawFlowerShape(mouseX, mouseY, 18, g, 0);
-        } else {
-          document.body.style.cursor = '';
-        }
-      }
+      else if(peekHref){ hidePeek(); document.body.style.cursor = ''; }
     }
     const t = millis()/1000;
 
@@ -1218,10 +1158,188 @@
     const birdBox = { x1:132, y1:300, x2:248, y2:415 };
     if(mouseX>=birdBox.x1 && mouseX<=birdBox.x2 && mouseY>=birdBox.y1 && mouseY<=birdBox.y2){
       document.getElementById('tree-bird').dispatchEvent(new Event('click'));
-      return;
     }
-    if(inGardenZone(mouseX, mouseY)) plantAt(mouseX);
   }
+</script>
+
+<script>
+  // ============================================================
+  // GROW A FLOWER: visitors pick a flower and plant it in a small,
+  // always-green garden bed. Every flower stays for the next visitor.
+  // Plain canvas drawing (separate from the p5 tree above).
+  // Saved through /api/garden: only the flower type and its spot.
+  // ============================================================
+  (function(){
+    const KINDS = [
+      { name:'daisy' }, { name:'tulip' }, { name:'sunflower' }, { name:'rose' },
+      { name:'lavender' }, { name:'cherry' }, { name:'bluebell' }
+    ];
+    const COOLDOWN_MS = 60*1000;
+    const bed = document.getElementById('flower-bed');
+    const ctx = bed.getContext('2d');
+    const steps = document.getElementById('grow-steps');
+    const countEl = document.getElementById('grow-count');
+    const STEPS_DEFAULT = steps.innerHTML;
+    let flowers = [];        // { x:0-1, y:0-1, c:kind, t, born }
+    let total = 0;
+    let chosen = null;
+    let blades = [];
+    let W = 0, H = 0, DPR = 1;
+
+    // ---------- drawing one flower (base of the stem at bx, by) ----------
+    function stem(c, bx, by, h, sway){
+      c.strokeStyle = '#3f9a52'; c.lineWidth = Math.max(1.5, h*0.06); c.lineCap = 'round';
+      c.beginPath(); c.moveTo(bx, by);
+      c.quadraticCurveTo(bx + sway*0.3, by - h*0.5, bx + sway, by - h); c.stroke();
+      c.fillStyle = '#4fb563';                                   // one leaf
+      c.beginPath(); c.ellipse(bx + h*0.12 + sway*0.2, by - h*0.35, h*0.16, h*0.06, -0.6, 0, Math.PI*2); c.fill();
+      return { x: bx + sway, y: by - h };
+    }
+    function petals(c, x, y, n, len, wid, color, rot){
+      c.fillStyle = color;
+      for(let i=0;i<n;i++){
+        const a = rot + i*Math.PI*2/n;
+        c.beginPath();
+        c.ellipse(x + Math.cos(a)*len*0.55, y + Math.sin(a)*len*0.55, len*0.55, wid, a, 0, Math.PI*2);
+        c.fill();
+      }
+    }
+    function drawKind(c, kind, bx, by, h, sway){
+      const top = stem(c, bx, by, h, sway);
+      const x = top.x, y = top.y, r = h*0.22;
+      switch(kind){
+        case 0: // daisy
+          petals(c, x, y, 12, r*1.1, r*0.22, '#ffffff', 0);
+          c.fillStyle = '#ffd23f'; c.beginPath(); c.arc(x, y, r*0.38, 0, Math.PI*2); c.fill(); break;
+        case 1: // tulip
+          c.fillStyle = '#ff4f7b';
+          c.beginPath(); c.moveTo(x - r*0.8, y - r*0.2);
+          c.quadraticCurveTo(x - r*0.9, y + r*0.9, x, y + r*0.8);
+          c.quadraticCurveTo(x + r*0.9, y + r*0.9, x + r*0.8, y - r*0.2);
+          c.lineTo(x + r*0.4, y - r*0.9); c.lineTo(x, y - r*0.3); c.lineTo(x - r*0.4, y - r*0.9); c.closePath(); c.fill(); break;
+        case 2: // sunflower
+          petals(c, x, y, 14, r*1.25, r*0.3, '#ffcc1f', 0.1);
+          c.fillStyle = '#6b3f1d'; c.beginPath(); c.arc(x, y, r*0.55, 0, Math.PI*2); c.fill(); break;
+        case 3: // rose
+          c.fillStyle = '#e8355a'; c.beginPath(); c.arc(x, y, r*0.85, 0, Math.PI*2); c.fill();
+          c.strokeStyle = '#a3163a'; c.lineWidth = Math.max(1, r*0.12);
+          c.beginPath(); c.arc(x, y, r*0.55, 0.3, 5.2); c.stroke();
+          c.beginPath(); c.arc(x + r*0.08, y, r*0.25, 2.5, 7.5); c.stroke(); break;
+        case 4: // lavender
+          c.fillStyle = '#9a7bf0';
+          for(let i=0;i<7;i++){ c.beginPath(); c.ellipse(x + (i%2? r*0.18 : -r*0.18), y - i*r*0.32 + r*0.6, r*0.22, r*0.16, 0, 0, Math.PI*2); c.fill(); }
+          break;
+        case 5: // cherry blossom
+          petals(c, x, y, 5, r*0.95, r*0.42, '#ffb7d5', -Math.PI/2);
+          c.fillStyle = '#ff6fa8'; c.beginPath(); c.arc(x, y, r*0.22, 0, Math.PI*2); c.fill(); break;
+        case 6: // bluebell
+          c.fillStyle = '#6fa8ff';
+          [[-0.5,0.2],[0.45,0.45],[0,-0.35]].forEach(([dx,dy])=>{
+            c.beginPath(); c.arc(x + dx*r, y + dy*r + r*0.3, r*0.38, Math.PI, 0); c.lineTo(x + dx*r + r*0.38, y + dy*r + r*0.55);
+            c.lineTo(x + dx*r - r*0.38, y + dy*r + r*0.55); c.closePath(); c.fill();
+          }); break;
+      }
+    }
+
+    // ---------- the picker buttons ----------
+    const picker = document.getElementById('grow-picker');
+    KINDS.forEach((k, i)=>{
+      const b = document.createElement('button');
+      b.className = 'seed'; b.type = 'button'; b.setAttribute('aria-label', 'choose ' + k.name);
+      const cv = document.createElement('canvas'); cv.width = 88; cv.height = 104;
+      const c2 = cv.getContext('2d'); drawKind(c2, i, 44, 100, 72, 0);
+      b.appendChild(cv); b.appendChild(document.createTextNode(k.name));
+      b.addEventListener('click', ()=>{
+        chosen = i;
+        picker.querySelectorAll('.seed').forEach(x=>x.classList.remove('chosen'));
+        b.classList.add('chosen'); bed.classList.add('ready');
+        steps.classList.remove('flash');
+        steps.textContent = `now tap the grass to plant your ${k.name}`;
+      });
+      picker.appendChild(b);
+    });
+
+    // ---------- the garden bed ----------
+    function resize(){
+      DPR = window.devicePixelRatio || 1;
+      W = bed.clientWidth; H = bed.clientHeight;
+      bed.width = Math.round(W*DPR); bed.height = Math.round(H*DPR);
+      ctx.setTransform(DPR,0,0,DPR,0,0);
+      blades = [];
+      const n = Math.round(W/3.2);
+      for(let i=0;i<n;i++){
+        blades.push({ x: Math.random()*W, y: H*0.18 + Math.random()*H*0.82, h: 8 + Math.random()*16,
+                      ph: Math.random()*6.28, g: 120 + Math.floor(Math.random()*90) });
+      }
+      blades.sort((a,b)=>a.y-b.y);
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    function place(f){            // spot in the bed (y = 0 back, 1 front)
+      return { x: 14 + f.x*(W-28), y: H*0.28 + f.y*(H*0.66), scale: 0.7 + f.y*0.45 };
+    }
+
+    function frame(now){
+      const t = now/1000;
+      // always-green grass
+      const g = ctx.createLinearGradient(0,0,0,H);
+      g.addColorStop(0,'#2f6b3a'); g.addColorStop(1,'#1f4f2a');
+      ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+      // blades and flowers drawn back-to-front
+      const items = flowers.map(f=>({ f, p: place(f) })).sort((a,b)=>a.p.y-b.p.y);
+      let bi = 0;
+      const drawBladesUntil = (y)=>{
+        for(; bi<blades.length && blades[bi].y <= y; bi++){
+          const b = blades[bi], sw = Math.sin(t*1.2 + b.ph)*2.5;
+          ctx.strokeStyle = `rgb(60,${b.g},80)`; ctx.lineWidth = 1.4;
+          ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.quadraticCurveTo(b.x+sw*0.4, b.y-b.h*0.5, b.x+sw, b.y-b.h); ctx.stroke();
+        }
+      };
+      items.forEach(({f,p}, i)=>{
+        drawBladesUntil(p.y);
+        const grow = Math.min(1, Math.max(0, (t - f.born)/1.2));
+        const ease = 1 - Math.pow(1-grow, 3);
+        const sway = Math.sin(t*1.1 + (f.t%97))*3*p.scale;
+        if(ease > 0) drawKind(ctx, f.c, p.x, p.y, 46*p.scale*ease, sway*ease);
+      });
+      drawBladesUntil(Infinity);
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+
+    // ---------- load everyone's flowers ----------
+    function showCount(){
+      countEl.textContent = total > 0 ? `${total} flower${total===1?'':'s'} grown by visitors` : 'be the first to grow a flower here';
+    }
+    showCount();
+    fetch('/api/garden', { cache:'no-store' }).then(r=>r.json()).then(d=>{
+      flowers = (d.flowers||[]).filter(f=>f.c >= 0 && f.c < KINDS.length)
+        .map((f,i)=>({ x:f.x, y: f.y ?? ((f.t % 1000)/1000), c:f.c, t:f.t, born: performance.now()/1000 + i*0.03 }));
+      total = d.total || flowers.length; showCount();
+    }).catch(()=>{});
+
+    // ---------- plant ----------
+    function say(text, flash){ steps.textContent = text; steps.classList.toggle('flash', !!flash); }
+    bed.addEventListener('click', e=>{
+      if(chosen === null){ say('first choose a flower above ✿', true); return; }
+      let last = 0;
+      try{ last = Number(localStorage.getItem('garden-last')) || 0; }catch(err){}
+      if(Date.now() - last < COOLDOWN_MS){ say('your flower is still growing: you can plant another in a minute', true); return; }
+      const r = bed.getBoundingClientRect();
+      const x = Math.min(1, Math.max(0, (e.clientX - r.left - 14) / (r.width - 28)));
+      const y = Math.min(1, Math.max(0, (e.clientY - r.top - H*0.28) / (H*0.66)));
+      const f = { x, y, c: chosen, t: Date.now(), born: performance.now()/1000 };
+      flowers.push(f); total++; showCount();
+      try{ localStorage.setItem('garden-last', String(Date.now())); }catch(err){}
+      say(`your ${KINDS[chosen].name} is growing ✿ it will stay here for the next visitor`, true);
+      fetch('/api/garden', { method:'POST', headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ x: f.x, y: f.y, c: f.c }) }).catch(()=>{});
+      chosen = null; bed.classList.remove('ready');
+      picker.querySelectorAll('.seed').forEach(x=>x.classList.remove('chosen'));
+      setTimeout(()=>{ steps.classList.remove('flash'); steps.innerHTML = STEPS_DEFAULT; }, 4000);
+    });
+  })();
 </script>
 
 </body>

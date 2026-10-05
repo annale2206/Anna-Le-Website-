@@ -1,15 +1,16 @@
 // api/garden.js
 //
-// The visitor garden on the homepage: every visitor can plant one small
-// flower in the grass under the tree, and it stays there for everyone who
-// comes after. Only a position and a color are stored, no names, no text,
-// no personal data.
+// "grow a flower" on the homepage: every visitor can choose a flower and
+// plant it in the garden bed under the tree, and it stays there for
+// everyone who comes after. Only the flower type and its spot are stored,
+// no names, no text, no personal data.
 //
-//   GET  /api/garden            → { flowers: [{ x, c, s, t }, ...], total }
-//   POST /api/garden {x, c}     → { ok: true, flower }
+//   GET  /api/garden            → { flowers: [{ x, y, c, t }, ...], total }
+//   POST /api/garden {x, y, c}  → { ok: true, flower }
 //
-// x = position along the grass (0 to 1), c = color index (0 to 6),
-// s = size (picked by the server), t = time planted.
+// x = left-right spot in the garden bed (0 to 1), y = back-to-front (0 to 1),
+// c = which flower (0 daisy, 1 tulip, 2 sunflower, 3 rose, 4 lavender,
+// 5 cherry blossom, 6 bluebell), t = time planted.
 //
 // Uses the same Upstash Redis connection as stats.js / log-session.js
 // (KV_REST_API_URL + KV_REST_API_TOKEN, already set in Vercel).
@@ -25,7 +26,7 @@ const redis = new Redis({
 const MAX_SHOWN = 160;        // how many of the newest flowers are drawn
 const MAX_KEPT = 1000;        // older ones are trimmed away
 const COOLDOWN_SECONDS = 60;  // one flower per visitor per minute
-const COLOR_COUNT = 7;
+const COLOR_COUNT = 7;          // number of flower kinds
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -43,9 +44,10 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { x, c } = req.body || {};
-      const xNum = Number(x), cNum = Number(c);
-      if (!(xNum >= 0 && xNum <= 1) || !Number.isInteger(cNum) || cNum < 0 || cNum >= COLOR_COUNT) {
+      const { x, y, c } = req.body || {};
+      const xNum = Number(x), yNum = Number(y), cNum = Number(c);
+      if (!(xNum >= 0 && xNum <= 1) || !(yNum >= 0 && yNum <= 1) ||
+          !Number.isInteger(cNum) || cNum < 0 || cNum >= COLOR_COUNT) {
         return res.status(400).json({ ok: false, error: 'bad flower' });
       }
 
@@ -58,8 +60,8 @@ export default async function handler(req, res) {
 
       const flower = {
         x: Math.round(xNum * 1000) / 1000,
+        y: Math.round(yNum * 1000) / 1000,
         c: cNum,
-        s: 14 + Math.floor(Math.random() * 8),
         t: Date.now(),
       };
       await redis.rpush('garden', JSON.stringify(flower));
