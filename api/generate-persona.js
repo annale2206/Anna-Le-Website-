@@ -17,6 +17,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import Replicate from 'replicate';
+import { hasValidToken } from './_auth.js';
 
 export const config = {
   maxDuration: 30, // only starts the job
@@ -48,6 +49,11 @@ const DEFAULT_STYLE =
   'in a quiet green garden, soft overcast daylight, relaxed natural expression';
 
 export default async function handler(req, res) {
+  // only visitors who entered the access code on the page get a valid pass
+  if (!hasValidToken(req)) {
+    return res.status(401).json({ error: 'locked: enter the access code first' });
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Use POST' });
   }

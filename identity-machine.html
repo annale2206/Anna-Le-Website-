@@ -384,7 +384,9 @@
   /* =====================================================================
      SETTINGS, edit these
      ===================================================================== */
-  const CODE = '2206';
+  // The access code is checked on the server (api/unlock.js), never stored in this page.
+  // A correct code returns a short-lived pass that the AI routes require.
+  let accessToken = null;
   const params = new URLSearchParams(location.search);
   // ?muse=1  → use the real Muse 2 headset. Default is simulated signal.
   let USE_MUSE = params.get('muse') === '1';
@@ -479,7 +481,7 @@
     el.classList.add('active');
   }
   // set SHOW_ERROR_DETAILS to false before exhibiting, so visitors only see the poetic line
-  const SHOW_ERROR_DETAILS = true;
+  const SHOW_ERROR_DETAILS = false;
   function flashError(msg, detail){
     errorText.textContent = msg;
     if(detail && SHOW_ERROR_DETAILS){
@@ -504,8 +506,20 @@
     if(k === 'back'){ entered = entered.slice(0,-1); updateDots(); return; }
     if(entered.length >= 4) return;
     entered += k; updateDots();
-    if(entered.length === 4){
-      if(entered === CODE){ setTimeout(enterMachine, 200); }
+    if(entered.length === 4){ checkCode(entered); }
+  });
+
+  async function checkCode(code){
+    let ok = false;
+    try{
+      const res = await fetch('/api/unlock', {
+        method:'POST', headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ code })
+      });
+      if(res.ok){ const d = await res.json(); if(d.token){ accessToken = d.token; ok = true; } }
+    }catch(e){}
+    {
+      if(ok){ setTimeout(enterMachine, 200); }
       else{
         dotsEl.classList.add('shake');
         dots.forEach(d=>d.classList.add('err'));
@@ -516,7 +530,8 @@
         }, 420);
       }
     }
-  });
+  }
+  const authHeaders = extra => ({ ...(extra || {}), 'x-im-token': accessToken || '' });
 
   /* =====================================================================
      EEG BUFFERS + ANALYSIS (shared by simulated and Muse sources)
@@ -1099,6 +1114,7 @@
     try{ body = (await res.text()).slice(0, 300); }catch(e){}
     if([404,405,501].includes(res.status) || /^\s*<!doctype html/i.test(body)) return res.status + ', the /api route was not found. Are you running the page with Live Server or opening the file? API routes only run on Vercel or with `vercel dev`.';
     if(res.status === 413) return '413: the photo was too large for the server.';
+    if(res.status === 401) return '401: the access pass expired, reload the page and enter the code again.';
     return res.status + ' ' + res.statusText + (body ? ', ' + body : '');
   }
 
@@ -1109,7 +1125,7 @@
       await new Promise(r=>setTimeout(r, 2500));
       if(sid !== session) return { cancelled:true };
       let res;
-      try{ res = await fetch('/api/prediction?id=' + encodeURIComponent(id), { cache:'no-store' }); }
+      try{ res = await fetch('/api/prediction?id=' + encodeURIComponent(id), { cache:'no-store', headers: authHeaders() }); }
       catch(e){ continue; } // brief network hiccup, keep trying
       if(!res.ok){ const why = await describeFailure(res); throw new Error(why); }
       const p = await res.json();
@@ -1131,7 +1147,7 @@
     let res = null;
     try{
       res = await fetch('/api/generate-persona', {
-        method:'POST', headers:{ 'Content-Type':'application/json' },
+        method:'POST', headers: authHeaders({ 'Content-Type':'application/json' }),
         body: JSON.stringify({ image: dataURL, prompt: r.portrait, eeg: { state:r.state, dominant:r.dominant, secondary:r.secondary } })
       });
       if(!res.ok) throw new Error('http');
@@ -1178,7 +1194,7 @@
     let res = null;
     try{
       res = await fetch('/api/generate-video', {
-        method:'POST', headers:{ 'Content-Type':'application/json' },
+        method:'POST', headers: authHeaders({ 'Content-Type':'application/json' }),
         body: JSON.stringify({ image: portraitUrl, prompt: r.motion, eeg: { state:r.state, dominant:r.dominant, secondary:r.secondary } })
       });
       if(!res.ok) throw new Error('http');

@@ -63,26 +63,26 @@
   // Every persona is placed explicitly below in PLACEMENTS — edit the
   // `type`/params on any entry to move it. Filenames must sit in the
   // same folder as this html file:
-  //   persona.png, persona1.png..persona14.png
-  //   boat.png, library.png, playground.png
+  //   persona.webp, persona1.webp..persona14.webp
+  //   boat.webp, library.webp, playground.webp
   // ============================================================
   const PLACEMENTS = [
-    { file:'persona.png',   type:'tree',        tree:0 },              // sitting under the apple tree
-    { file:'persona1.png',  type:'walk' },                              // walking on the grass
-    { file:'persona1.png',  type:'mountain-walk', x:700 },              // also walking along the mountain
-    { file:'persona2.png',  type:'tree', tree:1 },                     // sitting under the second apple tree, left side
-    { file:'persona3.png',  type:'ground', x:520 },                     // standing on the ground
-    { file:'persona4.png',  type:'rainbow-top' },                       // standing on top of the rainbow
-    { file:'persona5.png',  type:'ground', x:1260 },                    // standing
-    { file:'persona6.png',  type:'cloud', seat:0 },
-    { file:'persona7.png',  type:'cloud', seat:1 },
-    { file:'persona8.png',  type:'ocean', x:220 },
-    { file:'persona9.png',  type:'ocean', x:480 },
-    { file:'persona10.png', type:'ocean', x:760 },
-    { file:'persona11.png', type:'ocean', x:1000 },
-    { file:'persona12.png', type:'ocean', x:1230 },
-    { file:'persona13.png', type:'house', win:'left' },
-    { file:'persona14.png', type:'house', win:'right' }
+    { file:'persona.webp',   type:'tree',        tree:0 },              // sitting under the apple tree
+    { file:'persona1.webp',  type:'walk' },                              // walking on the grass
+    { file:'persona1.webp',  type:'mountain-walk', x:700 },              // also walking along the mountain
+    { file:'persona2.webp',  type:'tree', tree:1 },                     // sitting under the second apple tree, left side
+    { file:'persona3.webp',  type:'ground', x:520 },                     // standing on the ground
+    { file:'persona4.webp',  type:'rainbow-top' },                       // standing on top of the rainbow
+    { file:'persona5.webp',  type:'ground', x:1260 },                    // standing
+    { file:'persona6.webp',  type:'cloud', seat:0 },
+    { file:'persona7.webp',  type:'cloud', seat:1 },
+    { file:'persona8.webp',  type:'ocean', x:220 },
+    { file:'persona9.webp',  type:'ocean', x:480 },
+    { file:'persona10.webp', type:'ocean', x:760 },
+    { file:'persona11.webp', type:'ocean', x:1000 },
+    { file:'persona12.webp', type:'ocean', x:1230 },
+    { file:'persona13.webp', type:'house', win:'left' },
+    { file:'persona14.webp', type:'house', win:'right' }
   ];
 
   const PALETTE = ['#ff3d9a','#ff9f4d','#7fd4ff','#8a5cf6','#43e0c9','#ffd23f','#9dff9e'];
@@ -137,9 +137,9 @@
     for(const p of PLACEMENTS){
       p.img = loadImage(p.file, ()=>{}, ()=>{});
     }
-    boatImg       = loadImage('boat.png', ()=>{}, ()=>{});
-    libraryImg    = loadImage('library.png', ()=>{}, ()=>{});
-    playgroundImg = loadImage('playground.png', ()=>{}, ()=>{});
+    boatImg       = loadImage('boat.webp', ()=>{}, ()=>{});
+    libraryImg    = loadImage('library.webp', ()=>{}, ()=>{});
+    playgroundImg = loadImage('playground.webp', ()=>{}, ()=>{});
   }
 
   function rainbowPoint(t, r){

@@ -92,15 +92,6 @@
   }
   .status-line.error{ color:var(--pink); }
 
-  .setup-note{
-    max-width:900px; margin:0 auto 60px;
-    border:2px dashed var(--orange);
-    padding:20px 24px;
-    font-family:var(--mono); font-size:.85rem; color:#dfeee1;
-    line-height:1.7;
-  }
-  .setup-note strong{ color:var(--orange); }
-  .setup-note code{ background:#0d1319; padding:2px 6px; border-radius:3px; color:var(--sky); }
 </style>
 </head>
 <body data-petals="6">
@@ -171,20 +162,6 @@
 
   <div class="status-line" id="status-line"></div>
 
-  <div class="setup-note">
-    <strong>note for Anna, not visitors:</strong> this page now uses fal's
-    <code>realtime</code> WebSocket mode via <code>fal.realtime.connect()</code>
-    instead of a plain REST call per stroke: a persistent connection opens
-    on the first stroke and stays warm, so there's no per-request cold
-    start or Vercel function timeout to fight anymore. Requests to
-    <code>/api/fal/proxy</code> are how the browser authenticates without
-    exposing <code>FAL_KEY</code>, that file must exist at
-    <code>api/fal/proxy.js</code> in the project (separate from the older
-    <code>api/generate-draw.js</code>, which is no longer used by this page
-    but left in place). Feedback frames are still sent at a fixed 512x512
-    JPEG to keep each message small. <code>FAL_KEY</code> must be set as a
-    Vercel environment variable, same as before.
-  </div>
 
 </main>
 
@@ -198,10 +175,10 @@
   });
 
   const PERSONA_IMAGES = [
-    'persona1.png','persona2.png','persona3.png','persona4.png',
-    'persona5.png','persona6.png','persona7.png','persona8.png',
-    'persona9.png','persona10.png','persona11.png','persona12.png',
-    'persona13.png','persona14.png'
+    'persona1.webp','persona2.webp','persona3.webp','persona4.webp',
+    'persona5.webp','persona6.webp','persona7.webp','persona8.webp',
+    'persona9.webp','persona10.webp','persona11.webp','persona12.webp',
+    'persona13.webp','persona14.webp'
   ];
   const PERSONA_STYLES = [
     'warm golden tones', 'cool blue undertones', 'high contrast dramatic',

@@ -8,10 +8,16 @@
 //   output is a single URL string (first image for InstantID, the video for Kling)
 
 import Replicate from 'replicate';
+import { hasValidToken } from './_auth.js';
 
 export const config = { maxDuration: 15 };
 
 export default async function handler(req, res) {
+  // only visitors who entered the access code on the page get a valid pass
+  if (!hasValidToken(req)) {
+    return res.status(401).json({ error: 'locked: enter the access code first' });
+  }
+
   const id = req.query && req.query.id;
   if (!id || !/^[a-z0-9]+$/i.test(id)) {
     return res.status(400).json({ error: 'Missing or invalid id' });
