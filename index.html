@@ -1098,35 +1098,167 @@
                 c.lineTo(x+dx*r+r*0.38, y+dy*r+r*0.55); c.lineTo(x+dx*r-r*0.38, y+dy*r+r*0.55); c.closePath(); c.fill(); }); break;
     }
   }
+  // ---------- nicer leaves and fruits (shared by the tree links and visitor items) ----------
+  // Every shape hangs from its attach point (0,0) and is about `s` tall.
+  function shade(hex, amt){                  // lighten (+) or darken (-) a #rrggbb color
+    const n = parseInt(hex.slice(1), 16);
+    const f = v => Math.max(0, Math.min(255, Math.round(v + amt*255)));
+    return `rgb(${f(n>>16)},${f((n>>8)&255)},${f(n&255)})`;
+  }
+  function gloss(c, x, y, rx, ry){           // soft white highlight
+    const g = c.createRadialGradient(x, y, 0, x, y, Math.max(rx, ry));
+    g.addColorStop(0, 'rgba(255,255,255,.75)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = g; c.beginPath(); c.ellipse(x, y, rx, ry, -0.5, 0, Math.PI*2); c.fill();
+  }
+  function leafFill(c, base, cx, cy, r){
+    const g = c.createRadialGradient(cx - r*0.25, cy - r*0.2, r*0.05, cx, cy, r*1.1);
+    g.addColorStop(0, shade(base, 0.16)); g.addColorStop(0.6, base); g.addColorStop(1, shade(base, -0.18));
+    return g;
+  }
+  function stemLine(c, x1, y1, x2, y2, w, col){
+    c.strokeStyle = col || '#6b4a2b'; c.lineWidth = w; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(x1, y1); c.quadraticCurveTo((x1+x2)/2 + w, (y1+y2)/2, x2, y2); c.stroke();
+  }
+
+  // kind: 0 oak, 1 maple, 2 birch, 3 linden
+  function drawLeafArt(c, kind, s, base){
+    const L = s*0.82, top = s*0.16;          // blade length, where the blade starts
+    stemLine(c, 0, 0, 0, top + s*0.02, Math.max(1.2, s*0.035), shade(base, -0.3));
+    c.save(); c.translate(0, top);
+    c.beginPath();
+    if(kind === 0){                          // oak: a center blade with rounded side lobes
+      c.ellipse(0, L*0.52, s*0.17, L*0.5, 0, 0, Math.PI*2);
+      const lobes = [[0.28,0.2,0.13],[0.5,0.27,0.15],[0.72,0.24,0.13]];
+      for(const [ty, ox, rr] of lobes){
+        for(const side of [1,-1]){ c.moveTo(side*s*ox + s*rr, L*ty); c.ellipse(side*s*ox, L*ty, s*rr, s*rr*0.82, side*0.5, 0, Math.PI*2); }
+      }
+      c.moveTo(s*0.12, L*0.9); c.ellipse(0, L*0.9, s*0.12, s*0.1, 0, 0, Math.PI*2);
+    } else if(kind === 1){                   // maple: five pointed lobes, the longest pointing away from the stem
+      const cy = L*0.5, R = L*0.5;
+      // polar points: angle 0 = straight down (away from stem); r = fraction of R
+      const pts = [[-180,0.3],[-160,0.55],[-150,0.78],[-138,0.6],[-122,0.92],[-108,0.66],[-88,0.6],[-70,0.98],[-58,0.74],
+                   [-42,0.62],[-26,0.8],[-12,0.7],[0,1.08],[12,0.7],[26,0.8],[42,0.62],[58,0.74],[70,0.98],[88,0.6],
+                   [108,0.66],[122,0.92],[138,0.6],[150,0.78],[160,0.55],[180,0.3]];
+      pts.forEach(([deg, k], i)=>{
+        const a = deg*Math.PI/180;
+        const x = Math.sin(a)*R*k, y = cy + Math.cos(a)*R*k;
+        i ? c.lineTo(x, y) : c.moveTo(x, y);
+      });
+      c.closePath();
+      c.moveTo(0,0);
+    } else if(kind === 2){                   // birch: oval with fine teeth
+      const steps = 22;
+      const edge = (t, side)=>{ const y = L*t; const w = s*0.34*Math.sin(Math.PI*Math.pow(t,0.85)); const tooth = (Math.floor(t*steps)%2 ? 0.92 : 1.0); return [side*w*tooth, y]; };
+      c.moveTo(0, 0);
+      for(let i=1;i<=steps;i++){ const [x,y] = edge(i/steps, 1); c.lineTo(x, y); }
+      for(let i=steps-1;i>=0;i--){ const [x,y] = edge(i/steps, -1); c.lineTo(x, y); }
+    } else {                                 // linden: heart shape with a pointed tip
+      c.moveTo(0, L*0.12);
+      c.bezierCurveTo(-s*0.18, -L*0.08, -s*0.5, L*0.05, -s*0.44, L*0.4);
+      c.bezierCurveTo(-s*0.38, L*0.72, -s*0.12, L*0.86, 0, L);
+      c.bezierCurveTo(s*0.12, L*0.86, s*0.38, L*0.72, s*0.44, L*0.4);
+      c.bezierCurveTo(s*0.5, L*0.05, s*0.18, -L*0.08, 0, L*0.12);
+    }
+    c.fillStyle = leafFill(c, base, 0, L*0.45, s*0.5);
+    c.fill();
+    if(kind !== 0){ c.strokeStyle = shade(base, -0.22); c.lineWidth = Math.max(0.6, s*0.012); c.stroke(); }
+    // veins
+    c.strokeStyle = shade(base, 0.22); c.lineWidth = Math.max(0.7, s*0.022); c.lineCap = 'round';
+    c.beginPath();
+    if(kind === 1){
+      const cy = L*0.5, R = L*0.5;
+      c.moveTo(0, 0); c.lineTo(0, cy - R*0.1);
+      for(const deg of [0, -60, 60, -110, 110]){ const a = deg*Math.PI/180; c.moveTo(0, cy - R*0.1); c.lineTo(Math.sin(a)*R*0.85, cy + Math.cos(a)*R*0.85); }
+    } else {
+      c.moveTo(0, 0); c.lineTo(0, L*0.92);
+      for(let i=1;i<=4;i++){ const y = L*(0.12 + i*0.17); const w = s*0.22*Math.sin(Math.PI*Math.min(1, y/L+0.05));
+        c.moveTo(0, y); c.lineTo(-w, y - L*0.1); c.moveTo(0, y); c.lineTo(w, y - L*0.1); }
+    }
+    c.stroke();
+    c.restore();
+  }
+
+  // kind: 0 cherries, 1 apple, 2 pear, 3 persimmon
+  function drawFruitArt(c, kind, s){
+    const smallLeaf = (x, y, len, rot)=>{
+      c.save(); c.translate(x, y); c.rotate(rot);
+      c.fillStyle = leafFill(c, '#4caf5a', len*0.5, 0, len*0.5);
+      c.beginPath(); c.moveTo(0,0); c.quadraticCurveTo(len*0.5, -len*0.32, len, 0); c.quadraticCurveTo(len*0.5, len*0.32, 0, 0); c.fill();
+      c.strokeStyle = 'rgba(255,255,255,.45)'; c.lineWidth = Math.max(0.6, len*0.04);
+      c.beginPath(); c.moveTo(len*0.08, 0); c.lineTo(len*0.85, 0); c.stroke();
+      c.restore();
+    };
+    const ball = (x, y, r, col)=>{
+      const g = c.createRadialGradient(x - r*0.35, y - r*0.35, r*0.1, x, y, r);
+      g.addColorStop(0, shade(col, 0.22)); g.addColorStop(0.7, col); g.addColorStop(1, shade(col, -0.25));
+      c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, Math.PI*2); c.fill();
+    };
+    if(kind === 0){                          // cherries
+      const r = s*0.2;
+      stemLine(c, 0, 0, -s*0.24, s*0.62, Math.max(1, s*0.03), '#5d7a2e');
+      stemLine(c, 0, 0,  s*0.22, s*0.68, Math.max(1, s*0.03), '#5d7a2e');
+      smallLeaf(0, s*0.02, s*0.34, -0.35);
+      ball(-s*0.24, s*0.72, r, '#b80f2a'); ball(s*0.22, s*0.78, r, '#cc1636');
+      gloss(c, -s*0.3, s*0.65, r*0.3, r*0.18); gloss(c, s*0.16, s*0.71, r*0.3, r*0.18);
+    } else if(kind === 1){                   // apple
+      const r = s*0.36, cy = s*0.58;
+      stemLine(c, 0, 0, s*0.02, cy - r*0.78, Math.max(1.4, s*0.045));
+      smallLeaf(s*0.03, s*0.1, s*0.3, -0.5);
+      const g = c.createRadialGradient(-r*0.35, cy - r*0.35, r*0.1, 0, cy, r*1.15);
+      g.addColorStop(0, '#ff6b6b'); g.addColorStop(0.55, '#d6283e'); g.addColorStop(1, '#8e1426');
+      c.fillStyle = g; c.beginPath();
+      c.moveTo(0, cy - r*0.7);
+      c.bezierCurveTo(r*0.55, cy - r*1.15, r*1.2, cy - r*0.55, r*0.95, cy + r*0.3);
+      c.bezierCurveTo(r*0.8, cy + r*0.95, r*0.3, cy + r*1.0, 0, cy + r*0.85);
+      c.bezierCurveTo(-r*0.3, cy + r*1.0, -r*0.8, cy + r*0.95, -r*0.95, cy + r*0.3);
+      c.bezierCurveTo(-r*1.2, cy - r*0.55, -r*0.55, cy - r*1.15, 0, cy - r*0.7);
+      c.fill();
+      gloss(c, -r*0.42, cy - r*0.3, r*0.22, r*0.32);
+    } else if(kind === 2){                   // pear
+      const cy = s*0.25;
+      stemLine(c, 0, 0, -s*0.02, cy, Math.max(1.4, s*0.045));
+      smallLeaf(-s*0.02, s*0.08, s*0.28, -2.6);
+      const g = c.createLinearGradient(-s*0.35, 0, s*0.35, 0);
+      g.addColorStop(0, '#e6ec8a'); g.addColorStop(0.55, '#c3d24a'); g.addColorStop(1, '#8fa22e');
+      c.fillStyle = g; c.beginPath();
+      c.moveTo(0, cy);
+      c.bezierCurveTo(s*0.16, cy, s*0.17, s*0.42, s*0.3, s*0.6);
+      c.bezierCurveTo(s*0.45, s*0.82, s*0.32, s*1.0, 0, s*1.0);
+      c.bezierCurveTo(-s*0.32, s*1.0, -s*0.45, s*0.82, -s*0.3, s*0.6);
+      c.bezierCurveTo(-s*0.17, s*0.42, -s*0.16, cy, 0, cy);
+      c.fill();
+      c.fillStyle = 'rgba(230,110,60,.28)'; c.beginPath(); c.ellipse(s*0.12, s*0.72, s*0.16, s*0.2, 0, 0, Math.PI*2); c.fill();
+      c.fillStyle = 'rgba(90,80,20,.35)';
+      for(const [dx,dy] of [[-.12,.6],[.05,.8],[-.2,.82],[.16,.62],[-.05,.92],[.2,.88]]){ c.beginPath(); c.arc(s*dx, s*dy, Math.max(0.5, s*0.012), 0, Math.PI*2); c.fill(); }
+      gloss(c, -s*0.16, s*0.66, s*0.06, s*0.12);
+    } else {                                 // persimmon
+      const r = s*0.38, cy = s*0.6;
+      stemLine(c, 0, 0, 0, cy - r*0.75, Math.max(1.4, s*0.045));
+      const g = c.createRadialGradient(-r*0.3, cy - r*0.3, r*0.1, 0, cy, r*1.15);
+      g.addColorStop(0, '#ffb04d'); g.addColorStop(0.6, '#f27a12'); g.addColorStop(1, '#b8500a');
+      c.fillStyle = g; c.beginPath(); c.ellipse(0, cy, r*1.05, r*0.85, 0, 0, Math.PI*2); c.fill();
+      // four-leaf calyx on top
+      c.fillStyle = '#5b7a2c';
+      for(let i=0;i<4;i++){
+        const a = i*Math.PI/2 + Math.PI/4;
+        c.save(); c.translate(0, cy - r*0.72); c.scale(1, 0.45); c.rotate(a);
+        c.beginPath(); c.ellipse(r*0.32, 0, r*0.34, r*0.16, 0, 0, Math.PI*2); c.fill();
+        c.restore();
+      }
+      c.fillStyle = '#3f5a1d'; c.beginPath(); c.arc(0, cy - r*0.72, r*0.1, 0, Math.PI*2); c.fill();
+      gloss(c, -r*0.45, cy - r*0.15, r*0.2, r*0.28);
+    }
+  }
+
+  const LEAF_GREENS = ['#3f9a52','#2fbf5f','#5fae6a','#4fb563'];
   function drawSummer(c, k, x, y, s, sway){                   // leaf hanging from (x, y)
-    c.save(); c.translate(x, y); c.rotate(0.5 + sway*0.05);
-    c.strokeStyle = '#2f6b3a'; c.lineWidth = Math.max(1, s*0.06);
-    c.beginPath(); c.moveTo(0,0); c.lineTo(0, s*0.25); c.stroke();
-    c.translate(0, s*0.25);
-    const greens = ['#3f9a52','#2fbf5f','#5fae6a','#4fb563'];
-    const g = greens[k];
-    if(k === 0){ ell(c,0,s*0.45,s*0.28,s*0.45,0,g); }
-    else if(k === 1){ for(const a of [-0.9,0,0.9]) ell(c, Math.sin(a)*s*0.28, s*0.4-Math.cos(a)*s*0.05, s*0.18, s*0.38, a, g); }
-    else if(k === 2){ circ(c,0,s*0.38,s*0.34,g); }
-    else { c.fillStyle=g; c.beginPath(); c.moveTo(0,s*0.85);
-           c.bezierCurveTo(-s*0.6,s*0.45,-s*0.3,-s*0.05,0,s*0.22); c.bezierCurveTo(s*0.3,-s*0.05,s*0.6,s*0.45,0,s*0.85); c.fill(); }
-    c.strokeStyle = 'rgba(20,60,30,.6)'; c.lineWidth = Math.max(0.8, s*0.03);
-    c.beginPath(); c.moveTo(0, s*0.05); c.lineTo(0, s*0.75); c.stroke();
+    c.save(); c.translate(x, y); c.rotate(0.35 + sway*0.05);
+    drawLeafArt(c, k, s, LEAF_GREENS[k]);
     c.restore();
   }
   function drawFall(c, k, x, y, s, sway){                     // fruit hanging from (x, y)
     c.save(); c.translate(x, y); c.rotate(sway*0.04);
-    c.strokeStyle = '#6b4a2b'; c.lineWidth = Math.max(1, s*0.06); c.lineCap = 'round';
-    if(k === 0){
-      c.beginPath(); c.moveTo(0,0); c.quadraticCurveTo(-s*0.2,s*0.3,-s*0.28,s*0.6); c.moveTo(0,0); c.quadraticCurveTo(s*0.2,s*0.3,s*0.26,s*0.62); c.stroke();
-      circ(c,-s*0.28,s*0.72,s*0.17,'#c8102e'); circ(c,s*0.26,s*0.74,s*0.17,'#d41e3a');
-      circ(c,-s*0.32,s*0.67,s*0.05,'rgba(255,255,255,.6)');
-    } else {
-      c.beginPath(); c.moveTo(0,0); c.lineTo(0,s*0.22); c.stroke();
-      if(k === 1){ circ(c,0,s*0.55,s*0.33,'#d6283e'); circ(c,-s*0.1,s*0.45,s*0.07,'rgba(255,255,255,.45)'); ell(c,s*0.12,s*0.2,s*0.12,s*0.05,-0.5,'#4fb563'); }
-      if(k === 2){ circ(c,0,s*0.38,s*0.18,'#c9d65a'); circ(c,0,s*0.62,s*0.29,'#c9d65a'); circ(c,-s*0.08,s*0.55,s*0.06,'rgba(255,255,255,.4)'); }
-      if(k === 3){ ell(c,0,s*0.55,s*0.33,s*0.28,0,'#f28a1e'); ell(c,0,s*0.3,s*0.18,s*0.06,0,'#4f8a3a'); }
-    }
+    drawFruitArt(c, k, s);
     c.restore();
   }
   function drawWinter(c, k, bx, by, s){                       // snow standing on (bx, by)
@@ -1141,8 +1273,8 @@
   }
   function drawPlayItem(c, s, k, x, y, size, sway){
     if(s === 0) drawSpring(c, k, x, y, size, sway);
-    else if(s === 1) drawSummer(c, k, x, y, size*0.75, sway);
-    else if(s === 2) drawFall(c, k, x, y, size*0.75, sway);
+    else if(s === 1) drawSummer(c, k, x, y, size*0.95, sway);
+    else if(s === 2) drawFall(c, k, x, y, size*0.95, sway);
     else drawWinter(c, k, x, y, size);
   }
 
@@ -1159,7 +1291,8 @@
       const cv = document.createElement('canvas'); cv.width = 88; cv.height = 104;
       const c2 = cv.getContext('2d');
       if(P.where === 'ground') drawPlayItem(c2, P.i, k, 44, 98, P.i === 3 ? 80 : 72, 0);
-      else drawPlayItem(c2, P.i, k, 44, 14, 96, 0);
+      else if(P.i === 1) drawPlayItem(c2, P.i, k, 54, 4, 86, 0);
+      else drawPlayItem(c2, P.i, k, 44, 4, 98, 0);
       b.appendChild(cv); b.appendChild(document.createTextNode(name));
       b.addEventListener('click', ()=>{
         chosenItem = k;
@@ -1288,34 +1421,14 @@
     const c = drawingContext, r = size/2;
     c.save(); c.translate(x, y); c.rotate(rotDeg*Math.PI/180);
     if(season === 'summer'){
-      // a green leaf with a vein
-      const g = LINK_GREENS[i % 4];
-      c.rotate(-0.6);
-      c.fillStyle = g;
-      c.beginPath(); c.moveTo(0, r*1.05);
-      c.bezierCurveTo(-r*0.85, r*0.4, -r*0.7, -r*0.7, 0, -r*1.05);
-      c.bezierCurveTo(r*0.7, -r*0.7, r*0.85, r*0.4, 0, r*1.05); c.fill();
-      c.strokeStyle = 'rgba(15,60,25,.55)'; c.lineWidth = Math.max(1, r*0.07); c.lineCap = 'round';
-      c.beginPath(); c.moveTo(0, r*1.05); c.lineTo(0, -r*0.85);
-      for(const k of [0.45, 0.05, -0.35]){ c.moveTo(0, r*k); c.lineTo(-r*0.38, r*(k-0.25)); c.moveTo(0, r*k); c.lineTo(r*0.38, r*(k-0.25)); }
-      c.stroke();
+      // a green leaf (oak, maple, birch or linden), centered on the link
+      c.rotate(-0.5 + (i % 3)*0.35);
+      c.translate(0, -size*0.55);
+      drawLeafArt(c, i % 4, size*1.1, LINK_GREENS[i % 4]);
     } else if(season === 'fall'){
-      // a fruit: cherries, apple, pear or persimmon
-      const kind = i % 4;
-      c.strokeStyle = '#6b4a2b'; c.lineWidth = Math.max(1.2, r*0.09); c.lineCap = 'round';
-      const dot = (px,py,pr,col)=>{ c.fillStyle = col; c.beginPath(); c.arc(px,py,pr,0,Math.PI*2); c.fill(); };
-      if(kind === 0){
-        c.beginPath(); c.moveTo(0,-r*0.9); c.quadraticCurveTo(-r*0.3,-r*0.3,-r*0.42,r*0.2); c.moveTo(0,-r*0.9); c.quadraticCurveTo(r*0.3,-r*0.3,r*0.4,r*0.25); c.stroke();
-        dot(-r*0.42, r*0.45, r*0.38, '#c8102e'); dot(r*0.4, r*0.5, r*0.38, '#d41e3a');
-        dot(-r*0.52, r*0.33, r*0.1, 'rgba(255,255,255,.6)');
-      } else {
-        c.beginPath(); c.moveTo(0,-r*0.55); c.lineTo(0,-r*0.95); c.stroke();
-        if(kind === 1){ dot(0, r*0.1, r*0.72, '#d6283e'); dot(-r*0.25, -r*0.12, r*0.15, 'rgba(255,255,255,.45)'); }
-        if(kind === 2){ dot(0, -r*0.25, r*0.38, '#c9d65a'); dot(0, r*0.3, r*0.62, '#c9d65a'); dot(-r*0.2, r*0.12, r*0.12, 'rgba(255,255,255,.4)'); }
-        if(kind === 3){ c.fillStyle = '#f28a1e'; c.beginPath(); c.ellipse(0, r*0.15, r*0.75, r*0.62, 0, 0, Math.PI*2); c.fill();
-                        c.fillStyle = '#4f8a3a'; c.beginPath(); c.ellipse(0, -r*0.45, r*0.42, r*0.13, 0, 0, Math.PI*2); c.fill(); }
-        c.fillStyle = '#4fb563'; c.beginPath(); c.ellipse(r*0.28, -r*0.8, r*0.3, r*0.12, -0.5, 0, Math.PI*2); c.fill();
-      }
+      // a fruit (cherries, apple, pear or persimmon), centered on the link
+      c.translate(0, -size*0.6);
+      drawFruitArt(c, i % 4, size*1.15);
     } else {
       // a snowflake with six branched arms
       c.rotate(millis()/9000);
