@@ -12,7 +12,7 @@
 //   POST /api/garden {s, c, x, y}   → { ok: true, flower, fresh }
 //
 // s = season (0 spring, 1 summer, 2 fall, 3 winter)
-// c = which item in that season (spring 0-6, summer 0-3, fall 0-3, winter 0-2)
+// c = which item in that season (spring 0-6, summer 0-3, fall 0-15, winter 0-2)
 // x, y = spot on the tree drawing (0 to 1), t = time added.
 //
 // Uses the same Upstash Redis connection as stats.js / log-session.js
@@ -27,7 +27,7 @@ const redis = new Redis({
 });
 
 const LIMIT = 50;                         // items per season before it starts fresh
-const ITEMS_PER_SEASON = [7, 4, 4, 3];
+const ITEMS_PER_SEASON = [7, 4, 16, 3];   // spring flowers, summer leaves, fall fruits, winter snow
 const key = s => `garden:${s}`;
 
 export default async function handler(req, res) {
