@@ -228,7 +228,6 @@
   }
   .play-title{ font-family:var(--display); font-size:1rem; color:var(--green); letter-spacing:.04em; margin:0; }
   .play-steps{ font-family:var(--mono); font-size:1.1rem; color:var(--green-dim); text-align:center; min-height:1.3em; transition:color .3s ease; }
-  .play-steps.flash{ color:var(--pink); }
   .play-picker{ display:flex; flex-wrap:wrap; justify-content:center; gap:8px; }
   .seed{
     display:flex; flex-direction:column; align-items:center; gap:2px;
@@ -1152,7 +1151,7 @@
     const P = PLAY[seasonName];
     chosenItem = null;
     document.getElementById('play-title').textContent = P.title;
-    playSteps.classList.remove('flash'); playSteps.textContent = P.verb;
+    playSteps.textContent = P.verb;
     playPicker.innerHTML = '';
     P.items.forEach((name, k)=>{
       const b = document.createElement('button');
@@ -1166,7 +1165,6 @@
         chosenItem = k;
         playPicker.querySelectorAll('.seed').forEach(x=>x.classList.remove('chosen'));
         b.classList.add('chosen');
-        playSteps.classList.remove('flash');
         playSteps.textContent = P.where === 'ground'
           ? `now tap the ground under the tree to place your ${name}`
           : `now tap a branch of the tree to add your ${name}`;
@@ -1182,7 +1180,6 @@
     document.getElementById('play-count').textContent =
       n ? `${n} / ${PLAY_LIMIT} ${what} on the tree this ${seasonName}` : `be the first to add something this ${seasonName}`;
   }
-  function sayPlay(text, flash){ playSteps.textContent = text; playSteps.classList.toggle('flash', !!flash); }
 
   fetch('/api/garden', { cache:'no-store' }).then(r=>r.json()).then(d=>{
     playItems = (d.flowers || []).filter(it=>Number.isInteger(it.s) && it.s>=0 && it.s<4)
@@ -1193,10 +1190,7 @@
   function tryPlace(mx, my){
     const seasonName = p5Season().name, P = PLAY[seasonName];
     if(!inZone(P.where, mx, my)) return false;
-    if(chosenItem === null){
-      sayPlay(`first choose ${P.where === 'ground' ? 'what to place' : 'what to add'} below ✿`, true);
-      return true;
-    }
+    if(chosenItem === null) return true;          // nothing chosen yet: do nothing
     // the 51st item clears the season and starts a fresh tree
     let fresh = false;
     if(playItems.filter(it=>it.s === P.i).length >= PLAY_LIMIT){
@@ -1205,7 +1199,6 @@
     }
     const item = { s:P.i, c:chosenItem, x: mx/1200, y: my/800, t: Date.now(), born: millis()/1000 };
     playItems.push(item);
-    sayPlay(fresh ? `the tree was full, so it starts fresh with your ${P.items[chosenItem]} ✿` : P.done(P.items[chosenItem]), true);
     fetch('/api/garden', { method:'POST', headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({ s:item.s, c:item.c, x:item.x, y:item.y }) }).catch(()=>{});
     updatePlayCount(seasonName);
