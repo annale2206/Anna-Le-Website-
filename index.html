@@ -261,22 +261,6 @@
   .text-menu a{ color:#7f9a8c; text-decoration:none; }
   .text-menu a:hover, .text-menu a:focus-visible{ color:var(--green); text-decoration:underline; outline:none; }
 
-  /* ---- page transition: the clicked flower blooms over the screen ---- */
-  .bloom-out{
-    position:fixed; inset:0; z-index:60; pointer-events:none;
-    clip-path:circle(0px at var(--x) var(--y));
-    transition:clip-path .65s cubic-bezier(.7,0,.3,1);
-  }
-  .bloom-out.go{ clip-path:circle(150vmax at var(--x) var(--y)); }
-  .bloom-out .bloom-name{
-    position:absolute; left:0; right:0; top:50%; transform:translateY(-50%);
-    text-align:center; font-family:var(--mono); font-size:2.2rem; color:var(--bg);
-    opacity:0; transition:opacity .3s ease .35s;
-  }
-  .bloom-out.go .bloom-name{ opacity:1; }
-  @media (prefers-reduced-motion: reduce){
-    .bloom-out{ transition:none; }
-  }
 
 
   /* ---- season-specific behavior, driven by a class on <body> ---- */
@@ -624,7 +608,6 @@
   <div class="peek-sub" id="peek-sub"></div>
   <div class="peek-bar" id="peek-bar"></div>
 </div>
-<div class="bloom-out" id="bloom-out"><div class="bloom-name" id="bloom-name"></div></div>
 
 <!-- background music -->
 <audio id="bg-music" loop></audio>
@@ -1048,21 +1031,9 @@
     peekEl.style.transform = `translate(${x}px, ${y}px)`;
   });
 
-  // ---- click: the flower blooms over the screen in its color, then the page opens ----
-  let leaving = false;
-  function bloomTo(f, clientX, clientY){
-    if(leaving) return;
-    leaving = true;
-    hidePeek();
-    const layer = document.getElementById('bloom-out');
-    layer.style.background = flowerColor(f);
-    layer.style.setProperty('--x', clientX + 'px');
-    layer.style.setProperty('--y', clientY + 'px');
-    document.getElementById('bloom-name').textContent = (PREVIEWS[f.href] || {}).title || '';
-    requestAnimationFrame(()=> requestAnimationFrame(()=> layer.classList.add('go')));
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    setTimeout(()=>{ window.location.href = f.href; }, reduce ? 0 : 700);
-  }
+  // ---- click: open the page ----
+  function bloomTo(f){ hidePeek(); window.location.href = f.href; }
+
   // ============================================================
   // SEASONAL PLAY: each season visitors add one thing to the tree,
   // and it comes back every time that season returns.
@@ -1395,11 +1366,6 @@
     }
   }
 
-  // coming back with the Back button: clear the color layer
-  window.addEventListener('pageshow', ()=>{
-    leaving = false;
-    document.getElementById('bloom-out').classList.remove('go');
-  });
 
   // on phones the whole tree is only ~350px wide, so flowers are drawn
   // bigger and are easier to tap
