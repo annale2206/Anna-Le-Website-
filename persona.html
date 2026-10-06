@@ -503,12 +503,14 @@
   renderWorks();
 
   // ---------------- 3. new arrivals (live from OpenAlex) ----------------
+  // each search only looks in titles and abstracts (not full text), so papers that
+  // merely mention a word somewhere inside are left out
   const FEEDS = [
-    { label:'online persona',               q:'"online persona"' },
-    { label:'self-presentation online',     q:'self-presentation social media' },
-    { label:'influencers & microcelebrity', q:'influencer microcelebrity authenticity' },
-    { label:'algorithmic identity',         q:'algorithmic identity' },
-    { label:'AI & the generated self',      q:'generative AI self-representation identity' },
+    { label:'online persona',               q:'"online persona" OR "digital persona" OR "social media persona"' },
+    { label:'self-presentation online',     q:'"self-presentation" AND ("social media" OR online OR Instagram OR TikTok)' },
+    { label:'influencers & microcelebrity', q:'(influencer OR influencers OR microcelebrity) AND (authenticity OR persona OR "self-branding")' },
+    { label:'algorithmic identity',         q:'"algorithmic identity" OR "algorithmic self" OR "datafied self"' },
+    { label:'AI & the generated self',      q:'("generative AI" OR "AI-generated" OR avatar) AND (identity OR "self-representation" OR persona)' },
   ];
   const feedEl = document.getElementById('feed'), statusEl = document.getElementById('feed-status');
   const chips = document.getElementById('thread-chips');
@@ -549,16 +551,20 @@
     }catch(e){}
     statusEl.textContent = 'searching new research...'; feedEl.innerHTML = '';
     const since = new Date(Date.now() - 365*24*3600*1000).toISOString().slice(0,10);
-    const url = 'https://api.openalex.org/works?search=' + encodeURIComponent(th.q) +
-      '&filter=from_publication_date:' + since + ',type:article|book-chapter|book' +
-      '&sort=publication_date:desc&per_page=10' +
+    const base = 'https://api.openalex.org/works?sort=publication_date:desc&per_page=25' +
       '&select=id,doi,title,display_name,publication_date,publication_year,authorships,primary_location,cited_by_count';
+    const dates = 'from_publication_date:' + since + ',type:article|book-chapter|book';
+    const strict = base + '&filter=' + dates + ',title_and_abstract.search:' + encodeURIComponent(th.q);
+    const loose  = base + '&filter=' + dates + '&search=' + encodeURIComponent(th.q);
     try{
-      const res = await fetch(url);
+      let res = await fetch(strict);
+      if(res.status === 400) res = await fetch(loose);   // fallback if the strict search is not accepted
       if(!res.ok) throw new Error(res.status);
       const d = await res.json();
       if(current !== i) return;
-      const items = d.results || [], total = (d.meta && d.meta.count) || items.length;
+      // leave out records with no authors or no title (often whole journal issues)
+      const items = (d.results || []).filter(w => (w.title || w.display_name) && (w.authorships || []).length).slice(0, 10);
+      const total = (d.meta && d.meta.count) || items.length;
       renderFeed(items);
       statusEl.textContent = `${total.toLocaleString()} papers in the last year · updated just now`;
       try{ localStorage.setItem(key, JSON.stringify({ at: Date.now(), items, total })); }catch(e){}
