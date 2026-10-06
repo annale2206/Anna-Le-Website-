@@ -128,11 +128,6 @@
   .list{ list-style:none; padding:0; margin:8px 0 0; }
   .list li{ padding:12px 14px; border:1px solid #223040; border-radius:8px; margin-bottom:10px; background:#111922; }
   .list li:hover{ border-color:#35506a; }
-  .feed-status{ font-family:var(--mono); color:var(--green-dim); font-size:1rem; min-height:1.3em; }
-  .f-title{ font-family:var(--body); font-weight:500; color:var(--cream); font-size:1rem; line-height:1.35; text-decoration:none; }
-  a.f-title:hover{ color:var(--sky); text-decoration:underline; }
-  .f-meta{ font-family:var(--mono); font-size:.95rem; color:#8aa39a; margin-top:4px; }
-  .f-meta .cites{ color:var(--yellow); }
   .f-actions{ margin-top:6px; display:flex; gap:8px; flex-wrap:wrap; }
   .wc-tools input{ width:100%; max-width:420px; font-family:var(--mono); font-size:1.05rem; padding:8px 12px; border-radius:8px; border:1.5px solid #2c3a46; background:#0f161e; color:var(--cream); }
   .wc-tools input:focus{ outline:none; border-color:var(--green-dim); }
@@ -178,7 +173,7 @@
         An ongoing notebook on persona theory, from the mask to the platform: how people perform a public self online,
         and how algorithms and AI now co-author that self. Each card is a source; the pencil threads show who builds on whom.
       </p>
-      <div class="status">// ongoing · <span id="src-count"></span> sources · live feed of new research</div>
+      <div class="status">// ongoing · <span id="src-count"></span> sources</div>
     </div>
     <div class="reader" aria-label="persona reading on the grass">
       <img class="figure" src="persona.webp" alt="" loading="lazy">
@@ -191,7 +186,6 @@
     <div class="nb-tabs" role="tablist">
       <button class="nb-tab on" role="tab" data-view="map">map</button>
       <button class="nb-tab" role="tab" data-view="archive">archive <span class="cnt" id="arc-count"></span></button>
-      <button class="nb-tab" role="tab" data-view="new">new arrivals</button>
     </div>
 
     <div class="nb-page">
@@ -224,14 +218,6 @@
         <div class="wc-foot"><button class="tk-btn" id="copy-all">copy all citations</button> <span id="wc-count"></span></div>
       </div>
 
-      <!-- NEW ARRIVALS -->
-      <div class="nb-view" id="view-new" hidden>
-        <p class="nb-hint">The newest scholarship on online persona and public self-performance from the past year, pulled live from <a href="https://openalex.org" target="_blank" rel="noopener">OpenAlex</a>, an open index of research papers. Refreshed every day.</p>
-        <div class="chips" id="thread-chips"></div>
-        <div class="feed-status" id="feed-status"></div>
-        <ol class="list" id="feed"></ol>
-      </div>
-
     </div>
   </section>
 
@@ -248,7 +234,7 @@
   // ============================================================
   // PERSONA RESEARCH NOTEBOOK
   //   map: fields (columns) x eras (rows), cards = sources, threads = "builds on"
-  //   archive: searchable works cited    new arrivals: live OpenAlex feed
+  //   archive: searchable works cited
   // To add a source: add a line to WORKS. To connect two sources: add a pair to THREADS.
   // ============================================================
 
@@ -357,7 +343,6 @@
     tabs.forEach(t => { const on = t.dataset.view === v; t.classList.toggle('on', on); t.setAttribute('aria-selected', on); });
     document.querySelectorAll('.nb-view').forEach(el => el.hidden = el.id !== 'view-' + v);
     if(v === 'map') requestAnimationFrame(drawThreads);
-    if(v === 'new' && !feedStarted){ feedStarted = true; loadThread(0); }
     try{ localStorage.setItem('persona-view', v); }catch(e){}
   }
   tabs.forEach(t => t.addEventListener('click', () => showView(t.dataset.view)));
@@ -502,82 +487,9 @@
   searchEl.addEventListener('input', renderWorks);
   renderWorks();
 
-  // ---------------- 3. new arrivals (live from OpenAlex) ----------------
-  // each search only looks in titles and abstracts (not full text), so papers that
-  // merely mention a word somewhere inside are left out
-  const FEEDS = [
-    { label:'online persona',               q:'"online persona" OR "digital persona" OR "social media persona"' },
-    { label:'self-presentation online',     q:'"self-presentation" AND ("social media" OR online OR Instagram OR TikTok)' },
-    { label:'influencers & microcelebrity', q:'(influencer OR influencers OR microcelebrity) AND (authenticity OR persona OR "self-branding")' },
-    { label:'algorithmic identity',         q:'"algorithmic identity" OR "algorithmic self" OR "datafied self"' },
-    { label:'AI & the generated self',      q:'("generative AI" OR "AI-generated" OR avatar) AND (identity OR "self-representation" OR persona)' },
-  ];
-  const feedEl = document.getElementById('feed'), statusEl = document.getElementById('feed-status');
-  const chips = document.getElementById('thread-chips');
-  let current = 0, feedStarted = false;
-  function apaAuthors(list){
-    const names = list.map(n => {
-      const parts = String(n).trim().split(/\s+/); const last = parts.pop();
-      return last + (parts.length ? ', ' + parts.map(p => p[0].toUpperCase() + '.').join(' ') : '');
-    });
-    if(names.length <= 1) return names[0] || 'Unknown';
-    if(names.length > 3) return names.slice(0,3).join(', ') + ', et al.';
-    return names.slice(0,-1).join(', ') + ', & ' + names[names.length-1];
-  }
-  function renderFeed(items){
-    if(!items.length){ feedEl.innerHTML = ''; statusEl.textContent = 'no new papers in the last year for this thread'; return; }
-    feedEl.innerHTML = items.map(w => {
-      const authors = (w.authorships||[]).map(a => a.author && a.author.display_name).filter(Boolean);
-      const venue = w.primary_location && w.primary_location.source && w.primary_location.source.display_name;
-      const link = w.doi || (w.primary_location && w.primary_location.landing_page_url) || w.id;
-      const cite = `${apaAuthors(authors)} (${w.publication_year}). ${w.title || w.display_name}.${venue ? ' ' + venue + '.' : ''}${w.doi ? ' ' + w.doi : ''}`;
-      return `<li>
-        <a class="f-title" href="${esc(link)}" target="_blank" rel="noopener">${esc(w.title || w.display_name)}</a>
-        <div class="f-meta">${esc(authors.slice(0,4).join(', '))}${authors.length > 4 ? ' et al.' : ''} · ${esc(venue || 'preprint / other')} · ${esc(w.publication_date)}${w.cited_by_count ? ` · <span class="cites">cited ${w.cited_by_count}×</span>` : ''}</div>
-        <div class="f-actions"><button class="tk-btn" type="button" data-cite="${esc(cite)}">copy citation</button></div>
-      </li>`;
-    }).join('');
-    feedEl.querySelectorAll('[data-cite]').forEach(b => b.addEventListener('click', () => copy(b.dataset.cite, b)));
-  }
-  async function loadThread(i){
-    current = i;
-    chips.querySelectorAll('.chip').forEach((c,k) => c.classList.toggle('on', k === i));
-    const th = FEEDS[i], key = 'persona-feed:' + th.q;
-    try{
-      const cached = JSON.parse(localStorage.getItem(key) || 'null');
-      if(cached && Date.now() - cached.at < 12*3600*1000){
-        renderFeed(cached.items); statusEl.textContent = `${cached.total.toLocaleString()} papers in the last year · updated ${new Date(cached.at).toLocaleDateString()}`; return;
-      }
-    }catch(e){}
-    statusEl.textContent = 'searching new research...'; feedEl.innerHTML = '';
-    const since = new Date(Date.now() - 365*24*3600*1000).toISOString().slice(0,10);
-    const base = 'https://api.openalex.org/works?sort=publication_date:desc&per_page=25' +
-      '&select=id,doi,title,display_name,publication_date,publication_year,authorships,primary_location,cited_by_count';
-    const dates = 'from_publication_date:' + since + ',type:article|book-chapter|book';
-    const strict = base + '&filter=' + dates + ',title_and_abstract.search:' + encodeURIComponent(th.q);
-    const loose  = base + '&filter=' + dates + '&search=' + encodeURIComponent(th.q);
-    try{
-      let res = await fetch(strict);
-      if(res.status === 400) res = await fetch(loose);   // fallback if the strict search is not accepted
-      if(!res.ok) throw new Error(res.status);
-      const d = await res.json();
-      if(current !== i) return;
-      // leave out records with no authors or no title (often whole journal issues)
-      const items = (d.results || []).filter(w => (w.title || w.display_name) && (w.authorships || []).length).slice(0, 10);
-      const total = (d.meta && d.meta.count) || items.length;
-      renderFeed(items);
-      statusEl.textContent = `${total.toLocaleString()} papers in the last year · updated just now`;
-      try{ localStorage.setItem(key, JSON.stringify({ at: Date.now(), items, total })); }catch(e){}
-    }catch(err){
-      if(current === i) statusEl.textContent = 'the live feed is resting right now, try again in a moment';
-    }
-  }
-  chips.innerHTML = FEEDS.map(t => `<button class="chip" type="button">${esc(t.label)}</button>`).join('');
-  chips.querySelectorAll('.chip').forEach((c,i) => c.addEventListener('click', () => loadThread(i)));
-
   // open the tab the visitor used last time
   let startView = 'map';
-  try{ const v = localStorage.getItem('persona-view'); if(['map','archive','new'].includes(v)) startView = v; }catch(e){}
+  try{ const v = localStorage.getItem('persona-view'); if(['map','archive'].includes(v)) startView = v; }catch(e){}
   showView(startView);
 
   // ---------------- the bird: click to play or pause music ----------------
