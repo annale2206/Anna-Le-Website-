@@ -745,10 +745,10 @@
     }
   ];
 
-  // each season lasts SEASON_MINUTES, so visitors have time to play
-  const SEASON_MINUTES = 5;
+  // each season lasts SEASON_SECONDS
+  const SEASON_SECONDS = 30;
   function currentSeasonIndex(){
-    return Math.floor(new Date().getMinutes() / SEASON_MINUTES) % 4;
+    return Math.floor(Date.now() / 1000 / SEASON_SECONDS) % 4;
   }
 
   function applySeason(season){
@@ -866,9 +866,8 @@
     const now = new Date();
     const idx = currentSeasonIndex();
     const season = SEASONS[idx];
-    const nextChange = new Date(now);
-    nextChange.setMinutes((Math.floor(now.getMinutes() / SEASON_MINUTES) + 1) * SEASON_MINUTES, 0, 0);
-    const msLeft = nextChange - now;
+    const periodMs = SEASON_SECONDS * 1000;
+    const msLeft = periodMs - (now.getTime() % periodMs);
 
     const hh = now.getHours().toString().padStart(2,'0');
     const mm = now.getMinutes().toString().padStart(2,'0');
@@ -878,9 +877,8 @@
       `<span class="season-name">${season.name}</span>: ${hh}:${mm}:${ss} ` +
       `· next season in ${formatCountdown(msLeft)}`;
 
-    const cycleLen = SEASON_MINUTES * 4 * 60;
-    const cycleSeconds = (now.getMinutes() % (SEASON_MINUTES * 4)) * 60 + now.getSeconds();
-    const angle = (cycleSeconds / cycleLen) * 360;
+    const cycleMs = SEASON_SECONDS * 4 * 1000;
+    const angle = ((now.getTime() % cycleMs) / cycleMs) * 360;
     seasonHandEl.style.transform = `rotate(${angle.toFixed(1)}deg)`;
 
     clockFlowerEl.style.color = season.clockColor;
