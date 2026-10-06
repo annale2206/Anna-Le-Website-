@@ -96,6 +96,44 @@
     20%{ opacity:1; }
     100%{ opacity:0; transform:translateY(-20px) scale(1.1); }
   }
+  /* ---------- persona research tracker ---------- */
+  .tracker{ max-width:960px; margin:40px auto 10px; }
+  .tk-h{ font-family:var(--display); font-size:1.05rem; color:var(--green); margin:46px 0 4px; letter-spacing:.03em; }
+  .tk-note{ font-family:var(--body); color:#9fb3ab; font-size:.98rem; margin:0 0 16px; max-width:72ch; }
+  .tk-note a{ color:var(--sky); }
+
+  .timeline{ position:relative; display:flex; gap:12px; overflow-x:auto; padding:18px 4px 14px; scrollbar-color:#2c3a46 transparent; }
+  .timeline::before{ content:''; position:absolute; left:0; right:0; top:34px; height:2px; background:linear-gradient(90deg,var(--purple),var(--teal),var(--pink)); opacity:.6; }
+  .tl-item{ position:relative; flex:0 0 168px; padding-top:30px; }
+  .tl-item::before{ content:''; position:absolute; top:10px; left:10px; width:12px; height:12px; border-radius:50%; background:var(--c, var(--teal)); box-shadow:0 0 0 3px var(--bg); }
+  .tl-year{ font-family:var(--mono); font-size:1.25rem; color:var(--c, var(--teal)); }
+  .tl-who{ font-family:var(--mono); font-size:1.05rem; color:var(--cream); }
+  .tl-what{ font-family:var(--body); font-size:.82rem; color:#9fb3ab; line-height:1.35; margin-top:2px; }
+
+  .chips{ display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 12px; }
+  .chip{ font-family:var(--mono); font-size:1rem; padding:4px 12px; border-radius:999px; border:1.5px solid #2c3a46; background:none; color:#9fb3ab; cursor:pointer; }
+  .chip:hover{ border-color:var(--green-dim); color:var(--cream); }
+  .chip.on{ border-color:var(--green); color:var(--green); background:rgba(157,255,158,.08); }
+
+  .feed-status{ font-family:var(--mono); color:var(--green-dim); font-size:1rem; min-height:1.3em; }
+  .feed, .works{ list-style:none; padding:0; margin:8px 0 0; }
+  .feed li, .works li{ padding:12px 14px; border:1px solid #223040; border-radius:10px; margin-bottom:10px; background:rgba(255,255,255,.02); }
+  .feed li:hover, .works li:hover{ border-color:#35506a; }
+  .f-title{ font-family:var(--body); font-weight:500; color:var(--cream); font-size:1rem; line-height:1.35; text-decoration:none; }
+  a.f-title:hover{ color:var(--sky); text-decoration:underline; }
+  .f-meta{ font-family:var(--mono); font-size:1rem; color:#8aa39a; margin-top:4px; }
+  .f-meta .cites{ color:var(--yellow); }
+  .f-actions{ margin-top:6px; }
+  .tk-btn{ font-family:var(--mono); font-size:.95rem; background:none; border:1px solid #2c3a46; color:#9fb3ab; border-radius:6px; padding:2px 10px; cursor:pointer; }
+  .tk-btn:hover{ color:var(--green); border-color:var(--green-dim); }
+
+  .wc-tools input{ width:100%; max-width:420px; font-family:var(--mono); font-size:1.1rem; padding:8px 12px; border-radius:8px; border:1.5px solid #2c3a46; background:#0f161e; color:var(--cream); }
+  .wc-tools input:focus{ outline:none; border-color:var(--green-dim); }
+  .w-cite{ font-family:var(--body); font-size:.95rem; color:var(--cream); line-height:1.5; }
+  .w-cite em{ color:#d9e6df; }
+  .w-tag{ display:inline-block; font-family:var(--mono); font-size:.9rem; padding:0 8px; border-radius:999px; margin-right:6px; color:var(--bg); background:var(--c, var(--teal)); }
+  .w-note{ font-family:var(--body); font-size:.85rem; color:#8aa39a; margin-top:3px; }
+  .wc-foot{ margin:10px 0 30px; font-family:var(--mono); color:var(--green-dim); }
 </style>
 </head>
 <body data-petals="6">
@@ -114,7 +152,8 @@
   <div class="status">// ongoing</div>
 
   <p class="statement">
-  
+    An ongoing map of persona theory, from the mask to the platform: how people perform a public self online,
+    and how algorithms and AI now co-author that self. The tracker below follows new research as it is published.
   </p>
 
   <div class="mini-stage">
@@ -187,12 +226,12 @@
       <text class="mlabel" x="760" y="345" fill="var(--green)" text-anchor="middle" transform="rotate(16 760 345)" style="animation-delay:2.3s">art and technology</text>
 
       <!-- persona figure, seated on the grass beneath the trunk -->
-      <image href="persona.png" x="560" y="380" width="170" height="150" preserveAspectRatio="xMidYMax meet"/>
+      <image href="persona.webp" x="560" y="380" width="170" height="150" preserveAspectRatio="xMidYMax meet"/>
 
-      <!-- bird, on the grass beside persona.png — click to toggle music -->
+      <!-- bird, on the grass beside persona.webp: click to toggle music -->
       <g id="tree-bird" class="tree-bird" transform="translate(470,530)" role="button" tabindex="0" aria-label="toggle music">
         <g class="bird-head-group">
-          <image href="bird.png" x="-55" y="-110" width="110" height="110" preserveAspectRatio="xMidYMax meet"/>
+          <image href="bird.webp" x="-55" y="-110" width="110" height="110" preserveAspectRatio="xMidYMax meet"/>
         </g>
         <text class="tnote tn1" x="55" y="-75">♪</text>
         <text class="tnote tn2" x="22" y="-95">♫</text>
@@ -201,6 +240,31 @@
     </svg>
   </div>
 
+
+  <!-- ===================== persona research tracker ===================== -->
+  <section class="tracker" aria-label="persona research tracker">
+
+    <h2 class="tk-h">genealogy of persona</h2>
+    <p class="tk-note">from the mask to the platform: key moments in persona theory, leading to online persona and the public performance of self</p>
+    <div class="timeline" id="timeline"></div>
+
+    <h2 class="tk-h">live research feed</h2>
+    <p class="tk-note">newest scholarship on online persona and public self-performance, pulled live from <a href="https://openalex.org" target="_blank" rel="noopener">OpenAlex</a>, an open index of research papers. Refreshed every day.</p>
+    <div class="chips" id="thread-chips"></div>
+    <div class="feed-status" id="feed-status"></div>
+    <ol class="feed" id="feed"></ol>
+
+    <h2 class="tk-h">works cited</h2>
+    <p class="tk-note">every source across the persona research branches. Search, filter by field, and copy a citation.</p>
+    <div class="wc-tools">
+      <input id="wc-search" type="search" placeholder="search author, title, year..." aria-label="search works cited">
+      <div class="chips" id="wc-chips"></div>
+    </div>
+    <ol class="works" id="works"></ol>
+    <div class="wc-foot"><button class="tk-btn" id="copy-all">copy all citations</button> <span id="wc-count"></span></div>
+
+  </section>
+
   <audio id="mbg-music" src="music1.mp3" loop></audio>
 
 </main>
@@ -208,6 +272,200 @@
 <footer class="site-footer">© anna_le </footer>
 
 <script src="main.js" defer></script>
+<script>
+  // ============================================================
+  // PERSONA RESEARCH TRACKER
+  // 1. genealogy timeline  2. live feed (OpenAlex)  3. works cited
+  // To add a source: add a line to WORKS below.
+  // ============================================================
+  (function(){
+    const FIELDS = {
+      foundations:{ label:'foundations',               c:'var(--cream)' },
+      persona:    { label:'persona studies',           c:'var(--pink)' },
+      media:      { label:'media studies',             c:'var(--orange)' },
+      performance:{ label:'performance studies',       c:'var(--sky)' },
+      algorithm:  { label:'critical algorithm studies',c:'var(--teal)' },
+      philosophy: { label:'philosophy of technology',  c:'var(--purple)' },
+      hci:        { label:'hci',                       c:'var(--yellow)' },
+      art:        { label:'art and technology',        c:'var(--green)' },
+    };
+
+    // a = authors, y = year, t = title, s = where published (blank if still to add), f = field, n = note
+    const WORKS = [
+      { a:'Jung, C. G.', y:1953, t:'Two essays on analytical psychology', s:'Pantheon (Collected Works, Vol. 7)', f:'foundations', n:'the persona as the mask between the individual and society' },
+      { a:'Goffman, E.', y:1959, t:'The presentation of self in everyday life', s:'Doubleday', f:'foundations', n:'front stage and back stage: the self as an everyday performance' },
+      { a:'Butler, J.', y:1990, t:'Gender trouble: Feminism and the subversion of identity', s:'Routledge', f:'foundations', n:'performativity: identity produced through repeated acts' },
+      { a:'Marshall, P. D.', y:1997, t:'Celebrity and power: Fame in contemporary culture', s:'University of Minnesota Press', f:'foundations', n:'celebrity as a public persona produced by media systems' },
+      { a:'Hogan, B.', y:2010, t:'The presentation of self in the age of social media: Distinguishing performances and exhibitions online', s:'Bulletin of Science, Technology & Society, 30(6), 377-386', f:'media', n:'online profiles as curated exhibitions rather than live performances' },
+      { a:'Marwick, A. E., & boyd, d.', y:2011, t:'I tweet honestly, I tweet passionately: Twitter users, context collapse, and the imagined audience', s:'New Media & Society, 13(1), 114-133', f:'media', n:'context collapse and the imagined audience' },
+      { a:'Abidin, C.', y:2018, t:'Internet celebrity: Understanding fame online', s:'Emerald', f:'media', n:'influencers, microcelebrity and the attention economy' },
+
+      { a:'Marshall, P. D., & Barbour, K.', y:2015, t:'Making intellectual room for persona studies: A new consciousness and a shifted perspective', s:'Persona Studies, 1(1)', f:'persona', n:'persona as a strategic public identity' },
+      { a:'Marshall, P. D., Barbour, K., & Moore, C.', y:2017, t:'Five dimensions of online persona', s:'', f:'persona', n:'public, mediatised, performative, collective, intentional value' },
+      { a:'Moore, C., & Connell, ', y:2025, t:'Podcast persona', s:'', f:'persona', n:'persona beyond humans: media objects built by audiences and platforms' },
+      { a:'Lee, K.', y:2019, t:'Celebrity profiling as life writing', s:'', f:'persona', n:'journalist and subject personas co-produced' },
+
+      { a:'Senft, T. M.', y:2008, t:'Camgirls: Celebrity and community in the age of social networks', s:'Peter Lang', f:'media', n:'webcam performance and the origins of microcelebrity' },
+      { a:'Banet-Weiser, S.', y:2012, t:'Authentic™: The politics of ambivalence in a brand culture', s:'NYU Press', f:'media', n:'authenticity as a brand' },
+      { a:'Marwick, A. E.', y:2013, t:'Status update: Celebrity, publicity, and branding in the social media age', s:'Yale University Press', f:'media', n:'entrepreneurial selfhood and self-branding' },
+      { a:'Abidin, C.', y:2016, t:'Visibility labour: Engaging with influencers’ fashion brands and #OOTD advertorial campaigns on Instagram', s:'Media International Australia, 161(1), 86-100', f:'media', n:'visibility labour in attention economies' },
+      { a:'Duffy, B. E.', y:2017, t:'(Not) getting paid to do what you love: Gender, social media, and aspirational work', s:'Yale University Press', f:'media', n:'aspirational labour' },
+
+      { a:'Taylor, D.', y:2003, t:'The archive and the repertoire: Performing cultural memory in the Americas', s:'Duke University Press', f:'performance', n:'embodied repertoire vs. the archive' },
+      { a:'Zerbib, D.', y:null, t:'The performative turn', s:'', f:'performance', n:'performance as an event that transforms meaning' },
+      { a:'Martin, C.', y:null, t:'Documentary performance', s:'', f:'performance', n:'fiction, testimony, archive and technology' },
+
+      { a:'Bucher, T.', y:2018, t:'If...then: Algorithmic power and politics', s:'Oxford University Press', f:'algorithm', n:'algorithmic power in everyday platform life' },
+      { a:'Amoore, L.', y:2020, t:'Cloud ethics: Algorithms and the attributes of ourselves and others', s:'Duke University Press', f:'algorithm', n:'machine learning reduces social scenes to attributes' },
+      { a:'Crawford, K.', y:2021, t:'Atlas of AI', s:'Yale University Press', f:'algorithm', n:'classification as material, political infrastructure' },
+
+      { a:'Clarke, R.', y:2014, t:'The digital persona', s:'', f:'philosophy', n:'a data-based model of an individual’s public personality' },
+      { a:'Hui, Y.', y:2016, t:'On the existence of digital objects', s:'University of Minnesota Press', f:'philosophy', n:'profiles and data as ontological objects' },
+      { a:'Cheney-Lippold, J.', y:2017, t:'We are data: Algorithms and the making of our digital selves', s:'NYU Press', f:'philosophy', n:'measurable types and "as if" identity' },
+
+      { a:'Cooper, A.', y:1999, t:'The inmates are running the asylum', s:'Sams', f:'hci', n:'design personas as fictional users' },
+      { a:'Pruitt, J., & Adlin, T.', y:2006, t:'The persona lifecycle: Keeping people in mind throughout product design', s:'Morgan Kaufmann', f:'hci', n:'evidence-based personas' },
+      { a:'Jung, S.-G., Salminen, J., Jansen, B. J., et al.', y:2018, t:'Automatic persona generation', s:'', f:'hci', n:'personas computed from social media data' },
+
+      { a:'Bishop, C.', y:2005, t:'Installation art: A critical history', s:'Tate Publishing', f:'art', n:'installation history and theory' },
+      { a:'Kester, G. H.', y:2004, t:'Conversation pieces: Community and communication in modern art', s:'University of California Press', f:'art', n:'dialogical aesthetics' },
+      { a:'Bishop, C.', y:2012, t:'Artificial hells: Participatory art and the politics of spectatorship', s:'Verso', f:'art', n:'participatory art and spectatorship' },
+      { a:'Parikka, J.', y:2012, t:'What is media archaeology?', s:'Polity', f:'art', n:'media archaeology' },
+      { a:'Manning, E.', y:2013, t:'Always more than one: Individuation’s dance', s:'Duke University Press', f:'art', n:'process philosophy and movement' },
+      { a:'Parikka, J.', y:2015, t:'A geology of media', s:'University of Minnesota Press', f:'art', n:'material media histories' },
+      { a:'Hansen, M. B. N.', y:2015, t:'Feed-forward: On the future of twenty-first-century media', s:'University of Chicago Press', f:'art', n:'perception in computational environments' },
+      { a:'Huhtamo, E.', y:null, t:'Media archaeology (essays)', s:'', f:'art', n:'histories of media forms' },
+      { a:'Kac, E.', y:null, t:'Telepresence and bio art (essays)', s:'', f:'art', n:'art-technology practices' },
+    ];
+
+    // ---------- 1. genealogy timeline ----------
+    const TIMELINE = [
+      [1953,'Jung','the persona as a social mask','var(--purple)'],
+      [1959,'Goffman','everyday life as front-stage performance','var(--purple)'],
+      [1990,'Butler','identity as repeated performative acts','var(--purple)'],
+      [1997,'Marshall','celebrity as a produced public persona','var(--pink)'],
+      [2008,'Senft','microcelebrity on the webcam','var(--orange)'],
+      [2010,'Hogan','profiles as curated exhibitions','var(--orange)'],
+      [2011,'Marwick & boyd','context collapse, imagined audience','var(--orange)'],
+      [2013,'Marwick','self-branding in the social media age','var(--orange)'],
+      [2015,'Marshall & Barbour','persona studies as a field','var(--pink)'],
+      [2017,'Cheney-Lippold','algorithms make "measurable" selves','var(--teal)'],
+      [2018,'Abidin · Bucher','influencers; algorithmic power','var(--teal)'],
+      [2020,'Amoore','AI reduces people to attributes','var(--teal)'],
+    ];
+    document.getElementById('timeline').innerHTML = TIMELINE.map(([y,w,t,c])=>
+      `<div class="tl-item" style="--c:${c}"><div class="tl-year">${y}</div><div class="tl-who">${w}</div><div class="tl-what">${t}</div></div>`).join('');
+
+    // ---------- 2. live research feed ----------
+    const THREADS = [
+      { label:'online persona',            q:'"online persona"' },
+      { label:'self-presentation online',  q:'self-presentation social media' },
+      { label:'influencers & microcelebrity', q:'influencer microcelebrity authenticity' },
+      { label:'algorithmic identity',      q:'algorithmic identity' },
+      { label:'AI & the generated self',   q:'generative AI self-representation identity' },
+    ];
+    const esc = s => String(s ?? '').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    const feedEl = document.getElementById('feed'), statusEl = document.getElementById('feed-status');
+    const chips = document.getElementById('thread-chips');
+    let current = 0;
+
+    function apaAuthors(list){
+      const names = list.map(n=>{
+        const parts = String(n).trim().split(/\s+/); const last = parts.pop();
+        return last + (parts.length ? ', ' + parts.map(p=>p[0].toUpperCase()+'.').join(' ') : '');
+      });
+      if(names.length <= 1) return names[0] || 'Unknown';
+      if(names.length > 3) return names.slice(0,3).join(', ') + ', et al.';
+      return names.slice(0,-1).join(', ') + ', & ' + names[names.length-1];
+    }
+    function copy(text, btn){
+      const done = ()=>{ const o = btn.textContent; btn.textContent = 'copied ✓'; setTimeout(()=> btn.textContent = o, 1400); };
+      if(navigator.clipboard) navigator.clipboard.writeText(text).then(done).catch(()=>{});
+    }
+
+    function renderFeed(items){
+      if(!items.length){ feedEl.innerHTML = ''; statusEl.textContent = 'no new papers in the last year for this thread'; return; }
+      feedEl.innerHTML = items.map((w,i)=>{
+        const authors = (w.authorships||[]).map(a=>a.author && a.author.display_name).filter(Boolean);
+        const venue = w.primary_location && w.primary_location.source && w.primary_location.source.display_name;
+        const link = w.doi || (w.primary_location && w.primary_location.landing_page_url) || w.id;
+        const cite = `${apaAuthors(authors)} (${w.publication_year}). ${w.title || w.display_name}.${venue ? ' ' + venue + '.' : ''}${w.doi ? ' ' + w.doi : ''}`;
+        return `<li>
+          <a class="f-title" href="${esc(link)}" target="_blank" rel="noopener">${esc(w.title || w.display_name)}</a>
+          <div class="f-meta">${esc(authors.slice(0,4).join(', '))}${authors.length>4?' et al.':''} · ${esc(venue || 'preprint / other')} · ${esc(w.publication_date)}${w.cited_by_count ? ` · <span class="cites">cited ${w.cited_by_count}×</span>` : ''}</div>
+          <div class="f-actions"><button class="tk-btn" data-cite="${esc(cite)}">copy citation</button></div>
+        </li>`;
+      }).join('');
+      feedEl.querySelectorAll('[data-cite]').forEach(b=> b.addEventListener('click', ()=> copy(b.dataset.cite, b)));
+    }
+
+    async function loadThread(i){
+      current = i;
+      chips.querySelectorAll('.chip').forEach((c,k)=> c.classList.toggle('on', k===i));
+      const th = THREADS[i], key = 'persona-feed:' + th.q;
+      try{
+        const cached = JSON.parse(localStorage.getItem(key) || 'null');
+        if(cached && Date.now() - cached.at < 12*3600*1000){
+          renderFeed(cached.items); statusEl.textContent = `${cached.total.toLocaleString()} papers in the last year · updated ${new Date(cached.at).toLocaleDateString()}`; return;
+        }
+      }catch(e){}
+      statusEl.textContent = 'searching new research...'; feedEl.innerHTML = '';
+      const since = new Date(Date.now() - 365*24*3600*1000).toISOString().slice(0,10);
+      const url = 'https://api.openalex.org/works?search=' + encodeURIComponent(th.q) +
+        '&filter=from_publication_date:' + since + ',type:article|book-chapter|book' +
+        '&sort=publication_date:desc&per_page=10' +
+        '&select=id,doi,title,display_name,publication_date,publication_year,authorships,primary_location,cited_by_count';
+      try{
+        const res = await fetch(url);
+        if(!res.ok) throw new Error(res.status);
+        const d = await res.json();
+        if(current !== i) return;
+        const items = d.results || [], total = (d.meta && d.meta.count) || items.length;
+        renderFeed(items);
+        statusEl.textContent = `${total.toLocaleString()} papers in the last year · updated just now`;
+        try{ localStorage.setItem(key, JSON.stringify({ at: Date.now(), items, total })); }catch(e){}
+      }catch(err){
+        if(current === i) statusEl.textContent = 'the live feed is resting right now, try again in a moment';
+      }
+    }
+    chips.innerHTML = THREADS.map((t,i)=>`<button class="chip" type="button">${esc(t.label)}</button>`).join('');
+    chips.querySelectorAll('.chip').forEach((c,i)=> c.addEventListener('click', ()=> loadThread(i)));
+    loadThread(0);
+
+    // ---------- 3. works cited ----------
+    const worksEl = document.getElementById('works'), searchEl = document.getElementById('wc-search');
+    const wcChips = document.getElementById('wc-chips');
+    let field = 'all';
+    const citeText = w => `${w.a} (${w.y || 'n.d.'}). ${w.t}.${w.s ? ' ' + w.s + '.' : ''}`;
+    const citeHTML = w => {
+      const journal = /\d+\(\d+\)/.test(w.s || '');
+      const title = journal ? esc(w.t) : `<em>${esc(w.t)}</em>`;
+      const src = w.s ? (journal ? ` <em>${esc(w.s)}</em>.` : ` ${esc(w.s)}.`) : '';
+      return `${esc(w.a)} (${w.y || 'n.d.'}). ${title}.${src}`;
+    };
+    function renderWorks(){
+      const q = searchEl.value.trim().toLowerCase();
+      const list = WORKS.filter(w => (field === 'all' || w.f === field) &&
+        (!q || (w.a + ' ' + w.t + ' ' + (w.y||'') + ' ' + (w.n||'')).toLowerCase().includes(q)))
+        .sort((a,b)=> a.a.localeCompare(b.a) || (a.y||0) - (b.y||0));
+      worksEl.innerHTML = list.map(w=>`<li>
+        <div class="w-cite"><span class="w-tag" style="--c:${FIELDS[w.f].c}">${FIELDS[w.f].label}</span>${citeHTML(w)}</div>
+        ${w.n ? `<div class="w-note">${esc(w.n)}</div>` : ''}
+        <div class="f-actions"><button class="tk-btn" data-cite="${esc(citeText(w))}">copy citation</button></div>
+      </li>`).join('');
+      worksEl.querySelectorAll('[data-cite]').forEach(b=> b.addEventListener('click', ()=> copy(b.dataset.cite, b)));
+      document.getElementById('wc-count').textContent = `${list.length} of ${WORKS.length} sources`;
+      document.getElementById('copy-all').onclick = e => copy(list.map(citeText).join('\n'), e.target);
+    }
+    wcChips.innerHTML = `<button class="chip on" type="button" data-f="all">all</button>` +
+      Object.entries(FIELDS).map(([k,v])=>`<button class="chip" type="button" data-f="${k}">${v.label}</button>`).join('');
+    wcChips.querySelectorAll('.chip').forEach(c=> c.addEventListener('click', ()=>{
+      field = c.dataset.f; wcChips.querySelectorAll('.chip').forEach(x=> x.classList.toggle('on', x===c)); renderWorks();
+    }));
+    searchEl.addEventListener('input', renderWorks);
+    renderWorks();
+  })();
+</script>
 <script>
   document.querySelectorAll('.mflower').forEach(node=>{
     node.addEventListener('click', ()=>{
@@ -248,7 +506,7 @@
     }
   })();
 
-  // bird on the grass — click to toggle music1.mp3
+  // bird on the grass: click to toggle music1.mp3
   (function initTreeBird(){
     const bird = document.getElementById('tree-bird');
     const music = document.getElementById('mbg-music');
