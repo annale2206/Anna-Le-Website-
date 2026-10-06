@@ -2,138 +2,160 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>anna_le: persona</title>
+<meta name="description" content="Anna Le's research notebook on persona: from the mask to the platform, online persona and the public performance of self.">
 <link rel="stylesheet" href="style.css">
 <style>
-  .hero-sub{
-    font-family:var(--mono); color:var(--sky); font-size:1.15rem;
-    margin:-4px 0 24px;
-  }
-  .statement{ max-width:72ch; font-size:1.1rem; }
-
+  .hero-sub{ font-family:var(--mono); color:var(--sky); font-size:1.15rem; margin:-4px 0 24px; }
+  .statement{ max-width:66ch; font-size:1.1rem; }
   .status{
-    display:inline-block;
-    margin:14px 0 30px;
-    padding:10px 16px;
-    border:2px dashed var(--green-dim);
-    font-family:var(--mono);
-    color:var(--green-dim);
-    font-size:1rem;
-    letter-spacing:.03em;
+    display:inline-block; margin:14px 0 18px; padding:10px 16px;
+    border:2px dashed var(--green-dim); font-family:var(--mono); color:var(--green-dim);
+    font-size:1rem; letter-spacing:.03em;
   }
 
-  .mini-stage{
-    position:relative;
-    width:100vw;
-    max-width:100vw;
-    margin-left:calc(50% - 50vw);
-    margin-right:calc(50% - 50vw);
-    margin-top:20px;
-  }
-  .mini-stage svg{ width:100%; height:auto; display:block; overflow:visible; padding:0 40px; box-sizing:border-box; }
+  /* ---------- intro row: statement + the reader (persona figure and bird) ---------- */
+  .intro{ display:flex; gap:24px; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; }
+  .reader{ position:relative; width:230px; height:150px; flex:0 0 auto; }
+  .reader .figure{ position:absolute; right:0; bottom:0; width:150px; }
+  .reader .bird{ position:absolute; left:0; bottom:0; width:90px; background:none; border:0; padding:0; cursor:pointer; }
+  .reader .bird img{ width:100%; display:block; transform-origin:50% 90%; }
+  .reader .bird.playing img{ animation:bob .6s ease-in-out infinite; }
+  .reader .bird:focus-visible{ outline:2px solid var(--green-dim); outline-offset:4px; border-radius:8px; }
+  @keyframes bob{ 0%,100%{ transform:rotate(0); } 50%{ transform:rotate(-6deg); } }
+  .note-fly{ position:absolute; font-family:var(--mono); font-size:20px; opacity:0; pointer-events:none; }
+  .bird.playing ~ .note-fly{ animation:notefly 2.2s ease-in infinite; }
+  .note-fly.n1{ left:70px; bottom:90px; color:var(--green); }
+  .note-fly.n2{ left:40px; bottom:110px; color:var(--yellow); animation-delay:.7s !important; }
+  .note-fly.n3{ left:95px; bottom:80px; color:var(--sky); animation-delay:1.4s !important; }
+  @keyframes notefly{ 0%{opacity:0; transform:translateY(0) scale(.7);} 20%{opacity:1;} 100%{opacity:0; transform:translateY(-22px) scale(1.1);} }
 
-  .mtrunk{ stroke:var(--bark); stroke-width:14; stroke-linecap:round; fill:none; }
-  .mbranch{
-    fill:none; stroke:var(--bark); stroke-width:3.5; stroke-linecap:round;
-    stroke-dasharray:1; stroke-dashoffset:1;
-    animation:mgrow 1s ease forwards;
+  /* ---------- the notebook ---------- */
+  .notebook{ margin:26px 0 40px; }
+  .nb-tabs{ display:flex; gap:6px; flex-wrap:wrap; }
+  .nb-tab{
+    font-family:var(--mono); font-size:1.05rem; color:#9fb3ab; background:#111922;
+    border:1.5px solid #2c3a46; border-bottom:0; border-radius:10px 10px 0 0;
+    padding:8px 18px 7px; cursor:pointer; position:relative; top:1.5px;
   }
-  @keyframes mgrow{ to{ stroke-dashoffset:0; } }
+  .nb-tab:hover{ color:var(--cream); }
+  .nb-tab.on{ color:var(--green); background:#0d141b; z-index:2; }
+  .nb-tab .cnt{ color:var(--green-dim); font-size:.9rem; margin-left:4px; }
+  .nb-page{
+    position:relative; border:1.5px solid #2c3a46; border-radius:0 12px 12px 12px;
+    background-color:#0d141b;
+    background-image:radial-gradient(circle, #24313d 1.1px, transparent 1.3px);
+    background-size:22px 22px; padding:22px 22px 26px;
+  }
+  .nb-view[hidden]{ display:none; }
+  .nb-hint{ font-family:var(--body); color:#8aa39a; font-size:.95rem; margin:0 0 14px; max-width:76ch; }
+  .nb-hint a{ color:var(--sky); }
 
-  .mleaf{ opacity:0; animation:mleafin .5s ease forwards; transform-origin:center; }
-  @keyframes mleafin{ from{opacity:0; transform:scale(.3);} to{opacity:.9; transform:scale(1);} }
+  /* map: eras (rows) x fields (columns) */
+  .map-scroll{ overflow-x:auto; padding-bottom:6px; scrollbar-color:#2c3a46 transparent; }
+  .map{ position:relative; min-width:940px; }
+  .map-grid{
+    position:relative; z-index:1; display:grid;
+    grid-template-columns:118px repeat(8, minmax(0,1fr)); column-gap:8px;
+  }
+  .col-head{
+    position:sticky; top:0; font-family:var(--mono); font-size:.85rem; line-height:1.15;
+    color:var(--c); text-decoration:none; padding:6px 6px 8px; border-top:3px solid var(--c);
+    background:#0d141b; border-radius:0 0 6px 6px; min-height:44px; display:block;
+  }
+  a.col-head:hover{ background:#141e28; }
+  a.col-head::after{ content:' ↗'; opacity:.5; }
+  .era{
+    font-family:var(--mono); color:var(--cream); font-size:.95rem; padding:12px 8px 12px 0;
+    border-top:1px dashed #2c3a46; border-right:2px solid rgba(98,199,180,.25);
+  }
+  .era small{ display:block; color:#8aa39a; font-family:var(--body); font-size:.8rem; line-height:1.3; margin-top:3px; }
+  .cell{ border-top:1px dashed #2c3a46; padding:10px 0; display:flex; flex-direction:column; gap:7px; min-height:54px; }
+  .card{
+    font:inherit; text-align:left; cursor:pointer; color:var(--cream);
+    background:#131c25; border:1px solid #2a3846; border-top:3px solid var(--c);
+    border-radius:4px 4px 6px 6px; padding:6px 7px 6px; box-shadow:0 2px 0 rgba(0,0,0,.35);
+    transition:transform .15s, border-color .15s, opacity .2s;
+  }
+  .card:hover, .card:focus-visible{ transform:translateY(-2px) rotate(-.6deg); border-color:var(--c); outline:none; }
+  .card .who{ display:block; font-family:var(--mono); font-size:.85rem; line-height:1.15; }
+  .card .yr{ display:block; font-family:var(--mono); font-size:.8rem; color:var(--c); margin-top:2px; }
+  .card.landmark{ background:#17222d; }
+  .card.landmark .yr::after{ content:' ★'; color:#8aa39a; }
+  .card.verify .yr::after{ content:' ?'; color:#8aa39a; }
+  .card.on{ border-color:var(--c); background:#1b2834; }
+  .map.focus .card:not(.lit){ opacity:.3; }
+  .threads{ position:absolute; inset:0; z-index:0; pointer-events:none; overflow:visible; }
+  .threads path{ fill:none; stroke:#a9b8b0; stroke-opacity:.22; stroke-width:1.4; stroke-dasharray:5 4; }
+  .map.focus .threads path{ stroke-opacity:.06; }
+  .map.focus .threads path.lit{ stroke:var(--green); stroke-opacity:.9; stroke-width:2; stroke-dasharray:none; }
+  .map-legend{ font-family:var(--mono); font-size:.9rem; color:#8aa39a; margin-top:14px; display:flex; gap:18px; flex-wrap:wrap; }
+  .map-legend .dash{ display:inline-block; width:28px; border-top:2px dashed #a9b8b0; opacity:.6; vertical-align:middle; margin-right:6px; }
+  .swipe{ display:none; font-family:var(--mono); color:var(--green-dim); font-size:.9rem; margin:-6px 0 10px; }
 
-  .mflower{
-    cursor:pointer; opacity:0;
-    animation:mbloom .5s cubic-bezier(.2,1.6,.4,1) forwards, msway 6s ease-in-out infinite 1s;
-    transform-origin:center;
+  /* the notebook page that opens for a source */
+  .leaf{
+    position:fixed; z-index:50; top:0; right:0; height:100%; width:min(420px, 100%);
+    background:#0f1720; border-left:1.5px solid #2c3a46; box-shadow:-20px 0 40px rgba(0,0,0,.4);
+    background-image:repeating-linear-gradient(#0f1720 0 31px, #1a2531 31px 32px);
+    padding:26px 26px 30px 44px; overflow-y:auto; transform:translateX(105%); transition:transform .28s ease;
   }
-  @keyframes mbloom{ from{opacity:0; transform:scale(0);} to{opacity:1; transform:scale(1);} }
-  @keyframes msway{ 0%,100%{transform:rotate(-3deg);} 50%{transform:rotate(3deg);} }
-  .mflower:hover{ filter:brightness(1.3); }
+  .leaf::before{ content:''; position:absolute; top:0; bottom:0; left:28px; border-left:1.5px solid rgba(98,199,180,.35); }
+  .leaf.open{ transform:none; }
+  .leaf-close{ position:absolute; top:12px; right:14px; background:none; border:0; color:#9fb3ab; font-size:1.6rem; cursor:pointer; line-height:1; }
+  .leaf-close:hover{ color:var(--green); }
+  .leaf .tag{ display:inline-block; font-family:var(--mono); font-size:.85rem; padding:0 8px; border-radius:999px; color:var(--bg); background:var(--c); }
+  .leaf h3{ font-family:var(--body); font-weight:600; color:var(--cream); font-size:1.25rem; line-height:1.35; margin:14px 0 4px; }
+  .leaf .by{ font-family:var(--mono); color:var(--c); font-size:1rem; }
+  .leaf .lbl{ font-family:var(--mono); color:var(--green-dim); font-size:.85rem; margin:20px 0 4px; letter-spacing:.04em; }
+  .leaf .idea{ font-family:var(--body); color:var(--cream); font-size:1.05rem; line-height:2rem; margin:0; }
+  .leaf .apa{ font-family:var(--body); color:#d9e6df; font-size:.95rem; line-height:1.6; margin:0; }
+  .leaf .rel{ display:flex; flex-wrap:wrap; gap:6px; }
+  .leaf .rel button{ font-family:var(--mono); font-size:.85rem; background:#131c25; color:var(--cream); border:1px solid #2a3846; border-top:2px solid var(--c); border-radius:4px; padding:3px 8px; cursor:pointer; }
+  .leaf .rel button:hover{ border-color:var(--c); }
+  .leaf .none{ font-family:var(--body); color:#6f857c; font-size:.9rem; }
+  .leaf .acts{ margin-top:22px; display:flex; gap:8px; flex-wrap:wrap; }
+  .leaf .warn{ font-family:var(--body); color:var(--yellow); font-size:.9rem; margin-top:10px; }
 
-  .mlabel{
-    font-family:var(--mono); font-size:14px; letter-spacing:.02em;
-    opacity:0; animation:mfadein .5s ease forwards;
-  }
-  @keyframes mfadein{ to{opacity:1;} }
-
-  .mblade{
-    transform-origin:0px 0px;
-    opacity:0;
-    animation:mbladein .5s ease forwards;
-  }
-  @keyframes mbladein{
-    from{ opacity:0; transform:scaleY(.15); }
-    to{ opacity:.95; transform:scaleY(1); }
-  }
-
-  .tree-bird{ cursor:pointer; outline:none; }
-  .tree-bird:focus-visible .bird-head-group{ filter:brightness(1.25); }
-  .tree-bird.playing .bird-head-group{
-    animation:tbird-bob .6s ease-in-out infinite;
-    transform-origin:0px -55px;
-  }
-  @keyframes tbird-bob{
-    0%,100%{ transform:rotate(0deg); }
-    50%{ transform:rotate(-6deg); }
-  }
-
-  .tnote{
-    font-family:var(--mono);
-    font-size:20px;
-    opacity:0;
-    pointer-events:none;
-  }
-  .tree-bird.playing .tnote{
-    animation:tnote-float 2.2s ease-in infinite;
-  }
-  .tnote.tn1{ fill:var(--green); animation-delay:0s !important; }
-  .tnote.tn2{ fill:var(--pink); animation-delay:.7s !important; }
-  .tnote.tn3{ fill:var(--yellow); animation-delay:1.4s !important; }
-  @keyframes tnote-float{
-    0%{ opacity:0; transform:translateY(0) scale(.7); }
-    20%{ opacity:1; }
-    100%{ opacity:0; transform:translateY(-20px) scale(1.1); }
-  }
-  /* ---------- persona research tracker ---------- */
-  .tracker{ max-width:960px; margin:40px auto 10px; }
-  .tk-h{ font-family:var(--display); font-size:1.05rem; color:var(--green); margin:46px 0 4px; letter-spacing:.03em; }
-  .tk-note{ font-family:var(--body); color:#9fb3ab; font-size:.98rem; margin:0 0 16px; max-width:72ch; }
-  .tk-note a{ color:var(--sky); }
-
-  .timeline{ position:relative; display:flex; gap:12px; overflow-x:auto; padding:18px 4px 14px; scrollbar-color:#2c3a46 transparent; }
-  .timeline::before{ content:''; position:absolute; left:0; right:0; top:34px; height:2px; background:linear-gradient(90deg,var(--purple),var(--teal),var(--pink)); opacity:.6; }
-  .tl-item{ position:relative; flex:0 0 168px; padding-top:30px; }
-  .tl-item::before{ content:''; position:absolute; top:10px; left:10px; width:12px; height:12px; border-radius:50%; background:var(--c, var(--teal)); box-shadow:0 0 0 3px var(--bg); }
-  .tl-year{ font-family:var(--mono); font-size:1.25rem; color:var(--c, var(--teal)); }
-  .tl-who{ font-family:var(--mono); font-size:1.05rem; color:var(--cream); }
-  .tl-what{ font-family:var(--body); font-size:.82rem; color:#9fb3ab; line-height:1.35; margin-top:2px; }
-
+  /* shared bits: chips, buttons, lists */
   .chips{ display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 12px; }
-  .chip{ font-family:var(--mono); font-size:1rem; padding:4px 12px; border-radius:999px; border:1.5px solid #2c3a46; background:none; color:#9fb3ab; cursor:pointer; }
+  .chip{ font-family:var(--mono); font-size:.95rem; padding:4px 12px; border-radius:999px; border:1.5px solid #2c3a46; background:#0d141b; color:#9fb3ab; cursor:pointer; }
   .chip:hover{ border-color:var(--green-dim); color:var(--cream); }
   .chip.on{ border-color:var(--green); color:var(--green); background:rgba(157,255,158,.08); }
-
+  .tk-btn{ font-family:var(--mono); font-size:.95rem; background:#0d141b; border:1px solid #2c3a46; color:#9fb3ab; border-radius:6px; padding:3px 10px; cursor:pointer; text-decoration:none; }
+  .tk-btn:hover{ color:var(--green); border-color:var(--green-dim); }
+  .list{ list-style:none; padding:0; margin:8px 0 0; }
+  .list li{ padding:12px 14px; border:1px solid #223040; border-radius:8px; margin-bottom:10px; background:#111922; }
+  .list li:hover{ border-color:#35506a; }
   .feed-status{ font-family:var(--mono); color:var(--green-dim); font-size:1rem; min-height:1.3em; }
-  .feed, .works{ list-style:none; padding:0; margin:8px 0 0; }
-  .feed li, .works li{ padding:12px 14px; border:1px solid #223040; border-radius:10px; margin-bottom:10px; background:rgba(255,255,255,.02); }
-  .feed li:hover, .works li:hover{ border-color:#35506a; }
   .f-title{ font-family:var(--body); font-weight:500; color:var(--cream); font-size:1rem; line-height:1.35; text-decoration:none; }
   a.f-title:hover{ color:var(--sky); text-decoration:underline; }
-  .f-meta{ font-family:var(--mono); font-size:1rem; color:#8aa39a; margin-top:4px; }
+  .f-meta{ font-family:var(--mono); font-size:.95rem; color:#8aa39a; margin-top:4px; }
   .f-meta .cites{ color:var(--yellow); }
-  .f-actions{ margin-top:6px; }
-  .tk-btn{ font-family:var(--mono); font-size:.95rem; background:none; border:1px solid #2c3a46; color:#9fb3ab; border-radius:6px; padding:2px 10px; cursor:pointer; }
-  .tk-btn:hover{ color:var(--green); border-color:var(--green-dim); }
-
-  .wc-tools input{ width:100%; max-width:420px; font-family:var(--mono); font-size:1.1rem; padding:8px 12px; border-radius:8px; border:1.5px solid #2c3a46; background:#0f161e; color:var(--cream); }
+  .f-actions{ margin-top:6px; display:flex; gap:8px; flex-wrap:wrap; }
+  .wc-tools input{ width:100%; max-width:420px; font-family:var(--mono); font-size:1.05rem; padding:8px 12px; border-radius:8px; border:1.5px solid #2c3a46; background:#0f161e; color:var(--cream); }
   .wc-tools input:focus{ outline:none; border-color:var(--green-dim); }
   .w-cite{ font-family:var(--body); font-size:.95rem; color:var(--cream); line-height:1.5; }
   .w-cite em{ color:#d9e6df; }
-  .w-tag{ display:inline-block; font-family:var(--mono); font-size:.9rem; padding:0 8px; border-radius:999px; margin-right:6px; color:var(--bg); background:var(--c, var(--teal)); }
+  .w-tag{ display:inline-block; font-family:var(--mono); font-size:.85rem; padding:0 8px; border-radius:999px; margin-right:6px; color:var(--bg); background:var(--c); }
   .w-note{ font-family:var(--body); font-size:.85rem; color:#8aa39a; margin-top:3px; }
-  .wc-foot{ margin:10px 0 30px; font-family:var(--mono); color:var(--green-dim); }
+  .wc-foot{ margin:10px 0 0; font-family:var(--mono); color:var(--green-dim); display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+
+  @media (max-width:700px){
+    .eyebrow{ flex-wrap:wrap; }
+    .eyebrow .path{ font-size:.95rem; overflow-wrap:anywhere; }
+    .reader{ width:180px; height:118px; }
+    .reader .figure{ width:118px; }
+    .reader .bird{ width:70px; }
+    .nb-page{ padding:16px 12px 20px; border-radius:0 10px 10px 10px; }
+    .nb-tab{ padding:7px 12px 6px; font-size:.95rem; }
+    .swipe{ display:block; }
+    .map{ min-width:0; width:max-content; }
+    .map-grid{ grid-template-columns:76px repeat(8, 104px); column-gap:6px; }
+    .era{ position:sticky; left:0; z-index:3; background:#0d141b; font-size:.85rem; }
+    .era small{ font-size:.72rem; }
+  }
 </style>
 </head>
 <body data-petals="6">
@@ -148,124 +170,73 @@
     <h1>persona</h1>
     <span class="path">~/anna/research/persona</span>
   </div>
-  <div class="hero-sub">research: algorithmic persona</div>
-  <div class="status">// ongoing</div>
+  <div class="hero-sub">research notebook: algorithmic persona</div>
 
-  <p class="statement">
-    An ongoing map of persona theory, from the mask to the platform: how people perform a public self online,
-    and how algorithms and AI now co-author that self. The tracker below follows new research as it is published.
-  </p>
-
-  <div class="mini-stage">
-    <svg viewBox="0 0 1000 550">
-      <defs>
-        <symbol id="mflower-sym" viewBox="-22 -22 44 44">
-          <path d="M0,-11 Q2,-17 7,-16" stroke="#6b4a23" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-          <ellipse cx="8" cy="-15" rx="5.5" ry="3.2" fill="#5fae6a" transform="rotate(-25 8 -15)"/>
-          <path d="M0,-9 C9,-14 15,-4 13,7 C11,17 5,20 0,18 C-5,20 -11,17 -13,7 C-15,-4 -9,-14 0,-9 Z" fill="currentColor"/>
-          <ellipse cx="-4" cy="-2" rx="3" ry="5" fill="#ffffff" opacity=".25" transform="rotate(-20 -4 -2)"/>
-        </symbol>
-      </defs>
-
-      <!-- ground -->
-      <ellipse cx="500" cy="530" rx="140" ry="14" fill="#232f28"/>
-      <g id="mgrassLayer"></g>
-
-      <!-- trunk -->
-      <path class="mtrunk" d="M500,530 L500,380"/>
-
-      <!-- 7 branches fanning up from the fork at (500,380) -->
-      <path class="mbranch" d="M500,380 Q403.4,354.1 297.2,325.6" pathLength="1" style="animation-delay:.05s"/>
-      <path class="mbranch" d="M500,380 Q423.4,315.7 339.1,245.0" pathLength="1" style="animation-delay:.15s"/>
-      <path class="mbranch" d="M500,380 Q457.7,289.4 411.3,189.7" pathLength="1" style="animation-delay:.25s"/>
-      <path class="mbranch" d="M500,380 Q500,280 500,170"        pathLength="1" style="animation-delay:.35s"/>
-      <path class="mbranch" d="M500,380 Q542.3,289.4 588.7,189.7" pathLength="1" style="animation-delay:.45s"/>
-      <path class="mbranch" d="M500,380 Q576.6,315.7 660.9,245.0" pathLength="1" style="animation-delay:.55s"/>
-      <path class="mbranch" d="M500,380 Q596.6,354.1 702.8,325.6" pathLength="1" style="animation-delay:.65s"/>
-
-      <!-- a few decorative leaves along the branches -->
-      <g transform="translate(390,300) rotate(-30) scale(1.1)"><g class="mleaf" style="animation-delay:.9s">
-        <path d="M0,-12 C5,-7 5,6 0,13 C-5,6 -5,-7 0,-12 Z" fill="var(--green-dim)"/>
-      </g></g>
-      <g transform="translate(450,240) rotate(-15) scale(1)"><g class="mleaf" style="animation-delay:.95s">
-        <path d="M0,-12 C5,-7 5,6 0,13 C-5,6 -5,-7 0,-12 Z" fill="#7bc98a"/>
-      </g></g>
-      <g transform="translate(500,250) rotate(0) scale(1.15)"><g class="mleaf" style="animation-delay:1s">
-        <path d="M0,-12 C5,-7 5,6 0,13 C-5,6 -5,-7 0,-12 Z" fill="var(--green)"/>
-      </g></g>
-      <g transform="translate(550,240) rotate(15) scale(1)"><g class="mleaf" style="animation-delay:1.05s">
-        <path d="M0,-12 C5,-7 5,6 0,13 C-5,6 -5,-7 0,-12 Z" fill="#7bc98a"/>
-      </g></g>
-      <g transform="translate(610,300) rotate(30) scale(1.1)"><g class="mleaf" style="animation-delay:1.1s">
-        <path d="M0,-12 C5,-7 5,6 0,13 C-5,6 -5,-7 0,-12 Z" fill="var(--green-dim)"/>
-      </g></g>
-
-      <!-- 7 apples at the branch tips, one per discipline -->
-      <use class="mflower" href="#mflower-sym" x="275" y="303" width="48" height="48"
-           style="color:var(--pink); animation-delay:1.2s" data-href="persona-studies.html"/>
-      <use class="mflower" href="#mflower-sym" x="317" y="223" width="48" height="48"
-           style="color:var(--orange); animation-delay:1.3s" data-href="persona-media.html"/>
-      <use class="mflower" href="#mflower-sym" x="389" y="168" width="48" height="48"
-           style="color:var(--sky); animation-delay:1.4s" data-href="persona-performance-studies.html"/>
-      <use class="mflower" href="#mflower-sym" x="472" y="144" width="60" height="60"
-           style="color:var(--teal); animation-delay:1.5s" data-href="persona-algorithm-studies.html"/>
-      <use class="mflower" href="#mflower-sym" x="567" y="168" width="48" height="48"
-           style="color:var(--purple); animation-delay:1.6s" data-href="persona-philosophy-tech.html"/>
-      <use class="mflower" href="#mflower-sym" x="639" y="223" width="48" height="48"
-           style="color:var(--yellow); animation-delay:1.7s" data-href="persona-hci.html"/>
-      <use class="mflower" href="#mflower-sym" x="681" y="303" width="48" height="48"
-           style="color:var(--green); animation-delay:1.8s" data-href="persona-art-technology.html"/>
-
-      <!-- labels -->
-      <text class="mlabel" x="240" y="345" fill="var(--pink)" text-anchor="middle" transform="rotate(-16 240 345)" style="animation-delay:2s">persona studies</text>
-      <text class="mlabel" x="285" y="270" fill="var(--orange)" text-anchor="middle" transform="rotate(-12 285 270)" style="animation-delay:2.05s">media studies</text>
-      <text class="mlabel" x="365" y="200" fill="var(--sky)" text-anchor="middle" transform="rotate(-6 365 200)" style="animation-delay:2.1s">performance studies</text>
-      <text class="mlabel" x="502" y="116" fill="var(--teal)" text-anchor="middle" style="font-size:15px; animation-delay:2.15s">critical algorithm studies</text>
-      <text class="mlabel" x="635" y="200" fill="var(--purple)" text-anchor="middle" transform="rotate(6 635 200)" style="animation-delay:2.2s">philosophy of technology</text>
-      <text class="mlabel" x="715" y="270" fill="var(--yellow)" text-anchor="middle" transform="rotate(12 715 270)" style="animation-delay:2.25s">hci</text>
-      <text class="mlabel" x="760" y="345" fill="var(--green)" text-anchor="middle" transform="rotate(16 760 345)" style="animation-delay:2.3s">art and technology</text>
-
-      <!-- persona figure, seated on the grass beneath the trunk -->
-      <image href="persona.webp" x="560" y="380" width="170" height="150" preserveAspectRatio="xMidYMax meet"/>
-
-      <!-- bird, on the grass beside persona.webp: click to toggle music -->
-      <g id="tree-bird" class="tree-bird" transform="translate(470,530)" role="button" tabindex="0" aria-label="toggle music">
-        <g class="bird-head-group">
-          <image href="bird.webp" x="-55" y="-110" width="110" height="110" preserveAspectRatio="xMidYMax meet"/>
-        </g>
-        <text class="tnote tn1" x="55" y="-75">♪</text>
-        <text class="tnote tn2" x="22" y="-95">♫</text>
-        <text class="tnote tn3" x="-14" y="-70">♪</text>
-      </g>
-    </svg>
+  <div class="intro">
+    <div>
+      <p class="statement">
+        An ongoing notebook on persona theory, from the mask to the platform: how people perform a public self online,
+        and how algorithms and AI now co-author that self. Each card is a source; the pencil threads show who builds on whom.
+      </p>
+      <div class="status">// ongoing · <span id="src-count"></span> sources · live feed of new research</div>
+    </div>
+    <div class="reader" aria-label="persona reading on the grass">
+      <img class="figure" src="persona.webp" alt="" loading="lazy">
+      <button class="bird" id="bird" type="button" aria-label="play or pause music"><img src="bird.webp" alt=""></button>
+      <span class="note-fly n1">♪</span><span class="note-fly n2">♫</span><span class="note-fly n3">♪</span>
+    </div>
   </div>
 
-
-  <!-- ===================== persona research tracker ===================== -->
-  <section class="tracker" aria-label="persona research tracker">
-
-    <h2 class="tk-h">genealogy of persona</h2>
-    <p class="tk-note">from the mask to the platform: key moments in persona theory, leading to online persona and the public performance of self</p>
-    <div class="timeline" id="timeline"></div>
-
-    <h2 class="tk-h">live research feed</h2>
-    <p class="tk-note">newest scholarship on online persona and public self-performance, pulled live from <a href="https://openalex.org" target="_blank" rel="noopener">OpenAlex</a>, an open index of research papers. Refreshed every day.</p>
-    <div class="chips" id="thread-chips"></div>
-    <div class="feed-status" id="feed-status"></div>
-    <ol class="feed" id="feed"></ol>
-
-    <h2 class="tk-h">works cited</h2>
-    <p class="tk-note">every source across the persona research branches. Search, filter by field, and copy a citation.</p>
-    <div class="wc-tools">
-      <input id="wc-search" type="search" placeholder="search author, title, year..." aria-label="search works cited">
-      <div class="chips" id="wc-chips"></div>
+  <section class="notebook" aria-label="persona research notebook">
+    <div class="nb-tabs" role="tablist">
+      <button class="nb-tab on" role="tab" data-view="map">map</button>
+      <button class="nb-tab" role="tab" data-view="archive">archive <span class="cnt" id="arc-count"></span></button>
+      <button class="nb-tab" role="tab" data-view="new">new arrivals</button>
     </div>
-    <ol class="works" id="works"></ol>
-    <div class="wc-foot"><button class="tk-btn" id="copy-all">copy all citations</button> <span id="wc-count"></span></div>
 
+    <div class="nb-page">
+
+      <!-- MAP -->
+      <div class="nb-view" id="view-map">
+        <p class="nb-hint">Columns are fields, rows are eras. Click a card to open its notebook page; click a field name to open that branch of the research.</p>
+        <div class="swipe">swipe sideways to see all fields →</div>
+        <div class="map-scroll">
+          <div class="map" id="map">
+            <svg class="threads" id="threads" aria-hidden="true"></svg>
+            <div class="map-grid" id="map-grid"></div>
+          </div>
+        </div>
+        <div class="map-legend">
+          <span><span class="dash"></span>builds on</span>
+          <span>★ landmark</span>
+          <span>? details still to verify</span>
+        </div>
+      </div>
+
+      <!-- ARCHIVE -->
+      <div class="nb-view" id="view-archive" hidden>
+        <p class="nb-hint">Every source in the notebook. Search, filter by field, and copy citations (APA 7).</p>
+        <div class="wc-tools">
+          <input id="wc-search" type="search" placeholder="search author, title, year, idea..." aria-label="search the archive">
+          <div class="chips" id="wc-chips"></div>
+        </div>
+        <ol class="list" id="works"></ol>
+        <div class="wc-foot"><button class="tk-btn" id="copy-all">copy all citations</button> <span id="wc-count"></span></div>
+      </div>
+
+      <!-- NEW ARRIVALS -->
+      <div class="nb-view" id="view-new" hidden>
+        <p class="nb-hint">The newest scholarship on online persona and public self-performance from the past year, pulled live from <a href="https://openalex.org" target="_blank" rel="noopener">OpenAlex</a>, an open index of research papers. Refreshed every day.</p>
+        <div class="chips" id="thread-chips"></div>
+        <div class="feed-status" id="feed-status"></div>
+        <ol class="list" id="feed"></ol>
+      </div>
+
+    </div>
   </section>
 
-  <audio id="mbg-music" src="music1.mp3" loop></audio>
+  <aside class="leaf" id="leaf" aria-hidden="true" tabindex="-1"></aside>
+  <audio id="mbg-music" src="music1.mp3" loop preload="none"></audio>
 
 </main>
 
@@ -273,267 +244,343 @@
 
 <script src="main.js" defer></script>
 <script>
+(function(){
   // ============================================================
-  // PERSONA RESEARCH TRACKER
-  // 1. genealogy timeline  2. live feed (OpenAlex)  3. works cited
-  // To add a source: add a line to WORKS below.
+  // PERSONA RESEARCH NOTEBOOK
+  //   map: fields (columns) x eras (rows), cards = sources, threads = "builds on"
+  //   archive: searchable works cited    new arrivals: live OpenAlex feed
+  // To add a source: add a line to WORKS. To connect two sources: add a pair to THREADS.
   // ============================================================
-  (function(){
-    const FIELDS = {
-      foundations:{ label:'foundations',               c:'var(--cream)' },
-      persona:    { label:'persona studies',           c:'var(--pink)' },
-      media:      { label:'media studies',             c:'var(--orange)' },
-      performance:{ label:'performance studies',       c:'var(--sky)' },
-      algorithm:  { label:'critical algorithm studies',c:'var(--teal)' },
-      philosophy: { label:'philosophy of technology',  c:'var(--purple)' },
-      hci:        { label:'hci',                       c:'var(--yellow)' },
-      art:        { label:'art and technology',        c:'var(--green)' },
-    };
 
-    // a = authors, y = year, t = title, s = where published (blank if still to add), f = field, n = note
-    const WORKS = [
-      { a:'Jung, C. G.', y:1953, t:'Two essays on analytical psychology', s:'Pantheon (Collected Works, Vol. 7)', f:'foundations', n:'the persona as the mask between the individual and society' },
-      { a:'Goffman, E.', y:1959, t:'The presentation of self in everyday life', s:'Doubleday', f:'foundations', n:'front stage and back stage: the self as an everyday performance' },
-      { a:'Butler, J.', y:1990, t:'Gender trouble: Feminism and the subversion of identity', s:'Routledge', f:'foundations', n:'performativity: identity produced through repeated acts' },
-      { a:'Marshall, P. D.', y:1997, t:'Celebrity and power: Fame in contemporary culture', s:'University of Minnesota Press', f:'foundations', n:'celebrity as a public persona produced by media systems' },
-      { a:'Hogan, B.', y:2010, t:'The presentation of self in the age of social media: Distinguishing performances and exhibitions online', s:'Bulletin of Science, Technology & Society, 30(6), 377-386', f:'media', n:'online profiles as curated exhibitions rather than live performances' },
-      { a:'Marwick, A. E., & boyd, d.', y:2011, t:'I tweet honestly, I tweet passionately: Twitter users, context collapse, and the imagined audience', s:'New Media & Society, 13(1), 114-133', f:'media', n:'context collapse and the imagined audience' },
-      { a:'Abidin, C.', y:2018, t:'Internet celebrity: Understanding fame online', s:'Emerald', f:'media', n:'influencers, microcelebrity and the attention economy' },
+  const FIELDS = {
+    foundations:{ label:'foundations',                c:'var(--cream)',  page:'' },
+    persona:    { label:'persona studies',            c:'var(--pink)',   page:'persona-studies.html' },
+    media:      { label:'media studies',              c:'var(--orange)', page:'persona-media.html' },
+    performance:{ label:'performance studies',        c:'var(--sky)',    page:'persona-performance-studies.html' },
+    algorithm:  { label:'critical algorithm studies', c:'var(--teal)',   page:'persona-algorithm-studies.html' },
+    philosophy: { label:'philosophy of technology',   c:'var(--purple)', page:'persona-philosophy-tech.html' },
+    hci:        { label:'hci',                        c:'var(--yellow)', page:'persona-HCI.html' },
+    art:        { label:'art and technology',         c:'var(--green)',  page:'persona-art-technology.html' },
+  };
 
-      { a:'Marshall, P. D., & Barbour, K.', y:2015, t:'Making intellectual room for persona studies: A new consciousness and a shifted perspective', s:'Persona Studies, 1(1)', f:'persona', n:'persona as a strategic public identity' },
-      { a:'Marshall, P. D., Barbour, K., & Moore, C.', y:2017, t:'Five dimensions of online persona', s:'', f:'persona', n:'public, mediatised, performative, collective, intentional value' },
-      { a:'Moore, C., & Connell, ', y:2025, t:'Podcast persona', s:'', f:'persona', n:'persona beyond humans: media objects built by audiences and platforms' },
-      { a:'Lee, K.', y:2019, t:'Celebrity profiling as life writing', s:'', f:'persona', n:'journalist and subject personas co-produced' },
+  const ERAS = [
+    { label:'1950s',     note:'the mask and the stage',            from:1900, to:1989 },
+    { label:'1990s',     note:'performativity and celebrity',       from:1990, to:1999 },
+    { label:'2000s',     note:'webcams, installations, design personas', from:2000, to:2009 },
+    { label:'2010-14',   note:'the social media self',              from:2010, to:2014 },
+    { label:'2015-19',   note:'persona studies and platforms',      from:2015, to:2019 },
+    { label:'2020s',     note:'the algorithmic and generated self', from:2020, to:2099 },
+    { label:'undated',   note:'notes still to place',               from:null, to:null },
+  ];
 
-      { a:'Senft, T. M.', y:2008, t:'Camgirls: Celebrity and community in the age of social networks', s:'Peter Lang', f:'media', n:'webcam performance and the origins of microcelebrity' },
-      { a:'Banet-Weiser, S.', y:2012, t:'Authentic™: The politics of ambivalence in a brand culture', s:'NYU Press', f:'media', n:'authenticity as a brand' },
-      { a:'Marwick, A. E.', y:2013, t:'Status update: Celebrity, publicity, and branding in the social media age', s:'Yale University Press', f:'media', n:'entrepreneurial selfhood and self-branding' },
-      { a:'Abidin, C.', y:2016, t:'Visibility labour: Engaging with influencers’ fashion brands and #OOTD advertorial campaigns on Instagram', s:'Media International Australia, 161(1), 86-100', f:'media', n:'visibility labour in attention economies' },
-      { a:'Duffy, B. E.', y:2017, t:'(Not) getting paid to do what you love: Gender, social media, and aspirational work', s:'Yale University Press', f:'media', n:'aspirational labour' },
+  // id = short key used by THREADS, k = name on the card, a = authors (APA), y = year,
+  // t = title, s = where published ('' = still to add), f = field, n = the idea in one line,
+  // lm = landmark, v = details still to verify
+  const WORKS = [
+    { id:'jung53',     k:'Jung',              a:'Jung, C. G.', y:1953, t:'Two essays on analytical psychology', s:'Pantheon (Collected Works, Vol. 7)', f:'foundations', n:'the persona as the mask between the individual and society', lm:1 },
+    { id:'goffman59',  k:'Goffman',           a:'Goffman, E.', y:1959, t:'The presentation of self in everyday life', s:'Doubleday', f:'foundations', n:'front stage and back stage: the self as an everyday performance', lm:1 },
+    { id:'butler90',   k:'Butler',            a:'Butler, J.', y:1990, t:'Gender trouble: Feminism and the subversion of identity', s:'Routledge', f:'foundations', n:'performativity: identity produced through repeated acts', lm:1 },
+    { id:'marshall97', k:'Marshall',          a:'Marshall, P. D.', y:1997, t:'Celebrity and power: Fame in contemporary culture', s:'University of Minnesota Press', f:'persona', n:'celebrity as a public persona produced by media systems', lm:1 },
 
-      { a:'Taylor, D.', y:2003, t:'The archive and the repertoire: Performing cultural memory in the Americas', s:'Duke University Press', f:'performance', n:'embodied repertoire vs. the archive' },
-      { a:'Zerbib, D.', y:null, t:'The performative turn', s:'', f:'performance', n:'performance as an event that transforms meaning' },
-      { a:'Martin, C.', y:null, t:'Documentary performance', s:'', f:'performance', n:'fiction, testimony, archive and technology' },
+    { id:'mb15',       k:'Marshall & Barbour', a:'Marshall, P. D., & Barbour, K.', y:2015, t:'Making intellectual room for persona studies: A new consciousness and a shifted perspective', s:'Persona Studies, 1(1)', f:'persona', n:'persona as a strategic public identity; the field gets its name', lm:1 },
+    { id:'mbm17',      k:'Marshall, Barbour & Moore', a:'Marshall, P. D., Barbour, K., & Moore, C.', y:2017, t:'Five dimensions of online persona', s:'', f:'persona', n:'online persona as public, mediatised, performative, collective, and of intentional value', v:1 },
+    { id:'lee19',      k:'Lee',               a:'Lee, K.', y:2019, t:'Celebrity profiling as life writing', s:'', f:'persona', n:'journalist and subject personas are co-produced', v:1 },
+    { id:'mc25',       k:'Moore & Connell',   a:'Moore, C., & Connell', y:2025, t:'Podcast persona', s:'', f:'persona', n:'persona beyond humans: media objects built by audiences and platforms', v:1 },
 
-      { a:'Bucher, T.', y:2018, t:'If...then: Algorithmic power and politics', s:'Oxford University Press', f:'algorithm', n:'algorithmic power in everyday platform life' },
-      { a:'Amoore, L.', y:2020, t:'Cloud ethics: Algorithms and the attributes of ourselves and others', s:'Duke University Press', f:'algorithm', n:'machine learning reduces social scenes to attributes' },
-      { a:'Crawford, K.', y:2021, t:'Atlas of AI', s:'Yale University Press', f:'algorithm', n:'classification as material, political infrastructure' },
+    { id:'senft08',    k:'Senft',             a:'Senft, T. M.', y:2008, t:'Camgirls: Celebrity and community in the age of social networks', s:'Peter Lang', f:'media', n:'webcam performance and the origins of microcelebrity', lm:1 },
+    { id:'hogan10',    k:'Hogan',             a:'Hogan, B.', y:2010, t:'The presentation of self in the age of social media: Distinguishing performances and exhibitions online', s:'Bulletin of Science, Technology & Society, 30(6), 377-386', f:'media', n:'online profiles as curated exhibitions rather than live performances', lm:1 },
+    { id:'mboyd11',    k:'Marwick & boyd',    a:'Marwick, A. E., & boyd, d.', y:2011, t:'I tweet honestly, I tweet passionately: Twitter users, context collapse, and the imagined audience', s:'New Media & Society, 13(1), 114-133', f:'media', n:'context collapse and the imagined audience', lm:1 },
+    { id:'banet12',    k:'Banet-Weiser',      a:'Banet-Weiser, S.', y:2012, t:'Authentic™: The politics of ambivalence in a brand culture', s:'NYU Press', f:'media', n:'authenticity sold as a brand' },
+    { id:'marwick13',  k:'Marwick',           a:'Marwick, A. E.', y:2013, t:'Status update: Celebrity, publicity, and branding in the social media age', s:'Yale University Press', f:'media', n:'entrepreneurial selfhood and self-branding' },
+    { id:'abidin16',   k:'Abidin',            a:'Abidin, C.', y:2016, t:'Visibility labour: Engaging with influencers’ fashion brands and #OOTD advertorial campaigns on Instagram', s:'Media International Australia, 161(1), 86-100', f:'media', n:'visibility labour in attention economies' },
+    { id:'duffy17',    k:'Duffy',             a:'Duffy, B. E.', y:2017, t:'(Not) getting paid to do what you love: Gender, social media, and aspirational work', s:'Yale University Press', f:'media', n:'aspirational labour behind the online self' },
+    { id:'abidin18',   k:'Abidin',            a:'Abidin, C.', y:2018, t:'Internet celebrity: Understanding fame online', s:'Emerald', f:'media', n:'influencers, microcelebrity and the attention economy' },
 
-      { a:'Clarke, R.', y:2014, t:'The digital persona', s:'', f:'philosophy', n:'a data-based model of an individual’s public personality' },
-      { a:'Hui, Y.', y:2016, t:'On the existence of digital objects', s:'University of Minnesota Press', f:'philosophy', n:'profiles and data as ontological objects' },
-      { a:'Cheney-Lippold, J.', y:2017, t:'We are data: Algorithms and the making of our digital selves', s:'NYU Press', f:'philosophy', n:'measurable types and "as if" identity' },
+    { id:'taylor03',   k:'Taylor',            a:'Taylor, D.', y:2003, t:'The archive and the repertoire: Performing cultural memory in the Americas', s:'Duke University Press', f:'performance', n:'embodied repertoire versus the archive' },
+    { id:'zerbib',     k:'Zerbib',            a:'Zerbib, D.', y:null, t:'The performative turn', s:'', f:'performance', n:'performance as an event that transforms meaning', v:1 },
+    { id:'martin',     k:'Martin',            a:'Martin, C.', y:null, t:'Documentary performance', s:'', f:'performance', n:'fiction, testimony, archive and technology', v:1 },
 
-      { a:'Cooper, A.', y:1999, t:'The inmates are running the asylum', s:'Sams', f:'hci', n:'design personas as fictional users' },
-      { a:'Pruitt, J., & Adlin, T.', y:2006, t:'The persona lifecycle: Keeping people in mind throughout product design', s:'Morgan Kaufmann', f:'hci', n:'evidence-based personas' },
-      { a:'Jung, S.-G., Salminen, J., Jansen, B. J., et al.', y:2018, t:'Automatic persona generation', s:'', f:'hci', n:'personas computed from social media data' },
+    { id:'bucher18',   k:'Bucher',            a:'Bucher, T.', y:2018, t:'If...then: Algorithmic power and politics', s:'Oxford University Press', f:'algorithm', n:'algorithmic power in everyday platform life' },
+    { id:'amoore20',   k:'Amoore',            a:'Amoore, L.', y:2020, t:'Cloud ethics: Algorithms and the attributes of ourselves and others', s:'Duke University Press', f:'algorithm', n:'machine learning reduces people to attributes', lm:1 },
+    { id:'crawford21', k:'Crawford',          a:'Crawford, K.', y:2021, t:'Atlas of AI', s:'Yale University Press', f:'algorithm', n:'classification as material, political infrastructure' },
 
-      { a:'Bishop, C.', y:2005, t:'Installation art: A critical history', s:'Tate Publishing', f:'art', n:'installation history and theory' },
-      { a:'Kester, G. H.', y:2004, t:'Conversation pieces: Community and communication in modern art', s:'University of California Press', f:'art', n:'dialogical aesthetics' },
-      { a:'Bishop, C.', y:2012, t:'Artificial hells: Participatory art and the politics of spectatorship', s:'Verso', f:'art', n:'participatory art and spectatorship' },
-      { a:'Parikka, J.', y:2012, t:'What is media archaeology?', s:'Polity', f:'art', n:'media archaeology' },
-      { a:'Manning, E.', y:2013, t:'Always more than one: Individuation’s dance', s:'Duke University Press', f:'art', n:'process philosophy and movement' },
-      { a:'Parikka, J.', y:2015, t:'A geology of media', s:'University of Minnesota Press', f:'art', n:'material media histories' },
-      { a:'Hansen, M. B. N.', y:2015, t:'Feed-forward: On the future of twenty-first-century media', s:'University of Chicago Press', f:'art', n:'perception in computational environments' },
-      { a:'Huhtamo, E.', y:null, t:'Media archaeology (essays)', s:'', f:'art', n:'histories of media forms' },
-      { a:'Kac, E.', y:null, t:'Telepresence and bio art (essays)', s:'', f:'art', n:'art-technology practices' },
-    ];
+    { id:'clarke14',   k:'Clarke',            a:'Clarke, R.', y:2014, t:'The digital persona', s:'', f:'philosophy', n:'a data-based model of an individual’s public personality', v:1 },
+    { id:'hui16',      k:'Hui',               a:'Hui, Y.', y:2016, t:'On the existence of digital objects', s:'University of Minnesota Press', f:'philosophy', n:'profiles and data as ontological objects' },
+    { id:'cl17',       k:'Cheney-Lippold',    a:'Cheney-Lippold, J.', y:2017, t:'We are data: Algorithms and the making of our digital selves', s:'NYU Press', f:'philosophy', n:'algorithms make "measurable types": identity as if', lm:1 },
 
-    // ---------- 1. genealogy timeline ----------
-    const TIMELINE = [
-      [1953,'Jung','the persona as a social mask','var(--purple)'],
-      [1959,'Goffman','everyday life as front-stage performance','var(--purple)'],
-      [1990,'Butler','identity as repeated performative acts','var(--purple)'],
-      [1997,'Marshall','celebrity as a produced public persona','var(--pink)'],
-      [2008,'Senft','microcelebrity on the webcam','var(--orange)'],
-      [2010,'Hogan','profiles as curated exhibitions','var(--orange)'],
-      [2011,'Marwick & boyd','context collapse, imagined audience','var(--orange)'],
-      [2013,'Marwick','self-branding in the social media age','var(--orange)'],
-      [2015,'Marshall & Barbour','persona studies as a field','var(--pink)'],
-      [2017,'Cheney-Lippold','algorithms make "measurable" selves','var(--teal)'],
-      [2018,'Abidin · Bucher','influencers; algorithmic power','var(--teal)'],
-      [2020,'Amoore','AI reduces people to attributes','var(--teal)'],
-    ];
-    document.getElementById('timeline').innerHTML = TIMELINE.map(([y,w,t,c])=>
-      `<div class="tl-item" style="--c:${c}"><div class="tl-year">${y}</div><div class="tl-who">${w}</div><div class="tl-what">${t}</div></div>`).join('');
+    { id:'cooper99',   k:'Cooper',            a:'Cooper, A.', y:1999, t:'The inmates are running the asylum', s:'Sams', f:'hci', n:'design personas as fictional users' },
+    { id:'pruitt06',   k:'Pruitt & Adlin',    a:'Pruitt, J., & Adlin, T.', y:2006, t:'The persona lifecycle: Keeping people in mind throughout product design', s:'Morgan Kaufmann', f:'hci', n:'evidence-based personas' },
+    { id:'jungsg18',   k:'Jung et al.',       a:'Jung, S.-G., Salminen, J., Jansen, B. J., et al.', y:2018, t:'Automatic persona generation', s:'', f:'hci', n:'personas computed from social media data', v:1 },
 
-    // ---------- 2. live research feed ----------
-    const THREADS = [
-      { label:'online persona',            q:'"online persona"' },
-      { label:'self-presentation online',  q:'self-presentation social media' },
-      { label:'influencers & microcelebrity', q:'influencer microcelebrity authenticity' },
-      { label:'algorithmic identity',      q:'algorithmic identity' },
-      { label:'AI & the generated self',   q:'generative AI self-representation identity' },
-    ];
-    const esc = s => String(s ?? '').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-    const feedEl = document.getElementById('feed'), statusEl = document.getElementById('feed-status');
-    const chips = document.getElementById('thread-chips');
-    let current = 0;
+    { id:'kester04',   k:'Kester',            a:'Kester, G. H.', y:2004, t:'Conversation pieces: Community and communication in modern art', s:'University of California Press', f:'art', n:'dialogical aesthetics' },
+    { id:'bishop05',   k:'Bishop',            a:'Bishop, C.', y:2005, t:'Installation art: A critical history', s:'Tate Publishing', f:'art', n:'installation history and theory' },
+    { id:'bishop12',   k:'Bishop',            a:'Bishop, C.', y:2012, t:'Artificial hells: Participatory art and the politics of spectatorship', s:'Verso', f:'art', n:'participatory art and spectatorship' },
+    { id:'parikka12',  k:'Parikka',           a:'Parikka, J.', y:2012, t:'What is media archaeology?', s:'Polity', f:'art', n:'media archaeology' },
+    { id:'manning13',  k:'Manning',           a:'Manning, E.', y:2013, t:'Always more than one: Individuation’s dance', s:'Duke University Press', f:'art', n:'process philosophy and movement' },
+    { id:'parikka15',  k:'Parikka',           a:'Parikka, J.', y:2015, t:'A geology of media', s:'University of Minnesota Press', f:'art', n:'material media histories' },
+    { id:'hansen15',   k:'Hansen',            a:'Hansen, M. B. N.', y:2015, t:'Feed-forward: On the future of twenty-first-century media', s:'University of Chicago Press', f:'art', n:'perception in computational environments' },
+    { id:'huhtamo',    k:'Huhtamo',           a:'Huhtamo, E.', y:null, t:'Media archaeology (essays)', s:'', f:'art', n:'histories of media forms', v:1 },
+    { id:'kac',        k:'Kac',               a:'Kac, E.', y:null, t:'Telepresence and bio art (essays)', s:'', f:'art', n:'art and technology practices', v:1 },
+  ];
 
-    function apaAuthors(list){
-      const names = list.map(n=>{
-        const parts = String(n).trim().split(/\s+/); const last = parts.pop();
-        return last + (parts.length ? ', ' + parts.map(p=>p[0].toUpperCase()+'.').join(' ') : '');
-      });
-      if(names.length <= 1) return names[0] || 'Unknown';
-      if(names.length > 3) return names.slice(0,3).join(', ') + ', et al.';
-      return names.slice(0,-1).join(', ') + ', & ' + names[names.length-1];
-    }
-    function copy(text, btn){
-      const done = ()=>{ const o = btn.textContent; btn.textContent = 'copied ✓'; setTimeout(()=> btn.textContent = o, 1400); };
-      if(navigator.clipboard) navigator.clipboard.writeText(text).then(done).catch(()=>{});
-    }
+  // [later work, earlier work it builds on]
+  const THREADS = [
+    ['marshall97','jung53'], ['mb15','marshall97'], ['mb15','goffman59'], ['mbm17','mb15'], ['mc25','mbm17'], ['lee19','mb15'],
+    ['hogan10','goffman59'], ['mboyd11','goffman59'], ['marwick13','senft08'], ['abidin16','marwick13'], ['abidin18','abidin16'],
+    ['duffy17','banet12'], ['duffy17','marwick13'], ['senft08','marshall97'],
+    ['zerbib','butler90'], ['taylor03','butler90'],
+    ['cl17','clarke14'], ['amoore20','cl17'], ['crawford21','amoore20'], ['bucher18','cl17'],
+    ['pruitt06','cooper99'], ['jungsg18','pruitt06'],
+    ['bishop12','kester04'], ['bishop12','bishop05'], ['parikka15','parikka12'], ['parikka12','huhtamo'],
+  ];
 
-    function renderFeed(items){
-      if(!items.length){ feedEl.innerHTML = ''; statusEl.textContent = 'no new papers in the last year for this thread'; return; }
-      feedEl.innerHTML = items.map((w,i)=>{
-        const authors = (w.authorships||[]).map(a=>a.author && a.author.display_name).filter(Boolean);
-        const venue = w.primary_location && w.primary_location.source && w.primary_location.source.display_name;
-        const link = w.doi || (w.primary_location && w.primary_location.landing_page_url) || w.id;
-        const cite = `${apaAuthors(authors)} (${w.publication_year}). ${w.title || w.display_name}.${venue ? ' ' + venue + '.' : ''}${w.doi ? ' ' + w.doi : ''}`;
-        return `<li>
-          <a class="f-title" href="${esc(link)}" target="_blank" rel="noopener">${esc(w.title || w.display_name)}</a>
-          <div class="f-meta">${esc(authors.slice(0,4).join(', '))}${authors.length>4?' et al.':''} · ${esc(venue || 'preprint / other')} · ${esc(w.publication_date)}${w.cited_by_count ? ` · <span class="cites">cited ${w.cited_by_count}×</span>` : ''}</div>
-          <div class="f-actions"><button class="tk-btn" data-cite="${esc(cite)}">copy citation</button></div>
-        </li>`;
-      }).join('');
-      feedEl.querySelectorAll('[data-cite]').forEach(b=> b.addEventListener('click', ()=> copy(b.dataset.cite, b)));
-    }
+  const byId = Object.fromEntries(WORKS.map(w => [w.id, w]));
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const yr = w => w.y || 'n.d.';
+  const citeText = w => `${w.a} (${yr(w)}). ${w.t}.${w.s ? ' ' + w.s + '.' : ''}`;
+  const citeHTML = w => {
+    const journal = /\d+\(\d+\)/.test(w.s || '');
+    const title = journal ? esc(w.t) : `<em>${esc(w.t)}</em>`;
+    const src = w.s ? (journal ? ` <em>${esc(w.s)}</em>.` : ` ${esc(w.s)}.`) : '';
+    return `${esc(w.a)} (${yr(w)}). ${title}.${src}`;
+  };
+  function copy(text, btn){
+    const done = () => { const o = btn.textContent; btn.textContent = 'copied ✓'; setTimeout(() => btn.textContent = o, 1400); };
+    if(navigator.clipboard) navigator.clipboard.writeText(text).then(done).catch(()=>{});
+  }
+  document.getElementById('src-count').textContent = WORKS.length;
+  document.getElementById('arc-count').textContent = WORKS.length;
 
-    async function loadThread(i){
-      current = i;
-      chips.querySelectorAll('.chip').forEach((c,k)=> c.classList.toggle('on', k===i));
-      const th = THREADS[i], key = 'persona-feed:' + th.q;
-      try{
-        const cached = JSON.parse(localStorage.getItem(key) || 'null');
-        if(cached && Date.now() - cached.at < 12*3600*1000){
-          renderFeed(cached.items); statusEl.textContent = `${cached.total.toLocaleString()} papers in the last year · updated ${new Date(cached.at).toLocaleDateString()}`; return;
-        }
-      }catch(e){}
-      statusEl.textContent = 'searching new research...'; feedEl.innerHTML = '';
-      const since = new Date(Date.now() - 365*24*3600*1000).toISOString().slice(0,10);
-      const url = 'https://api.openalex.org/works?search=' + encodeURIComponent(th.q) +
-        '&filter=from_publication_date:' + since + ',type:article|book-chapter|book' +
-        '&sort=publication_date:desc&per_page=10' +
-        '&select=id,doi,title,display_name,publication_date,publication_year,authorships,primary_location,cited_by_count';
-      try{
-        const res = await fetch(url);
-        if(!res.ok) throw new Error(res.status);
-        const d = await res.json();
-        if(current !== i) return;
-        const items = d.results || [], total = (d.meta && d.meta.count) || items.length;
-        renderFeed(items);
-        statusEl.textContent = `${total.toLocaleString()} papers in the last year · updated just now`;
-        try{ localStorage.setItem(key, JSON.stringify({ at: Date.now(), items, total })); }catch(e){}
-      }catch(err){
-        if(current === i) statusEl.textContent = 'the live feed is resting right now, try again in a moment';
-      }
-    }
-    chips.innerHTML = THREADS.map((t,i)=>`<button class="chip" type="button">${esc(t.label)}</button>`).join('');
-    chips.querySelectorAll('.chip').forEach((c,i)=> c.addEventListener('click', ()=> loadThread(i)));
-    loadThread(0);
+  // ---------------- tabs ----------------
+  const tabs = document.querySelectorAll('.nb-tab');
+  function showView(v){
+    tabs.forEach(t => { const on = t.dataset.view === v; t.classList.toggle('on', on); t.setAttribute('aria-selected', on); });
+    document.querySelectorAll('.nb-view').forEach(el => el.hidden = el.id !== 'view-' + v);
+    if(v === 'map') requestAnimationFrame(drawThreads);
+    if(v === 'new' && !feedStarted){ feedStarted = true; loadThread(0); }
+    try{ localStorage.setItem('persona-view', v); }catch(e){}
+  }
+  tabs.forEach(t => t.addEventListener('click', () => showView(t.dataset.view)));
 
-    // ---------- 3. works cited ----------
-    const worksEl = document.getElementById('works'), searchEl = document.getElementById('wc-search');
-    const wcChips = document.getElementById('wc-chips');
-    let field = 'all';
-    const citeText = w => `${w.a} (${w.y || 'n.d.'}). ${w.t}.${w.s ? ' ' + w.s + '.' : ''}`;
-    const citeHTML = w => {
-      const journal = /\d+\(\d+\)/.test(w.s || '');
-      const title = journal ? esc(w.t) : `<em>${esc(w.t)}</em>`;
-      const src = w.s ? (journal ? ` <em>${esc(w.s)}</em>.` : ` ${esc(w.s)}.`) : '';
-      return `${esc(w.a)} (${w.y || 'n.d.'}). ${title}.${src}`;
-    };
-    function renderWorks(){
-      const q = searchEl.value.trim().toLowerCase();
-      const list = WORKS.filter(w => (field === 'all' || w.f === field) &&
-        (!q || (w.a + ' ' + w.t + ' ' + (w.y||'') + ' ' + (w.n||'')).toLowerCase().includes(q)))
-        .sort((a,b)=> a.a.localeCompare(b.a) || (a.y||0) - (b.y||0));
-      worksEl.innerHTML = list.map(w=>`<li>
-        <div class="w-cite"><span class="w-tag" style="--c:${FIELDS[w.f].c}">${FIELDS[w.f].label}</span>${citeHTML(w)}</div>
-        ${w.n ? `<div class="w-note">${esc(w.n)}</div>` : ''}
-        <div class="f-actions"><button class="tk-btn" data-cite="${esc(citeText(w))}">copy citation</button></div>
-      </li>`).join('');
-      worksEl.querySelectorAll('[data-cite]').forEach(b=> b.addEventListener('click', ()=> copy(b.dataset.cite, b)));
-      document.getElementById('wc-count').textContent = `${list.length} of ${WORKS.length} sources`;
-      document.getElementById('copy-all').onclick = e => copy(list.map(citeText).join('\n'), e.target);
-    }
-    wcChips.innerHTML = `<button class="chip on" type="button" data-f="all">all</button>` +
-      Object.entries(FIELDS).map(([k,v])=>`<button class="chip" type="button" data-f="${k}">${v.label}</button>`).join('');
-    wcChips.querySelectorAll('.chip').forEach(c=> c.addEventListener('click', ()=>{
-      field = c.dataset.f; wcChips.querySelectorAll('.chip').forEach(x=> x.classList.toggle('on', x===c)); renderWorks();
-    }));
-    searchEl.addEventListener('input', renderWorks);
-    renderWorks();
-  })();
-</script>
-<script>
-  document.querySelectorAll('.mflower').forEach(node=>{
-    node.addEventListener('click', ()=>{
-      const href = node.dataset.href;
-      if(href) window.location.href = href;
+  // ---------------- 1. map ----------------
+  const mapEl = document.getElementById('map'), gridEl = document.getElementById('map-grid'), svg = document.getElementById('threads');
+  const fieldKeys = Object.keys(FIELDS);
+  const inEra = (w, e) => e.from === null ? !w.y : (w.y && w.y >= e.from && w.y <= e.to);
+  let html = '<div></div>' + fieldKeys.map(k => {
+    const f = FIELDS[k];
+    return f.page ? `<a class="col-head" style="--c:${f.c}" href="${f.page}" title="open the ${f.label} branch">${f.label}</a>`
+                  : `<div class="col-head" style="--c:${f.c}">${f.label}</div>`;
+  }).join('');
+  ERAS.forEach(e => {
+    html += `<div class="era">${e.label}<small>${e.note}</small></div>`;
+    fieldKeys.forEach(k => {
+      const list = WORKS.filter(w => w.f === k && inEra(w, e)).sort((a,b) => (a.y||0) - (b.y||0));
+      html += `<div class="cell">` + list.map(w =>
+        `<button class="card${w.lm ? ' landmark' : ''}${w.v ? ' verify' : ''}" style="--c:${FIELDS[w.f].c}" data-id="${w.id}" type="button">
+           <span class="who">${esc(w.k)}</span><span class="yr">${yr(w)}</span></button>`).join('') + `</div>`;
     });
   });
+  gridEl.innerHTML = html;
+  const cardOf = id => gridEl.querySelector(`.card[data-id="${id}"]`);
 
-  // grass blades along the ground, same technique as the homepage tree
-  (function initMiniGrass(){
-    const svgNS = 'http://www.w3.org/2000/svg';
-    const grassLayer = document.getElementById('mgrassLayer');
-    if(!grassLayer) return;
-    const bladeColors = ['#5fae6a','#7bc98a','#3f7a52','#8fd99c'];
-    const bladeCount = 70;
-    for(let i=0;i<bladeCount;i++){
-      const x = 365 + Math.random()*270;
-      const y = 528 + Math.sin(x/40) * 4 + (Math.random()*6 - 3);
-      const h = 12 + Math.random()*18;
-      const rot = -18 + Math.random()*36;
-      const bow = 1.5 + Math.random()*3;
-      const color = bladeColors[Math.floor(Math.random()*bladeColors.length)];
-      const delay = Math.random()*1.2;
-
-      const g = document.createElementNS(svgNS,'g');
-      g.setAttribute('transform', `translate(${x.toFixed(1)},${y.toFixed(1)}) rotate(${rot.toFixed(1)})`);
-
-      const path = document.createElementNS(svgNS,'path');
-      const d = `M0,0 C${-bow},${-h*0.4} ${-bow*0.6},${-h*0.75} 0,${-h} `
-               + `C${bow*0.6},${-h*0.75} ${bow},${-h*0.4} 0,0 Z`;
-      path.setAttribute('d', d);
-      path.setAttribute('class','mblade');
-      path.setAttribute('fill', color);
-      path.style.animationDelay = delay.toFixed(2)+'s';
-
-      g.appendChild(path);
-      grassLayer.appendChild(g);
-    }
-  })();
-
-  // bird on the grass: click to toggle music1.mp3
-  (function initTreeBird(){
-    const bird = document.getElementById('tree-bird');
-    const music = document.getElementById('mbg-music');
-    if(!bird || !music) return;
-    let playing = false;
-
-    function setPlaying(v){
-      playing = v;
-      bird.classList.toggle('playing', v);
-    }
-
-    bird.addEventListener('click', ()=>{
-      if(playing){
-        music.pause();
-        setPlaying(false);
-      } else {
-        music.play().then(()=> setPlaying(true)).catch(()=>{});
-      }
+  function drawThreads(){
+    const box = mapEl.getBoundingClientRect();
+    if(!box.width) return;
+    svg.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
+    svg.setAttribute('width', box.width); svg.setAttribute('height', box.height);
+    svg.innerHTML = THREADS.map(([later, earlier]) => {
+      const a = cardOf(earlier), b = cardOf(later);
+      if(!a || !b) return '';
+      const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+      const x1 = ra.left - box.left + ra.width/2, y1 = ra.bottom - box.top;
+      const x2 = rb.left - box.left + rb.width/2, y2 = rb.top - box.top;
+      const dy = Math.max(30, Math.abs(y2 - y1) * .45);
+      return `<path data-a="${earlier}" data-b="${later}" d="M${x1.toFixed(1)},${y1.toFixed(1)} C${x1.toFixed(1)},${(y1+dy).toFixed(1)} ${x2.toFixed(1)},${(y2-dy).toFixed(1)} ${x2.toFixed(1)},${y2.toFixed(1)}"/>`;
+    }).join('');
+    if(selected) highlight(selected);
+  }
+  let selected = null;
+  function neighbours(id){
+    const s = new Set([id]);
+    THREADS.forEach(([l, e]) => { if(l === id) s.add(e); if(e === id) s.add(l); });
+    return s;
+  }
+  function highlight(id){
+    const lit = id ? neighbours(id) : null;
+    mapEl.classList.toggle('focus', !!id);
+    gridEl.querySelectorAll('.card').forEach(c => {
+      c.classList.toggle('lit', !!lit && lit.has(c.dataset.id));
+      c.classList.toggle('on', c.dataset.id === selected);
     });
+    svg.querySelectorAll('path').forEach(p => p.classList.toggle('lit', !!id && (p.dataset.a === id || p.dataset.b === id)));
+  }
+  gridEl.addEventListener('mouseover', e => { const c = e.target.closest('.card'); if(c) highlight(c.dataset.id); });
+  gridEl.addEventListener('mouseleave', () => highlight(selected));
+  gridEl.addEventListener('click', e => { const c = e.target.closest('.card'); if(c) openLeaf(c.dataset.id); });
+  if(window.ResizeObserver) new ResizeObserver(() => drawThreads()).observe(mapEl);
+  window.addEventListener('load', drawThreads);
+  if(document.fonts) document.fonts.ready.then(drawThreads);
 
-    bird.addEventListener('keydown', e=>{
-      if(e.key === 'Enter' || e.key === ' '){
-        e.preventDefault();
-        bird.dispatchEvent(new Event('click'));
-      }
+  // ---------------- the notebook page for one source ----------------
+  const leaf = document.getElementById('leaf');
+  let lastFocus = null;
+  function relButtons(ids){
+    if(!ids.length) return '<span class="none">nothing linked yet</span>';
+    return '<div class="rel">' + ids.map(id => { const w = byId[id];
+      return `<button type="button" style="--c:${FIELDS[w.f].c}" data-go="${id}">${esc(w.k)} ${yr(w)}</button>`; }).join('') + '</div>';
+  }
+  function openLeaf(id){
+    const w = byId[id]; if(!w) return;
+    selected = id; highlight(id);
+    const f = FIELDS[w.f];
+    const builds = THREADS.filter(t => t[0] === id).map(t => t[1]);
+    const builtBy = THREADS.filter(t => t[1] === id).map(t => t[0]);
+    const scholar = 'https://scholar.google.com/scholar?q=' + encodeURIComponent(w.t + ' ' + w.a.split(',')[0]);
+    leaf.style.setProperty('--c', f.c);
+    leaf.innerHTML = `
+      <button class="leaf-close" type="button" aria-label="close">×</button>
+      <span class="tag">${esc(f.label)}</span>${w.lm ? ' <span class="tag" style="--c:var(--cream)">★ landmark</span>' : ''}
+      <h3>${esc(w.t)}</h3>
+      <div class="by">${esc(w.a)} · ${yr(w)}</div>
+      <div class="lbl">the idea</div>
+      <p class="idea">${esc(w.n)}</p>
+      <div class="lbl">builds on</div>${relButtons(builds)}
+      <div class="lbl">built on by</div>${relButtons(builtBy)}
+      <div class="lbl">citation (APA 7)</div>
+      <p class="apa">${citeHTML(w)}</p>
+      ${w.v ? '<div class="warn">? some details of this source are still being checked</div>' : ''}
+      <div class="acts">
+        <button class="tk-btn" type="button" data-copy>copy citation</button>
+        <a class="tk-btn" href="${scholar}" target="_blank" rel="noopener">find on Google Scholar ↗</a>
+        ${f.page ? `<a class="tk-btn" href="${f.page}">open ${esc(f.label)} ↗</a>` : ''}
+      </div>`;
+    leaf.querySelector('[data-copy]').addEventListener('click', e => copy(citeText(w), e.target));
+    leaf.querySelector('.leaf-close').addEventListener('click', closeLeaf);
+    leaf.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => {
+      openLeaf(b.dataset.go);
+      const c = cardOf(b.dataset.go); if(c) c.scrollIntoView({ block:'nearest', inline:'center', behavior:'smooth' });
+    }));
+    if(!leaf.classList.contains('open')) lastFocus = document.activeElement;
+    leaf.classList.add('open'); leaf.setAttribute('aria-hidden', 'false'); leaf.scrollTop = 0;
+    leaf.focus({ preventScroll:true });
+  }
+  function closeLeaf(){
+    leaf.classList.remove('open'); leaf.setAttribute('aria-hidden', 'true');
+    selected = null; highlight(null);
+    if(lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll:true });
+  }
+  document.addEventListener('keydown', e => { if(e.key === 'Escape' && leaf.classList.contains('open')) closeLeaf(); });
+  document.addEventListener('click', e => {
+    if(leaf.classList.contains('open') && !leaf.contains(e.target) && !e.target.closest('.card') && !e.target.closest('.w-open')) closeLeaf();
+  });
+
+  // ---------------- 2. archive (works cited) ----------------
+  const worksEl = document.getElementById('works'), searchEl = document.getElementById('wc-search');
+  const wcChips = document.getElementById('wc-chips');
+  let field = 'all';
+  function renderWorks(){
+    const q = searchEl.value.trim().toLowerCase();
+    const list = WORKS.filter(w => (field === 'all' || w.f === field) &&
+      (!q || (w.a + ' ' + w.t + ' ' + (w.y||'') + ' ' + (w.n||'')).toLowerCase().includes(q)))
+      .sort((a,b) => a.a.localeCompare(b.a) || (a.y||0) - (b.y||0));
+    worksEl.innerHTML = list.map(w => `<li>
+      <div class="w-cite"><span class="w-tag" style="--c:${FIELDS[w.f].c}">${FIELDS[w.f].label}</span>${citeHTML(w)}</div>
+      ${w.n ? `<div class="w-note">${esc(w.n)}</div>` : ''}
+      <div class="f-actions"><button class="tk-btn" type="button" data-cite="${esc(citeText(w))}">copy citation</button>
+        <button class="tk-btn w-open" type="button" data-open="${w.id}">notebook page</button></div>
+    </li>`).join('');
+    worksEl.querySelectorAll('[data-cite]').forEach(b => b.addEventListener('click', () => copy(b.dataset.cite, b)));
+    worksEl.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => openLeaf(b.dataset.open)));
+    document.getElementById('wc-count').textContent = `${list.length} of ${WORKS.length} sources`;
+    document.getElementById('copy-all').onclick = e => copy(list.map(citeText).join('\n'), e.target);
+  }
+  wcChips.innerHTML = `<button class="chip on" type="button" data-f="all">all</button>` +
+    fieldKeys.map(k => `<button class="chip" type="button" data-f="${k}">${FIELDS[k].label}</button>`).join('');
+  wcChips.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
+    field = c.dataset.f; wcChips.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x === c)); renderWorks();
+  }));
+  searchEl.addEventListener('input', renderWorks);
+  renderWorks();
+
+  // ---------------- 3. new arrivals (live from OpenAlex) ----------------
+  const FEEDS = [
+    { label:'online persona',               q:'"online persona"' },
+    { label:'self-presentation online',     q:'self-presentation social media' },
+    { label:'influencers & microcelebrity', q:'influencer microcelebrity authenticity' },
+    { label:'algorithmic identity',         q:'algorithmic identity' },
+    { label:'AI & the generated self',      q:'generative AI self-representation identity' },
+  ];
+  const feedEl = document.getElementById('feed'), statusEl = document.getElementById('feed-status');
+  const chips = document.getElementById('thread-chips');
+  let current = 0, feedStarted = false;
+  function apaAuthors(list){
+    const names = list.map(n => {
+      const parts = String(n).trim().split(/\s+/); const last = parts.pop();
+      return last + (parts.length ? ', ' + parts.map(p => p[0].toUpperCase() + '.').join(' ') : '');
     });
-  })();
+    if(names.length <= 1) return names[0] || 'Unknown';
+    if(names.length > 3) return names.slice(0,3).join(', ') + ', et al.';
+    return names.slice(0,-1).join(', ') + ', & ' + names[names.length-1];
+  }
+  function renderFeed(items){
+    if(!items.length){ feedEl.innerHTML = ''; statusEl.textContent = 'no new papers in the last year for this thread'; return; }
+    feedEl.innerHTML = items.map(w => {
+      const authors = (w.authorships||[]).map(a => a.author && a.author.display_name).filter(Boolean);
+      const venue = w.primary_location && w.primary_location.source && w.primary_location.source.display_name;
+      const link = w.doi || (w.primary_location && w.primary_location.landing_page_url) || w.id;
+      const cite = `${apaAuthors(authors)} (${w.publication_year}). ${w.title || w.display_name}.${venue ? ' ' + venue + '.' : ''}${w.doi ? ' ' + w.doi : ''}`;
+      return `<li>
+        <a class="f-title" href="${esc(link)}" target="_blank" rel="noopener">${esc(w.title || w.display_name)}</a>
+        <div class="f-meta">${esc(authors.slice(0,4).join(', '))}${authors.length > 4 ? ' et al.' : ''} · ${esc(venue || 'preprint / other')} · ${esc(w.publication_date)}${w.cited_by_count ? ` · <span class="cites">cited ${w.cited_by_count}×</span>` : ''}</div>
+        <div class="f-actions"><button class="tk-btn" type="button" data-cite="${esc(cite)}">copy citation</button></div>
+      </li>`;
+    }).join('');
+    feedEl.querySelectorAll('[data-cite]').forEach(b => b.addEventListener('click', () => copy(b.dataset.cite, b)));
+  }
+  async function loadThread(i){
+    current = i;
+    chips.querySelectorAll('.chip').forEach((c,k) => c.classList.toggle('on', k === i));
+    const th = FEEDS[i], key = 'persona-feed:' + th.q;
+    try{
+      const cached = JSON.parse(localStorage.getItem(key) || 'null');
+      if(cached && Date.now() - cached.at < 12*3600*1000){
+        renderFeed(cached.items); statusEl.textContent = `${cached.total.toLocaleString()} papers in the last year · updated ${new Date(cached.at).toLocaleDateString()}`; return;
+      }
+    }catch(e){}
+    statusEl.textContent = 'searching new research...'; feedEl.innerHTML = '';
+    const since = new Date(Date.now() - 365*24*3600*1000).toISOString().slice(0,10);
+    const url = 'https://api.openalex.org/works?search=' + encodeURIComponent(th.q) +
+      '&filter=from_publication_date:' + since + ',type:article|book-chapter|book' +
+      '&sort=publication_date:desc&per_page=10' +
+      '&select=id,doi,title,display_name,publication_date,publication_year,authorships,primary_location,cited_by_count';
+    try{
+      const res = await fetch(url);
+      if(!res.ok) throw new Error(res.status);
+      const d = await res.json();
+      if(current !== i) return;
+      const items = d.results || [], total = (d.meta && d.meta.count) || items.length;
+      renderFeed(items);
+      statusEl.textContent = `${total.toLocaleString()} papers in the last year · updated just now`;
+      try{ localStorage.setItem(key, JSON.stringify({ at: Date.now(), items, total })); }catch(e){}
+    }catch(err){
+      if(current === i) statusEl.textContent = 'the live feed is resting right now, try again in a moment';
+    }
+  }
+  chips.innerHTML = FEEDS.map(t => `<button class="chip" type="button">${esc(t.label)}</button>`).join('');
+  chips.querySelectorAll('.chip').forEach((c,i) => c.addEventListener('click', () => loadThread(i)));
+
+  // open the tab the visitor used last time
+  let startView = 'map';
+  try{ const v = localStorage.getItem('persona-view'); if(['map','archive','new'].includes(v)) startView = v; }catch(e){}
+  showView(startView);
+
+  // ---------------- the bird: click to play or pause music ----------------
+  const bird = document.getElementById('bird'), music = document.getElementById('mbg-music');
+  bird.addEventListener('click', () => {
+    if(!music.paused){ music.pause(); bird.classList.remove('playing'); }
+    else music.play().then(() => bird.classList.add('playing')).catch(()=>{});
+  });
+})();
 </script>
 </body>
 </html>
