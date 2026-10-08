@@ -461,6 +461,8 @@
   const VOCAB = {
     delta:{
       state:'still',
+      light:'cool soft blue-hour light, calm muted colors',
+      energy:'very slow and calm, softly flowing movement',
       portrait:'beside a misty lake at dawn, cool soft blue-hour light, calm still water behind, quiet resting expression',
       accent:'a thin morning mist',
       motion:'very slow gentle breathing, mist drifting slowly over the water, eyes softly closing and opening',
@@ -468,6 +470,8 @@
     },
     theta:{
       state:'dreaming',
+      light:'soft hazy dreamy light, gentle pastel colors',
+      energy:'slow, floating, dreamlike movement',
       portrait:'in a sunlit meadow of wildflowers, soft hazy afternoon light, shallow depth of field, gentle faraway gaze',
       accent:'wildflowers softly out of focus',
       motion:'tall grass and flowers swaying slowly, a soft breeze lifting strands of hair, a slow dreamy blink',
@@ -475,6 +479,8 @@
     },
     alpha:{
       state:'calm',
+      light:'soft even daylight, relaxed natural colors',
+      energy:'relaxed, smooth, unhurried movement',
       portrait:'in a quiet green garden, soft overcast daylight, relaxed natural expression, leaves gently blurred behind',
       accent:'soft dappled leaf shadows',
       motion:'gentle slow push-in, leaves moving lightly in the breeze, a calm natural blink',
@@ -482,6 +488,8 @@
     },
     beta:{
       state:'focused',
+      light:'crisp clear bright light, sharp detail',
+      energy:'lively, precise, confident movement',
       portrait:'in a forest clearing, crisp clear morning light, attentive direct gaze, fine detail in skin and hair',
       accent:'clear morning sunlight through the trees',
       motion:'subject turns slightly toward the camera, sunlight flickering through branches, a steady focused look',
@@ -489,6 +497,8 @@
     },
     gamma:{
       state:'radiant',
+      light:'warm glowing golden light, vivid colors',
+      energy:'energetic, dynamic, expressive movement with bold gestures',
       portrait:'on a coastline at golden hour, warm sunlight on the skin, wind in the hair, vivid natural colors of sea and sky',
       accent:'warm golden-hour backlight',
       motion:'wind moving through the hair, waves rolling in behind, warm light glowing on the face',
@@ -1005,19 +1015,32 @@
     const glitchy = blinkPerMin > 25;
     const shifting = reading.variability > 0.25;
 
-    let portrait = `${VOCAB[dom.b].portrait}, accented by ${VOCAB[sec.b].accent}`;
+    // WITHOUT words: the brain reading chooses a place in nature and a quiet motion.
+    // WITH words: the visitor's words choose who they are and what they do;
+    // the brain reading only sets the light, the colors and the energy of the movement.
+    let portrait;
+    if(intent){
+      portrait = `${VOCAB[dom.b].light}, with a touch of ${VOCAB[sec.b].light}`;
+    } else {
+      portrait = `${VOCAB[dom.b].portrait}, accented by ${VOCAB[sec.b].accent}`;
+      if(shifting) portrait += ', shifting dappled light through moving leaves';
+    }
     if(strength === 'subtly') portrait += ', soft muted tones';
     if(strength === 'intensely') portrait += ', bright clear light';
     if(glitchy) portrait += ', light rain falling';
-    if(shifting) portrait += ', shifting dappled light through moving leaves';
-    const portraitShown = portrait;   // the screen shows only the part that comes from the brain reading
+    const portraitShown = intent ? `as “${intent}”, ${portrait}` : portrait;   // what the screen shows
     portrait += `. ${REALISM}. ${BEAUTY_FILTERS[BEAUTY_FILTER_LEVEL] || ''}`;
 
     // one motion prompt per part of the film, each from its own slice of the reading
     const scenes = reading.segments.map((seg, k)=>{
       const sr = rank(seg, ref);
-      let m = `${VOCAB[sr[0].b].motion}, ${VOCAB[sr[1].b].motionAccent}, ${FILM_CAMERA}`;
-      if(glitchy) m += ', light rain falling';
+      let m;
+      if(intent){
+        m = `${VOCAB[sr[0].b].energy}, ${VOCAB[sr[0].b].light}, the camera follows the action in one continuous shot`;
+      } else {
+        m = `${VOCAB[sr[0].b].motion}, ${VOCAB[sr[1].b].motionAccent}, ${FILM_CAMERA}`;
+        if(glitchy) m += ', light rain falling';
+      }
       return { band: sr[0].b, change: sr[0].s, motion: m };
     });
 

@@ -86,10 +86,20 @@ export default async function handler(req, res) {
   const DEFAULT_MOTION_PROMPT = 'subtle natural motion, gentle breathing, ' +
     'slight head turn, soft blinking, cinematic portrait animation, minimal camera movement';
 
-  let finalPrompt = (prompt && String(prompt).trim()) ? String(prompt).trim().slice(0, 900) : DEFAULT_MOTION_PROMPT;
-  if (words) finalPrompt += '. The mood of the scene is inspired by the words "' + words + '"';
+  const eegPart = (prompt && String(prompt).trim()) ? String(prompt).trim().slice(0, 900) : DEFAULT_MOTION_PROMPT;
+  let finalPrompt;
+  if (words) {
+    // the visitor's words lead: they say what the person DOES;
+    // the brain reading sets the energy, light and camera
+    finalPrompt =
+      'The person in this image is ' + words + '. Show them clearly acting this out with visible, ' +
+      'expressive movement of the whole body (for example dancing, performing, walking, gesturing), ' +
+      'not just small facial motion. Energy and light from their brain reading: ' + eegPart;
+  } else {
+    finalPrompt = eegPart;
+  }
   if (partNum > 0) finalPrompt += '. This continues an earlier shot: start exactly from this frame and keep the same place, light and camera direction';
-  finalPrompt += '. Keep the same person, face and identity throughout, realistic natural motion.';
+  finalPrompt += '. Keep the same person, face and identity throughout, realistic motion.';
 
   if (!image || typeof image !== 'string' ||
       !(/^https:\/\//.test(image) || /^data:image\/(jpeg|png);base64,/.test(image)) ||

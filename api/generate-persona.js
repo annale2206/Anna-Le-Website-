@@ -35,18 +35,31 @@ const ASPECT_RATIO = '4:3';
 // Wraps the style prompt so the model edits THIS person rather than
 // inventing a stranger.
 function buildPrompt(style, visitor) {
-  const words = visitor
-    ? 'The person described the self they want to see in their own words: "' + visitor + '". ' +
-      'Let these words shape the setting, mood, clothing and styling, but they never change who the person is. '
-    : '';
+  const keepIdentity =
+    'Keep their face, facial features, skin tone and identity exactly as they are. ' +
+    'Do not reshape the face or change their features. ' +
+    'Any skin retouching or beauty filter should follow the style notes below. ';
+
+  // WITH the visitor's words: the words decide who they become (setting,
+  // outfit, styling, pose); the brain reading only sets light and color.
+  if (visitor) {
+    return (
+      'Turn this photo into a hyperrealistic, high-resolution photograph of the same person as: "' + visitor + '". ' +
+      'Fully commit to these words: choose the setting, outfit, hair, styling and pose that fit them, ' +
+      'as a real photograph, not a costume or illustration. ' +
+      keepIdentity +
+      'Light and color from their brain reading: ' + style + '. ' +
+      'Frame from the waist up or wider so their body and pose are visible and ready to move, ' +
+      'sharp focus on the face, true-to-life colors. No text, no watermark.'
+    );
+  }
+
+  // WITHOUT words: the quiet nature portrait from the brain reading.
   return (
     'Turn this photo into a hyperrealistic, high-resolution natural portrait photograph of the same person outdoors in nature. ' +
-    'Keep their face, facial features, skin tone and identity exactly as they are. ' +
-    'Show their natural beauty with flattering soft natural light. ' +
-    'Do not reshape the face or change their features; no fantasy or special effects. ' +
-    'Any skin retouching or beauty filter should follow the style notes below. ' +
+    keepIdentity +
+    'Show their natural beauty with flattering soft natural light; no fantasy or special effects. ' +
     'Setting and light from their brain reading: ' + style + '. ' +
-    words +
     'Head-and-shoulders framing, sharp focus on the eyes, true-to-life colors, like a professional outdoor portrait photograph. No text, no watermark.'
   );
 }
