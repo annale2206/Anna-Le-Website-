@@ -4,7 +4,7 @@
 // restyles it into a synthetic portrait, using the brain-reading prompt from
 // the page.
 //
-// MODEL (Oct 2026): Google Nano Banana 2 on Replicate — higher resolution
+// MODEL (Oct 2026): Google Nano Banana 2 on Replicate: higher resolution
 // (up to 4K) and better at keeping the person recognizable than InstantID.
 // Same REPLICATE_API_TOKEN as before, already set in Vercel.
 //
@@ -18,6 +18,7 @@
 
 import Replicate from 'replicate';
 import { hasValidToken } from './_auth.js';
+import { cleanVisitorWords } from './_words.js';
 
 export const config = {
   maxDuration: 30, // only starts the job
@@ -33,14 +34,19 @@ const ASPECT_RATIO = '4:3';
 
 // Wraps the style prompt so the model edits THIS person rather than
 // inventing a stranger.
-function buildPrompt(style) {
+function buildPrompt(style, visitor) {
+  const words = visitor
+    ? 'The person described the self they want to see in their own words: "' + visitor + '". ' +
+      'Let these words shape the setting, mood, clothing and styling, but they never change who the person is. '
+    : '';
   return (
     'Turn this photo into a hyperrealistic, high-resolution natural portrait photograph of the same person outdoors in nature. ' +
     'Keep their face, facial features, skin tone and identity exactly as they are. ' +
     'Show their natural beauty with flattering soft natural light. ' +
     'Do not reshape the face or change their features; no fantasy or special effects. ' +
     'Any skin retouching or beauty filter should follow the style notes below. ' +
-    'Setting and light: ' + style + '. ' +
+    'Setting and light from their brain reading: ' + style + '. ' +
+    words +
     'Head-and-shoulders framing, sharp focus on the eyes, true-to-life colors, like a professional outdoor portrait photograph. No text, no watermark.'
   );
 }
@@ -58,7 +64,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Use POST' });
   }
 
-  const { image, prompt } = req.body; // image: base64 selfie, prompt: style from the brain reading
+  const { image, prompt, visitor } = req.body; // image: base64 selfie, prompt: style from the brain reading, visitor: their own words
 
   if (!image) {
     return res.status(400).json({ error: 'No image provided' });
@@ -76,7 +82,7 @@ export default async function handler(req, res) {
     const replicate = new Replicate();
 
     const input = {
-      prompt: buildPrompt(style),
+      prompt: buildPrompt(style, cleanVisitorWords(visitor)),
       image_input: [image],
       resolution: RESOLUTION,
       aspect_ratio: ASPECT_RATIO,

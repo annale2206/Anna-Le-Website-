@@ -36,6 +36,7 @@
 
 import Replicate from 'replicate';
 import { hasValidToken } from './_auth.js';
+import { cleanVisitorWords } from './_words.js';
 
 // ASYNC UPDATE (Oct 2026): this route no longer waits for the video (Vercel
 // was timing out). It starts the job and returns { id } right away; the page
@@ -58,7 +59,8 @@ const MODEL = 'google/veo-3.1-fast';
 // Veo options: duration 4, 6 or 8 seconds · resolution '720p' or '1080p'
 // aspect_ratio '16:9' or '9:16'. Veo can also make matching sound — the
 // kiosk page plays videos muted, so it's off here; set to true to try it.
-const DURATION = 6;
+const DURATION = 8;                 // default; the page asks for 8 s per scene
+const ALLOWED_DURATIONS = [4, 6, 8];
 const RESOLUTION = '720p';
 const GENERATE_AUDIO = false;
 
@@ -72,15 +74,27 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Use POST' });
   }
 
-  const { image, prompt } = req.body; // image: portrait URL, prompt: visitor's own motion description
+  // image: portrait URL · prompt: motion from the brain reading (one scene)
+  // visitor: the visitor's own words · duration: 4, 6 or 8 seconds
+  // part: 0 for the first part of the film; later parts start from the last
+  // frame of the part before (sent as a JPEG data URL), so the film continues.
+  const { image, prompt, visitor, duration, part } = req.body;
+  const partNum = Math.max(0, Math.min(9, Number(part) || 0));
+  const seconds = ALLOWED_DURATIONS.includes(Number(duration)) ? Number(duration) : DURATION;
+  const words = cleanVisitorWords(visitor);
 
   const DEFAULT_MOTION_PROMPT = 'subtle natural motion, gentle breathing, ' +
     'slight head turn, soft blinking, cinematic portrait animation, minimal camera movement';
 
-  const finalPrompt = (prompt && prompt.trim()) ? prompt.trim() : DEFAULT_MOTION_PROMPT;
+  let finalPrompt = (prompt && String(prompt).trim()) ? String(prompt).trim().slice(0, 900) : DEFAULT_MOTION_PROMPT;
+  if (words) finalPrompt += '. The mood of the scene is inspired by the words "' + words + '"';
+  if (partNum > 0) finalPrompt += '. This continues an earlier shot: start exactly from this frame and keep the same place, light and camera direction';
+  finalPrompt += '. Keep the same person, face and identity throughout, realistic natural motion.';
 
-  if (!image) {
-    return res.status(400).json({ error: 'No image provided' });
+  if (!image || typeof image !== 'string' ||
+      !(/^https:\/\//.test(image) || /^data:image\/(jpeg|png);base64,/.test(image)) ||
+      image.length > 4000000) {
+    return res.status(400).json({ error: 'No usable image provided' });
   }
 
   if (!process.env.REPLICATE_API_TOKEN) {
@@ -95,7 +109,7 @@ export default async function handler(req, res) {
     const input = {
       image: image,                 // the portrait from stage 02 = first frame
       prompt: finalPrompt,
-      duration: DURATION,
+      duration: seconds,
       resolution: RESOLUTION,
       aspect_ratio: '16:9',
       generate_audio: GENERATE_AUDIO,

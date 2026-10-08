@@ -237,6 +237,24 @@
   .prompt-box-label{ font-size:10px; letter-spacing:.2em; color:#5a6f75; text-transform:uppercase; margin-bottom:6px; }
   .prompt-box-text{ font-size:13px; line-height:1.6; color:#c8d4d8; }
 
+  /* ---------- visitor's own words ---------- */
+  .intent-box{ width:min(640px, 92vw); display:flex; flex-direction:column; gap:8px; }
+  #intent-input{
+    width:100%; min-height:96px; resize:none; box-sizing:border-box;
+    background:#0d1114; border:1px solid #1e2a2e; color:#e6eef0; outline:none;
+    font-family:'Space Mono', monospace; font-size:18px; line-height:1.5; padding:14px 16px;
+  }
+  #intent-input:focus{ border-color:#43e0c9; }
+  #intent-input::placeholder{ color:#3f4d52; }
+  .intent-count{ font-size:11px; color:#3f4d52; letter-spacing:.08em; text-align:right; }
+  .intent-actions{ display:flex; align-items:center; justify-content:center; gap:22px; }
+  .phase-tag{ font-size:11px; letter-spacing:.2em; color:#43e0c9; text-transform:uppercase; text-align:center; min-height:14px; }
+  #reading{ justify-content:flex-start; overflow-y:auto; gap:12px; }
+  .scene-list{ margin:0; padding-left:18px; font-size:12px; }
+  .scene-list li{ margin:2px 0; }
+  .rig-screen video.film-layer{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:1; }
+  .video-count{ position:absolute; z-index:4; right:10px; bottom:8px; font-size:11px; letter-spacing:.12em; color:#c8d4d8; background:rgba(10,13,16,.6); padding:2px 8px; }
+
   #error-msg{
     position:fixed; inset:0;
     display:flex; align-items:center; justify-content:center;
@@ -343,9 +361,25 @@
   </div>
 </div>
 
-<!-- neural scan (replaces the typed prompt screens) -->
+<!-- the visitor's own words, combined with the EEG reading -->
+<div class="screen panel-screen" id="intent">
+  <div class="panel-title">who are you becoming?</div>
+  <div class="panel-sub">type a few words for your portrait, or skip and let your signal decide</div>
+  <div class="intent-box">
+    <textarea id="intent-input" maxlength="120" rows="3" autocomplete="off" spellcheck="false"
+      placeholder="e.g. a dancer by the sea · my grandmother's garden · a quiet scientist"></textarea>
+    <div class="intent-count" id="intent-count">0 / 120</div>
+  </div>
+  <div class="intent-actions">
+    <button class="btn" id="intent-go">continue</button>
+    <button class="btn-link" id="intent-skip">skip</button>
+  </div>
+</div>
+
+<!-- neural scan: personal baseline first, then the reading -->
 <div class="screen panel-screen" id="scan">
   <div class="panel-title">neural scan</div>
+  <div class="phase-tag" id="scan-phase"></div>
   <div class="panel-sub" id="scan-instruction">relax · eyes open · stay still</div>
   <div class="scan-panel">
     <canvas id="wave-canvas"></canvas>
@@ -366,12 +400,16 @@
   <div class="panel-sub">signal interpreted as</div>
   <div class="reading-state" id="reading-state">·</div>
   <div class="reading-meta" id="reading-meta"></div>
+  <div class="prompt-box" id="reading-words-box">
+    <div class="prompt-box-label">your words</div>
+    <div class="prompt-box-text" id="reading-words"></div>
+  </div>
   <div class="prompt-box">
     <div class="prompt-box-label">portrait prompt</div>
     <div class="prompt-box-text" id="reading-portrait"></div>
   </div>
   <div class="prompt-box">
-    <div class="prompt-box-label">motion prompt</div>
+    <div class="prompt-box-label" id="reading-motion-label">motion prompts</div>
     <div class="prompt-box-text" id="reading-motion"></div>
   </div>
   <div class="panel-sub" id="reading-countdown"></div>
@@ -392,7 +430,18 @@
   let USE_MUSE = params.get('muse') === '1';
   // ?scan=20 → scan length in seconds
   const SCAN_SECONDS = Math.max(5, Number(params.get('scan')) || 15);
-  const READING_SECONDS = 5;
+  // ?baseline=15 → personal baseline length in seconds (recorded before the scan)
+  const BASELINE_SECONDS = Math.max(5, Number(params.get('baseline')) || 10);
+  const READING_SECONDS = 8;
+  // the visitor's own words (optional), mixed with the EEG reading
+  const INTENT_MAX = 120;
+  const INTENT_IDLE_SECONDS = 90;      // nobody typing → continue without words
+  // the film: one continuous video that keeps growing. Each new part starts
+  // from the last frame of the part before, so it plays as one unbroken shot.
+  // ?parts=1 → one part only (cheaper for testing) · Veo part length: 4, 6 or 8 s
+  const FILM_PARTS = Math.min(6, Math.max(1, Number(params.get('parts')) || 4));
+  const VIDEO_SECONDS = 8;
+  const FILM_CAMERA = 'one continuous slow camera move, no cuts, no scene change';
   const PORTRAIT_HOLD_SECONDS = 6;    // how long the finished portrait stays up before switching to the video screen          // how long the "signal interpreted as" screen stays up
   const BLINK_THRESHOLD_UV = 120;     // peak-to-peak on AF7/AF8 that counts as a blink
   const MUSE_LIB = './muse.bundle.js'; // local bundle (keep next to this html)
@@ -402,6 +451,7 @@
   // past visitors, so each person is read *relative to everyone before them*.
   const REF = { delta:.30, theta:.22, alpha:.25, beta:.17, gamma:.06 };
   if(params.get('resetbaseline') === '1'){ try{ localStorage.removeItem('im-baseline'); }catch(e){} }
+
 
   /* =====================================================================
      BRAIN STATE → PROMPT VOCABULARY, edit freely
@@ -654,6 +704,10 @@
       this.timer = setInterval(()=> this.tick(), 40);
     },
     stop(){ this.running = false; clearInterval(this.timer); },
+    neutral(){
+      // resting state for the baseline: close to typical values, small random variation
+      for(const b of BANDS) this.target[b] = Math.sqrt(REF[b]*(0.85 + Math.random()*.3)*800/3);
+    },
     newMood(){
       const pw = { ...REF };
       const dom = this.force || BANDS[Math.floor(Math.random()*BANDS.length)];
@@ -689,7 +743,7 @@
     }
   };
   window.addEventListener('keydown', e=>{
-    if(USE_MUSE || !scanScreen.classList.contains('active')) return;
+    if(USE_MUSE || !scanScreen.classList.contains('active') || e.target === intentInput) return;
     const map = { d:'delta', t:'theta', a:'alpha', b:'beta', g:'gamma' };
     const band = map[e.key.toLowerCase()];
     if(band){ sim.force = band; sim.newMood(); $('scan-hint').textContent = `simulating: ${band}`; }
@@ -807,20 +861,31 @@
     }
   }
 
-  // runs the scan; resolves with the averaged reading
-  function runScan(){
+  // runs the scan in two parts:
+  //   1. BASELINE: the visitor rests, eyes open. This is their personal "normal".
+  //   2. READING: the visitor holds their words (or the question) in mind.
+  // The reading is then described as a change from their own baseline,
+  // instead of comparing them to a fixed "typical brain".
+  function runScan(intent){
     return new Promise(resolve=>{
-      scan.active = true; scan.frames = []; scan.blinks = 0; scan.resolve = resolve;
+      scan.active = true; scan.resolve = resolve;
+      scan.baseFrames = []; scan.frames = []; scan.baseBlinks = 0; scan.blinks = 0;
       $('scan-progress').style.width = '0%';
+      $('scan-phase').textContent = '';
       $('scan-hint').textContent = USE_MUSE ? '' : 'simulated signal · press D T A B G to steer it';
       $('scan-instruction').textContent = 'relax · eyes open · stay still';
       $('connect-overlay').classList.remove('show');
       showScreen(scanScreen);
 
       if(USE_MUSE && !muse.connected) showConnectOverlay();
-      else { if(!USE_MUSE){ sim.force = null; sim.newMood(); } scan.phase = 'settling'; scan.startAt = performance.now(); }
+      else { if(!USE_MUSE){ sim.force = null; sim.neutral(); } scan.phase = 'settling'; scan.startAt = performance.now(); }
 
-      const ref = currentBaseline();
+      const total = BASELINE_SECONDS + SCAN_SECONDS;
+      const readingText = intent
+        ? `now hold this in mind: “${intent}”`
+        : 'now imagine the self you would like to become';
+      let personal = null;       // the visitor's baseline, once recorded
+
       const loop = ()=>{
         if(!scan.active) return;
         drawWaves();
@@ -829,31 +894,43 @@
           const d = $(`sensor-${i}`);
           d.className = 'led-dot ' + (q === 'good' ? 'on' : q === 'noisy' ? 'warn' : 'bad');
         });
-        updateBars(rel, ref);
+        // red marks = what we compare against: typical values during the baseline,
+        // then the visitor's own baseline during the reading
+        updateBars(rel, personal || REF);
 
-        // once the headset is connected, leave the overlay
         if(scan.phase === 'waiting' && ((USE_MUSE && muse.connected && signalLive()) || (!USE_MUSE && signalLive()))){
           $('connect-overlay').classList.remove('show');
           scan.phase = 'settling'; scan.startAt = performance.now();
         }
         const now = performance.now();
         // 1.5 s settling so the buffer is full of fresh data before recording
-        if(scan.phase === 'settling' && now - scan.startAt > 1500){ scan.phase = 'recording'; scan.startAt = now; }
-        if(scan.phase === 'recording'){
+        if(scan.phase === 'settling' && now - scan.startAt > 1500){ scan.phase = 'baseline'; scan.startAt = now; }
+
+        if(scan.phase === 'baseline' || scan.phase === 'reading'){
+          const isBase = scan.phase === 'baseline';
+          $('scan-phase').textContent = isBase ? `01 · your baseline` : `02 · your reading`;
+          const goodCount = quality.filter(q=>q==='good').length;
           if(!signalLive()){
             $('scan-instruction').textContent = 'waiting for signal…';
           } else {
-            $('scan-instruction').textContent = quality.filter(q=>q==='good').length < 2
+            $('scan-instruction').textContent = goodCount < 2
               ? 'adjust the headband, sensors need skin contact'
-              : 'relax · eyes open · stay still';
-            scan.frames.push(rel);
-            if(detectBlink()) scan.blinks++;
+              : isBase ? 'baseline · eyes open · breathe normally · stay still' : readingText;
+            if(isBase){ scan.baseFrames.push(rel); if(detectBlink()) scan.baseBlinks++; }
+            else { scan.frames.push(rel); if(detectBlink()) scan.blinks++; }
           }
-          const p = (now - scan.startAt) / (SCAN_SECONDS*1000);
-          $('scan-progress').style.width = Math.min(100, p*100) + '%';
-          if(p >= 1){
+          const elapsed = (now - scan.startAt) / 1000;
+          const done = isBase ? elapsed : BASELINE_SECONDS + elapsed;
+          $('scan-progress').style.width = Math.min(100, done/total*100) + '%';
+
+          if(isBase && elapsed >= BASELINE_SECONDS){
+            personal = averageFrames(scan.baseFrames);
+            scan.phase = 'reading'; scan.startAt = now;
+            // the simulated signal shifts away from rest, like a real response would
+            if(!USE_MUSE && !sim.force) sim.newMood();
+          } else if(!isBase && elapsed >= SCAN_SECONDS){
             scan.active = false;
-            resolve(summarize(scan.frames, scan.blinks));
+            resolve(summarize(scan.baseFrames, scan.frames, scan.baseBlinks, scan.blinks));
             return;
           }
         }
@@ -882,11 +959,24 @@
     }catch(e){}
   }
 
-  function summarize(frames, blinks){
+  function averageFrames(frames){
+    if(!frames || !frames.length) return null;
     const avg = {}; for(const b of BANDS) avg[b] = 0;
-    if(!frames.length){ for(const b of BANDS) avg[b] = REF[b]; }
-    else for(const f of frames) for(const b of BANDS) avg[b] += f[b]/frames.length;
-    // stability: how much alpha+theta wandered during the scan
+    for(const f of frames) for(const b of BANDS) avg[b] += f[b]/frames.length;
+    return avg;
+  }
+
+  function summarize(baseFrames, frames, baseBlinks, blinks){
+    // the baseline only counts if we recorded enough of it (about 3 s of frames)
+    const base = baseFrames.length > 120 ? averageFrames(baseFrames) : null;
+    const avg = averageFrames(frames) || { ...REF };
+    // split the reading into equal parts, one per part of the film
+    const segments = [];
+    for(let k=0; k<FILM_PARTS; k++){
+      const a = Math.floor(frames.length*k/FILM_PARTS), z = Math.floor(frames.length*(k+1)/FILM_PARTS);
+      segments.push(averageFrames(frames.slice(a, z)) || avg);
+    }
+    // stability: how much alpha+theta wandered during the reading
     let cv = 0;
     if(frames.length > 10){
       const s = frames.map(f=>f.alpha + f.theta);
@@ -894,12 +984,21 @@
       const sd = Math.sqrt(s.reduce((a,v)=>a+(v-m)**2,0)/s.length);
       cv = m ? sd/m : 0;
     }
-    return { avg, blinks, variability: cv, seconds: SCAN_SECONDS };
+    return { base, avg, segments, blinks, baseBlinks, variability: cv, seconds: SCAN_SECONDS };
   }
 
-  function interpret(reading){
-    const ref = currentBaseline();
-    const scores = BANDS.map(b=>({ b, s: reading.avg[b]/ref[b] })).sort((x,y)=>y.s-x.s);
+  // ratio of each band to the comparison point, biggest change first
+  function rank(values, ref){
+    return BANDS.map(b=>({ b, s: values[b]/Math.max(ref[b], 1e-6) })).sort((x,y)=>y.s-x.s);
+  }
+  const pct = s => (s >= 1 ? '+' : '-') + Math.round(Math.abs(s-1)*100) + '%';
+
+  function interpret(reading, intent){
+    // compare with the visitor's own baseline; if it could not be recorded,
+    // fall back to typical values blended with past visitors
+    const personal = !!reading.base;
+    const ref = reading.base || currentBaseline();
+    const scores = rank(reading.avg, ref);
     const dom = scores[0], sec = scores[1];
     const strength = dom.s >= 1.6 ? 'intensely' : dom.s >= 1.2 ? '' : 'subtly';
     const blinkPerMin = reading.blinks / (reading.seconds/60);
@@ -911,22 +1010,35 @@
     if(strength === 'intensely') portrait += ', bright clear light';
     if(glitchy) portrait += ', light rain falling';
     if(shifting) portrait += ', shifting dappled light through moving leaves';
+    const portraitShown = portrait;   // the screen shows only the part that comes from the brain reading
     portrait += `. ${REALISM}. ${BEAUTY_FILTERS[BEAUTY_FILTER_LEVEL] || ''}`;
 
-    let motion = `${VOCAB[dom.b].motion}, ${VOCAB[sec.b].motionAccent}`;
-    if(glitchy) motion += ', light rain falling';
+    // one motion prompt per part of the film, each from its own slice of the reading
+    const scenes = reading.segments.map((seg, k)=>{
+      const sr = rank(seg, ref);
+      let m = `${VOCAB[sr[0].b].motion}, ${VOCAB[sr[1].b].motionAccent}, ${FILM_CAMERA}`;
+      if(glitchy) m += ', light rain falling';
+      return { band: sr[0].b, change: sr[0].s, motion: m };
+    });
 
     const state = [strength, VOCAB[dom.b].state].filter(Boolean).join(' ');
-    return { state, dominant: dom.b, secondary: sec.b, portrait, motion,
-             meta: `${dom.b} ↑ ${dom.s.toFixed(2)}× · ${sec.b} ${sec.s.toFixed(2)}× · ${reading.blinks} blinks` };
+    const vs = personal ? 'vs your baseline' : 'vs typical';
+    return { state, dominant: dom.b, secondary: sec.b, portrait, portraitShown, scenes, motion: scenes[0].motion,
+             intent: intent || '', personal,
+             meta: `${dom.b} ${pct(dom.s)} · ${sec.b} ${pct(sec.s)} ${vs} · ${reading.blinks} blinks` };
   }
 
   function showReading(r){
     return new Promise(resolve=>{
       $('reading-state').textContent = r.state;
       $('reading-meta').textContent = r.meta;
-      $('reading-portrait').textContent = r.portrait;
-      $('reading-motion').textContent = r.motion;
+      $('reading-portrait').textContent = r.portraitShown;
+      $('reading-words').textContent = r.intent ? `“${r.intent}”` : '';
+      $('reading-words-box').style.display = r.intent ? '' : 'none';
+      $('reading-motion-label').textContent = r.scenes.length > 1 ? `motion prompts · film in ${r.scenes.length} parts` : 'motion prompt';
+      const ol = document.createElement('ol'); ol.className = 'scene-list';
+      r.scenes.forEach(sc=>{ const li = document.createElement('li'); li.textContent = `${sc.band} ${pct(sc.change)}: ${sc.motion}`; ol.appendChild(li); });
+      $('reading-motion').replaceChildren(ol);
       showScreen(readingScreen);
       let left = READING_SECONDS;
       const tick = ()=>{ $('reading-countdown').textContent = `synthesizing in ${left}… (tap to skip)`; };
@@ -989,6 +1101,37 @@
   }
 
   /* =====================================================================
+     THE VISITOR'S OWN WORDS
+     ===================================================================== */
+  const intentScreen = $('intent'), intentInput = $('intent-input');
+  function cleanIntent(t){
+    return String(t || '').replace(/[\u0000-\u001f\u007f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, INTENT_MAX);
+  }
+  intentInput.addEventListener('input', ()=>{ $('intent-count').textContent = `${intentInput.value.length} / ${INTENT_MAX}`; });
+  function askIntent(){
+    return new Promise(resolve=>{
+      intentInput.value = ''; $('intent-count').textContent = `0 / ${INTENT_MAX}`;
+      showScreen(intentScreen);
+      setTimeout(()=> intentInput.focus(), 50);
+      let idle;
+      const poke = ()=>{ clearTimeout(idle); idle = setTimeout(()=> finish(''), INTENT_IDLE_SECONDS*1000); };
+      const finish = text=>{
+        clearTimeout(idle);
+        $('intent-go').onclick = $('intent-skip').onclick = null;
+        intentInput.removeEventListener('keydown', onKey); intentInput.removeEventListener('input', poke);
+        intentInput.blur();
+        resolve(cleanIntent(text));
+      };
+      const onKey = e=>{ if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); finish(intentInput.value); } };
+      $('intent-go').onclick = ()=> finish(intentInput.value);
+      $('intent-skip').onclick = ()=> finish('');
+      intentInput.addEventListener('keydown', onKey);
+      intentInput.addEventListener('input', poke);
+      poke();
+    });
+  }
+
+  /* =====================================================================
      MAIN FLOW
      ===================================================================== */
   let session = 0;      // bumps on reset, so late results from an old visitor are ignored
@@ -1029,8 +1172,10 @@
     ctx.restore();
     const dataURL = hiddenCanvas.toDataURL('image/jpeg', 0.92);
 
-    const reading = await runScan();
-    const r = interpret(reading);
+    const intent = await askIntent();
+    if(sid !== session){ busy = false; return; }
+    const reading = await runScan(intent);
+    const r = interpret(reading, intent);
     addToBaseline(reading.avg);
     await showReading(r);
     if(sid !== session){ busy = false; return; }
@@ -1046,7 +1191,7 @@
     }
     if(sid !== session) return;
     // start the video right away, but let the visitor look at the portrait first
-    const videoDone = generateVideo(portraitUrl, r, sid);
+    const videoDone = generateVideos(portraitUrl, r, sid);
     await new Promise(res=>setTimeout(res, PORTRAIT_HOLD_SECONDS*1000));
     if(sid === session) showStage(3);
     await videoDone;
@@ -1148,7 +1293,7 @@
     try{
       res = await fetch('/api/generate-persona', {
         method:'POST', headers: authHeaders({ 'Content-Type':'application/json' }),
-        body: JSON.stringify({ image: dataURL, prompt: r.portrait, eeg: { state:r.state, dominant:r.dominant, secondary:r.secondary } })
+        body: JSON.stringify({ image: dataURL, prompt: r.portrait, visitor: r.intent, eeg: { state:r.state, dominant:r.dominant, secondary:r.secondary } })
       });
       if(!res.ok) throw new Error('http');
       const data = await res.json();
@@ -1181,53 +1326,144 @@
     }
   }
 
-  // ---- stage 03: animate it with the motion prompt ----
-  async function generateVideo(portraitUrl, r, sid){
+  // ---- stage 03: one film that keeps extending ----
+  // Part 1 animates the portrait. Each next part starts from the LAST FRAME of
+  // the part before, and is added to the end of the film. The film loops while
+  // it grows, using two video layers so the switch between parts is seamless.
+  let film = [];            // finished part URLs, in order
+  let layers = null, front = 0, partIndex = 0;
+
+  function makeLayer(){
+    const v = document.createElement('video');
+    v.className = 'film-layer';
+    v.muted = true; v.playsInline = true; v.preload = 'auto';
+    v.crossOrigin = 'anonymous';           // lets us read the last frame
+    v.style.transition = 'opacity .25s linear';
+    v.addEventListener('ended', ()=>{ if(layers && v === layers[front]) advance(); });
+    return v;
+  }
+  function filmSeconds(){ return film.length * VIDEO_SECONDS; }
+  function updateFilmTag(extending){
+    const tag = videoScreen.querySelector('.video-count');
+    if(!tag) return;
+    const t = filmSeconds();
+    tag.textContent = `film 0:${String(t).padStart(2,'0')}` + (extending ? ' · extending…' : '');
+  }
+  function preloadNext(){
+    if(!layers || film.length < 2) return;
+    const back = layers[1-front], next = (partIndex + 1) % film.length;
+    if(back.dataset.src !== film[next]){ back.dataset.src = film[next]; back.src = film[next]; back.load(); }
+  }
+  function advance(){
+    const cur = layers[front];
+    if(film.length < 2){ cur.currentTime = 0; cur.play().catch(()=>{}); return; }
+    partIndex = (partIndex + 1) % film.length;
+    const nxt = layers[1-front];
+    if(nxt.dataset.src !== film[partIndex]){ nxt.dataset.src = film[partIndex]; nxt.src = film[partIndex]; }
+    nxt.currentTime = 0;
+    nxt.style.opacity = 1;
+    nxt.play().catch(()=>{});
+    cur.style.opacity = 0;
+    front = 1 - front;
+    preloadNext();
+  }
+
+  // grab the last frame of a finished part as a JPEG, to start the next part from
+  function lastFrameOf(url){
+    return new Promise(resolve=>{
+      const v = document.createElement('video');
+      v.crossOrigin = 'anonymous'; v.muted = true; v.preload = 'auto'; v.src = url;
+      const fail = ()=> resolve(null);
+      const timer = setTimeout(fail, 20000);
+      v.addEventListener('error', ()=>{ clearTimeout(timer); fail(); });
+      v.addEventListener('loadedmetadata', ()=>{ v.currentTime = Math.max(0, v.duration - 0.05); });
+      v.addEventListener('seeked', ()=>{
+        clearTimeout(timer);
+        try{
+          const c = document.createElement('canvas');
+          c.width = v.videoWidth; c.height = v.videoHeight;
+          c.getContext('2d').drawImage(v, 0, 0);
+          resolve(c.toDataURL('image/jpeg', 0.9));   // throws if the video host blocks reading frames
+        }catch(e){ resolve(null); }
+      }, { once:true });
+    });
+  }
+
+  async function makePart(startImage, r, k, sid){
+    const sc = r.scenes[k];
+    const res = await fetch('/api/generate-video', {
+      method:'POST', headers: authHeaders({ 'Content-Type':'application/json' }),
+      body: JSON.stringify({ image: startImage, prompt: sc.motion, visitor: r.intent, duration: VIDEO_SECONDS,
+                             part: k, eeg: { state:r.state, dominant:sc.band, secondary:r.secondary } })
+    });
+    if(!res.ok) throw new Error(await describeFailure(res));
+    const data = await res.json();
+    if(data.video) return data.video;
+    if(!data.id) throw new Error('server answered but sent no job id: ' + JSON.stringify(data).slice(0,300));
+    const pr = await waitForPrediction(data.id, sid, 12);
+    return pr.cancelled ? null : pr.url;
+  }
+
+  async function generateVideos(portraitUrl, r, sid){
     static2.stop();
-    // show the portrait faintly behind the static while the video is made
-    videoScreen.querySelectorAll('img.ghost-portrait').forEach(el=>el.remove());
+    film = []; partIndex = 0; front = 0; layers = null;
+    const parts = r.scenes.length;
+    videoScreen.querySelectorAll('img.ghost-portrait, .video-count, video.reveal, video.film-layer').forEach(el=>el.remove());
     const ghost = document.createElement('img');
     ghost.className = 'ghost-portrait';
     ghost.src = portraitUrl;
     videoScreen.insertBefore(ghost, videoScreen.firstChild);
     const stopGlitch = runGlitch(videoScreen, led3, $('status-3'), 'animating');
-    let res = null;
-    try{
-      res = await fetch('/api/generate-video', {
-        method:'POST', headers: authHeaders({ 'Content-Type':'application/json' }),
-        body: JSON.stringify({ image: portraitUrl, prompt: r.motion, eeg: { state:r.state, dominant:r.dominant, secondary:r.secondary } })
-      });
-      if(!res.ok) throw new Error('http');
-      const data = await res.json();
-      let videoUrl = data.video;
-      if(!videoUrl && data.id){
-        const pr = await waitForPrediction(data.id, sid, 10);
-        if(pr.cancelled){ stopGlitch(); return; }
-        videoUrl = pr.url;
+    let glitching = true, lastWhy = '';
+    let startImage = portraitUrl;
+
+    for(let k=0; k<parts; k++){
+      if(sid !== session) return;
+      let url = null;
+      try{ url = await makePart(startImage, r, k, sid); }
+      catch(err){ lastWhy = err.message; console.error('[generate-video] part ' + (k+1), err.message); }
+      if(sid !== session) return;
+      if(!url) break;                       // stop extending; keep what we have
+      film.push(url);
+      logSession('video', url);
+
+      if(glitching){
+        // first part ready: replace the static with the film
+        glitching = false; stopGlitch();
+        videoScreen.querySelectorAll('img.ghost-portrait').forEach(el=>el.remove());
+        layers = [makeLayer(), makeLayer()];
+        layers[1].style.opacity = 0;
+        layers.forEach(l=> videoScreen.insertBefore(l, videoScreen.firstChild));
+        layers[0].dataset.src = url; layers[0].src = url; layers[0].play().catch(()=>{});
+        const tag = document.createElement('div'); tag.className = 'video-count';
+        videoScreen.appendChild(tag);
+        led3.classList.add('on');
+      } else {
+        preloadNext();
       }
-      if(!videoUrl) throw new Error('server answered but sent no video: ' + JSON.stringify(data).slice(0,300));
-      data.video = videoUrl;
-      stopGlitch();
-      if(sid !== session) return;
-      videoScreen.querySelectorAll('video.reveal, img.ghost-portrait').forEach(el=>el.remove());
-      const vid = document.createElement('video');
-      vid.className = 'reveal';
-      vid.src = data.video;
-      vid.autoplay = true; vid.loop = true; vid.muted = true; vid.playsInline = true;
-      videoScreen.insertBefore(vid, videoScreen.firstChild);
-      led3.classList.add('on');
-      $('cap-3').textContent = `moving as: ${r.state} · tap to finish`;
-      logSession('video', data.video);
-    } catch(err){
-      stopGlitch();
-      if(sid !== session) return;
-      static2.start();
-      videoScreen.querySelectorAll('img.ghost-portrait').forEach(el=>el.remove());
-      showStage(2);   // the portrait is still there to look at
-      const why = err.message === 'http' ? await describeFailure(res) : (res ? err.message : await describeFailure(null, err));
-      console.error('[generate-video]', why);
-      flashError('the video isn\'t ready yet, the portrait is still here', why);
+      const more = k < parts - 1;
+      updateFilmTag(more);
+      $('cap-3').textContent = more ? `moving as: ${r.state} · the film is still growing`
+                                    : `moving as: ${r.state} · tap to finish`;
+      if(!more) break;
+
+      // the next part starts where this one ends
+      const frame = await lastFrameOf(url);
+      if(!frame){ console.warn('[film] could not read the last frame, stopping at ' + film.length + ' part(s)'); break; }
+      startImage = frame;
     }
+
+    if(sid !== session) return;
+    if(!film.length){
+      if(glitching) stopGlitch();
+      static2.start();
+      videoScreen.querySelectorAll('img.ghost-portrait, .video-count').forEach(el=>el.remove());
+      showStage(2);   // the portrait is still there to look at
+      flashError('the video isn\'t ready yet, the portrait is still here', lastWhy);
+      return;
+    }
+    updateFilmTag(false);
+    $('cap-3').textContent = `moving as: ${r.state} · tap to finish`;
   }
 
   // tap stage 03 to reset for the next visitor (once the video is done).
@@ -1239,7 +1475,8 @@
     busy = false;
     [...activeGlitches].forEach(stop=>stop());
     studioScreen.querySelectorAll('img.reveal, .glitch-bar').forEach(el=>el.remove());
-    videoScreen.querySelectorAll('video.reveal, img.ghost-portrait, .glitch-bar').forEach(el=>el.remove());
+    videoScreen.querySelectorAll('video.reveal, video.film-layer, img.ghost-portrait, .glitch-bar, .video-count').forEach(el=>el.remove());
+    film = []; layers = null;
     [led2, led3].forEach(l=>l.classList.remove('on','pulse'));
     $('cap-2').textContent = ''; $('cap-3').textContent = '';
     static1.start(); static2.start();
