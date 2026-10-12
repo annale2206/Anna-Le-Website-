@@ -12,7 +12,7 @@
     --paper:#f8f7f2; --ink:#26353a; --ink-soft:#4a575b; --run:#4a6b5f; --rule:#e6b9ab; --rose:#ddb7ae;
     --serif: Georgia, 'Times New Roman', serif;
     --sans: 'Helvetica Neue', Arial, system-ui, sans-serif;
-    /* map colors */
+    /* idea and reading colors */
     --c-texture:#d9776a; --c-age:#c99a2e; --c-inclusion:#8a6cc0; --c-consumer:#e08a3c; --c-evaluate:#2f9c8f; --c-authentic:#4a7cc9;
     --c-braidotti:#26353a; --c-mirzoeff:#7a4f8c;
   }
@@ -63,24 +63,6 @@
   .shot::after{ content:'✦ perfected'; position:absolute; top:10px; left:10px; font:600 .78rem var(--sans); letter-spacing:.06em; text-transform:uppercase;
     color:#fff; background:var(--c-evaluate); padding:3px 9px; opacity:0; transition:opacity .3s; pointer-events:none; }
   body.perfected .shot::after{ opacity:1; }
-
-  /* ============ connection map ============ */
-  .map-wrap{ background:#fff; border:1px solid #e3e0d6; padding:16px 10px 10px; margin-top:6px; }
-  .map-scroll{ overflow-x:auto; }
-  #map{ display:block; width:100%; height:auto; }
-  @media (max-width:1100px){ #map{ min-width:640px; } }
-  #map .edge{ fill:none; stroke-width:2.6; stroke-linecap:round; opacity:.75; transition:opacity .2s, stroke-width .2s; }
-  #map .edge.read{ stroke-dasharray:6 6; stroke-width:2; }
-  #map .node{ cursor:pointer; transition:opacity .2s; }
-  #map.focus .edge:not(.lit){ opacity:.07; }
-  #map.focus .node:not(.lit){ opacity:.25; }
-  #map .edge.lit{ opacity:1; stroke-width:3.6; }
-  #map text{ font-family:var(--sans); }
-  .map-help{ font-size:.86rem; color:var(--ink-soft); margin:10px 6px 2px; }
-  .legend{ display:flex; flex-wrap:wrap; gap:8px 16px; margin:10px 6px 4px; font-size:.82rem; color:var(--ink-soft); }
-  .legend span{ display:inline-flex; align-items:center; gap:6px; }
-  .legend i{ width:22px; height:3px; display:inline-block; border-radius:2px; }
-  .legend i.dash{ height:0; border-top:2px dashed var(--ink); }
 
   /* ============ live archive ============ */
   .filters{ position:sticky; top:0; z-index:5; background:var(--paper); padding:10px 0; border-bottom:1px solid var(--rule); display:flex; flex-wrap:nowrap; overflow-x:auto; gap:8px; align-items:center; scrollbar-width:thin; }
@@ -136,18 +118,8 @@
 </div>
 
 <div class="split">
-  <!-- LEFT: the live archive (map + images) -->
+  <!-- LEFT: the live archive -->
   <section class="col-archive" aria-label="visual archive">
-  <!-- ===================== MAP ===================== -->
-  <div class="run"><span>Project 1 / Unmaking Human</span><span>Connection map</span></div>
-  <h2 class="essay">What connects to what</h2>
-  <p class="note-small">The eight images run from selling perfection to questioning it. Colored lines join each image to the ideas it shows; dashed lines join it to the course reading its caption uses.</p>
-  <div class="map-wrap">
-    <div class="map-scroll"><svg id="map" viewBox="0 0 1100 640" role="img" aria-label="Map connecting the eight images to six ideas and two course readings"></svg></div>
-    <div class="legend" id="legend"></div>
-    <p class="map-help">Hover or tap any circle to see its connections. Tap an image to jump to it; tap an idea or a reading to show only the images linked to it.</p>
-  </div>
-
   <!-- ===================== LIVE ARCHIVE ===================== -->
   <div class="run"><span>Project 1 / Unmaking Human</span><span>Visual archive</span></div>
   <h2 class="essay">The archive</h2>
@@ -309,105 +281,6 @@
     links: el.dataset.links.split(' '),
     group: el.dataset.group,
   }));
-
-  // ============================================================
-  // MAP
-  // ============================================================
-  const NS = 'http://www.w3.org/2000/svg';
-  const svg = document.getElementById('map');
-  const mk = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for(const k in attrs) e.setAttribute(k, attrs[k]); (parent || svg).appendChild(e); return e; };
-
-  // positions
-  const imgPos = {}; IMAGES.forEach((im, i)=> imgPos[im.id] = { x: 85 + i*133, y: 150 });
-  const ideaOrder = ['texture','age','inclusion','consumer','evaluate','authentic'];
-  const ideaPos = {}; ideaOrder.forEach((k, i)=> ideaPos[k] = { x: 120 + i*172, y: 375 });
-  const readPos = { braidotti:{ x:360, y:560 }, mirzoeff:{ x:780, y:560 } };
-
-  const defs = mk('defs', {});
-  const grad = mk('linearGradient', { id:'spectrum', x1:'0', x2:'1', y1:'0', y2:'0' }, defs);
-  [['0%','#d9776a'],['50%','#c99a2e'],['100%','#4a7cc9']].forEach(([o,c])=> mk('stop', { offset:o, 'stop-color':c }, grad));
-  const mark = mk('marker', { id:'sp-arrow', viewBox:'0 0 10 10', refX:'8', refY:'5', markerWidth:'7', markerHeight:'7', orient:'auto' }, defs);
-  mk('path', { d:'M0 0L10 5L0 10z', fill:'#4a7cc9' }, mark);
-
-  // spectrum line on top
-  mk('line', { x1:60, y1:52, x2:1040, y2:52, stroke:'url(#spectrum)', 'stroke-width':4, 'marker-end':'url(#sp-arrow)' });
-  const t1 = mk('text', { x:60, y:34, 'font-size':13, 'font-weight':700, fill:'#b5574b', 'letter-spacing':'.06em' }); t1.textContent = 'SELLING PERFECTION';
-  const t2 = mk('text', { x:1020, y:34, 'font-size':13, 'font-weight':700, fill:'#3a63a8', 'text-anchor':'end', 'letter-spacing':'.06em' }); t2.textContent = 'QUESTIONING PERFECTION';
-
-  const edges = mk('g', {});
-  const nodes = mk('g', {});
-  const curve = (a, b) => { const my = (a.y + b.y)/2; return `M${a.x} ${a.y}C${a.x} ${my} ${b.x} ${my} ${b.x} ${b.y}`; };
-
-  // edges: image -> idea (colored), image -> reading (dashed)
-  IMAGES.forEach(im=>{
-    im.links.forEach(l=>{
-      const a = { x: imgPos[im.id].x, y: imgPos[im.id].y + 48 };
-      if(IDEAS[l]){
-        const b = { x: ideaPos[l].x, y: ideaPos[l].y - 26 };
-        mk('path', { class:'edge', d:curve(a, b), stroke:IDEAS[l].c, 'data-a':im.id, 'data-b':l }, edges);
-      } else if(READINGS[l]){
-        const b = { x: readPos[l].x, y: readPos[l].y - 34 };
-        mk('path', { class:'edge read', d:curve(a, b), stroke:READINGS[l].c, 'data-a':im.id, 'data-b':l }, edges);
-      }
-    });
-  });
-
-  // image nodes: round thumbnails
-  IMAGES.forEach(im=>{
-    const p = imgPos[im.id], g = mk('g', { class:'node', 'data-id':im.id, tabindex:0, role:'button', 'aria-label':`${im.n}: ${im.title}` }, nodes);
-    const cp = mk('clipPath', { id:'cp-'+im.id }, defs); mk('circle', { cx:p.x, cy:p.y, r:46 }, cp);
-    mk('circle', { cx:p.x, cy:p.y, r:50, fill:'#fff', stroke:GROUPS[im.group].c, 'stroke-width':4 }, g);
-    mk('image', { href:im.src, x:p.x-80, y:p.y-46, width:160, height:92, preserveAspectRatio:'xMidYMid slice', 'clip-path':`url(#cp-${im.id})` }, g);
-    mk('circle', { cx:p.x+36, cy:p.y-36, r:14, fill:GROUPS[im.group].c }, g);
-    const n = mk('text', { x:p.x+36, y:p.y-31, 'text-anchor':'middle', 'font-size':13, 'font-weight':700, fill:'#fff' }, g); n.textContent = String(im.n).padStart(2,'0');
-    const tip = mk('title', {}, g); tip.textContent = `${String(im.n).padStart(2,'0')} / ${im.title}`;
-  });
-
-  // idea nodes: colored pills
-  ideaOrder.forEach(k=>{
-    const p = ideaPos[k], it = IDEAS[k], g = mk('g', { class:'node', 'data-id':k, tabindex:0, role:'button', 'aria-label':'idea: ' + it.label }, nodes);
-    mk('rect', { x:p.x - 78, y:p.y - 26, width:156, height:52, rx:26, fill:it.c }, g);
-    it.lines.forEach((ln, j)=>{ const t = mk('text', { x:p.x, y:p.y - 3 + j*16, 'text-anchor':'middle', 'font-size':12.5, 'font-weight':700, fill:'#fff' }, g); t.textContent = ln; });
-  });
-
-  // reading nodes
-  Object.entries(READINGS).forEach(([k, r])=>{
-    const p = readPos[k], g = mk('g', { class:'node', 'data-id':k, tabindex:0, role:'button', 'aria-label':'reading: ' + r.label }, nodes);
-    mk('rect', { x:p.x - 120, y:p.y - 34, width:240, height:68, rx:6, fill:'#fff', stroke:r.c, 'stroke-width':2.5, 'stroke-dasharray':'7 5' }, g);
-    const a = mk('text', { x:p.x, y:p.y - 4, 'text-anchor':'middle', 'font-size':20, 'font-weight':700, fill:r.c, 'font-family':'Georgia, serif' }, g); a.textContent = r.label;
-    const b = mk('text', { x:p.x, y:p.y + 18, 'text-anchor':'middle', 'font-size':12.5, fill:'#4a575b', 'font-style':'italic' }, g); b.textContent = r.sub;
-  });
-
-  // highlight on hover / focus
-  function neighbours(id){
-    const s = new Set([id]);
-    IMAGES.forEach(im=>{ if(im.id === id) im.links.forEach(l=> s.add(l)); if(im.links.includes(id)) s.add(im.id); });
-    return s;
-  }
-  function light(id){
-    const lit = id ? neighbours(id) : null;
-    svg.classList.toggle('focus', !!id);
-    svg.querySelectorAll('.node').forEach(n=> n.classList.toggle('lit', !!lit && lit.has(n.dataset.id)));
-    svg.querySelectorAll('.edge').forEach(e=> e.classList.toggle('lit', !!id && (e.dataset.a === id || e.dataset.b === id)));
-  }
-  svg.querySelectorAll('.node').forEach(n=>{
-    n.addEventListener('mouseenter', ()=> light(n.dataset.id));
-    n.addEventListener('focus', ()=> light(n.dataset.id));
-    n.addEventListener('mouseleave', ()=> light(null));
-    n.addEventListener('blur', ()=> light(null));
-    const go = ()=>{
-      const id = n.dataset.id;
-      if(id.startsWith('v')){ setFilter('all'); jumpTo(document.getElementById(id)); }
-      else { setFilter(id); jumpTo(document.getElementById('filters')); }
-    };
-    n.addEventListener('click', go);
-    n.addEventListener('keydown', e=>{ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); go(); } });
-  });
-
-  // legend
-  document.getElementById('legend').innerHTML =
-    Object.values(IDEAS).map(it=> `<span><i style="background:${it.c}"></i>${it.label}</span>`).join('') +
-    `<span><i class="dash"></i>course reading used in the caption</span>`;
 
   // ============================================================
   // LIVE ARCHIVE: filters + "connected to" chips on each card
