@@ -508,6 +508,8 @@
           transform="rotate(-3 536 26)" style="font-size:17px; animation-delay:3.65s">Cindy Sherman</text>
     <text class="label" x="672" y="64" fill="var(--yellow)" text-anchor="middle"
           transform="rotate(3 672 64)" style="font-size:17px; animation-delay:3.7s">identity machine</text>
+    <text class="label" x="728" y="156" fill="var(--sky)" text-anchor="middle"
+          transform="rotate(-3 728 156)" style="font-size:17px; animation-delay:3.72s">the perfect face</text>
     <text class="label" x="809" y="100" fill="var(--pink)" text-anchor="middle"
           transform="rotate(5 809 100)" style="font-size:17px; animation-delay:3.7s">interactive</text>
     <text class="label" x="869" y="-12" fill="var(--yellow)" text-anchor="middle"
@@ -553,7 +555,8 @@
   <span>projects:</span> <a href="project1.html">manifesto fiction</a> · <a href="project2.html">Threads of Becoming</a> ·
   <a href="project3.html">Us</a> · <a href="project4.html">Color of Love</a> · <a href="3d-persona.html">3d persona</a><br>
   <span>research:</span> <a href="persona.html">persona</a> · <a href="cindy-sherman.html">Cindy Sherman</a> ·
-  <a href="identity-machine.html">identity machine</a><br>
+  <a href="identity-machine.html">identity machine</a> ·
+  <a href="filtered-humanity.html">the perfect face</a><br>
   <span>art practice:</span> <a href="interactive.html">interactive</a> · <a href="sculptures.html">sculptures</a> ·
   <a href="collaboration.html">collaboration</a>
 </nav>
@@ -686,7 +689,7 @@
     };
     const projects = [270,160], research = [600,140], practice = [930,160];
     [[170,90],[240,40],[330,30],[390,80],[90,110]].forEach((p,i)=> twig(projects, p, (i%2? 10:-10), 1.2 + i*0.06));
-    [[500,60],[560,20],[665,25]].forEach((p,i)=> twig(research, p, (i%2? 9:-9), 1.25 + i*0.06));
+    [[500,60],[560,20],[665,25],[725,118]].forEach((p,i)=> twig(research, p, (i%2? 9:-9), 1.25 + i*0.06));
     [[810,80],[870,30],[960,40]].forEach((p,i)=> twig(practice, p, (i%2? 10:-10), 1.3 + i*0.06));
 
     // a few small side shoots so the tree feels alive
@@ -1034,6 +1037,7 @@
     { x:483, y:43, size:32, color:'#8a5cf6', href:'persona.html' },
     { x:543, y:3,  size:32, color:'#43e0c9', href:'cindy-sherman.html' },
     { x:649, y:9,  size:32, color:'#ffd23f', href:'identity-machine.html' },
+    { x:709, y:102, size:32, color:'#7fd4ff', href:'filtered-humanity.html' },
     { x:793, y:63, size:32, color:'#ff3d9a', href:'interactive.html' },
     { x:853, y:13, size:32, color:'#ffd23f', href:'sculptures.html' },
     { x:943, y:23, size:32, color:'#43e0c9', href:'collaboration.html' },
@@ -1058,6 +1062,7 @@
     'persona.html':          { title:'persona',             sub:'research: algorithmic persona', img:'thumbs/persona.jpg' },
     'cindy-sherman.html':    { title:'Cindy Sherman',       sub:'paper: Untitled Film Stills', img:'thumbs/cindy-sherman.jpg' },
     'identity-machine.html': { title:'identity machine',    sub:'brainwaves → a generated self', text:'01 · 02 · 03' },
+    'filtered-humanity.html':{ title:'the perfect face',    sub:'beauty, advertising, and the human', img:'perfect-face/06-dove-reverse-selfie.jpg' },
     'interactive.html':      { title:'interactive',         sub:'interactive works', img:yt('LZSsrpJ-nw8') },
     'sculptures.html':       { title:'sculptures',          sub:'crochet-mapping projection', img:'thumbs/sculptures.jpg' },
     'collaboration.html':    { title:'collaboration',       sub:'collaborative works', img:yt('1ntDb_3LuYQ') },
