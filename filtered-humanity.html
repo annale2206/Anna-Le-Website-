@@ -19,7 +19,18 @@
   body{ background:var(--paper) !important; background-image:none !important; color:var(--ink); font-family:var(--sans); }
   header.nav .logo{ color:var(--run); }
   header.nav .logo span{ color:var(--rule); }
-  .paper{ max-width:900px; margin:0 auto; padding:10px 32px 90px; }
+  .paper{ max-width:1400px; margin:0 auto; padding:10px 32px 20px; }
+
+  /* ============ split screen: archive left, essay right ============ */
+  .split{ max-width:1400px; margin:0 auto; padding:0 32px 60px; display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); gap:44px; align-items:start; }
+  .col-essay{
+    position:sticky; top:0; height:100vh; overflow-y:auto; overscroll-behavior:contain;
+    border-left:1px solid var(--rule); padding:0 8px 50px 36px; scrollbar-width:thin;
+  }
+  .col-essay p{ font-size:1rem; }
+  .col-essay .run:first-child{ margin-top:22px; }
+  .col-archive .run:first-child{ margin-top:22px; }
+  .col-archive .card h3.vt{ font-size:clamp(1.5rem,2.6vw,2rem); }
   p{ color:var(--ink); max-width:none; font-size:1.06rem; line-height:1.62; }
 
   /* running header + footer, like each PDF page */
@@ -28,10 +39,10 @@
   .page-foot{ display:flex; justify-content:space-between; border-top:1px solid var(--rule); padding-top:8px; margin-top:34px; font:.74rem var(--sans); color:var(--run); text-transform:uppercase; letter-spacing:.03em; }
 
   /* cover */
-  .cover{ background:var(--rose); padding:52px 36px 60px; }
+  .cover{ background:var(--rose); padding:48px 36px 52px; }
   .cover h1{ font:700 clamp(2rem,5vw,2.6rem)/1.1 var(--serif); color:var(--ink); margin:0 0 26px; letter-spacing:.01em; }
   .cover .sub{ font:400 clamp(1.5rem,3.6vw,2rem)/1.3 var(--serif); color:var(--ink); }
-  .question{ font:400 clamp(1.5rem,3.6vw,2.05rem)/1.4 var(--serif); color:var(--ink); margin:52px 0 30px; }
+  .question{ font:400 clamp(1.4rem,3vw,1.9rem)/1.4 var(--serif); color:var(--ink); margin:40px 0 10px; max-width:36ch; }
   .meta{ color:var(--ink-soft); font-size:1rem; }
 
   h2.essay{ font:700 clamp(1.9rem,4.4vw,2.5rem)/1.15 var(--serif); color:var(--ink); margin:0 0 6px; }
@@ -57,7 +68,7 @@
   .map-wrap{ background:#fff; border:1px solid #e3e0d6; padding:16px 10px 10px; margin-top:6px; }
   .map-scroll{ overflow-x:auto; }
   #map{ display:block; width:100%; height:auto; }
-  @media (max-width:760px){ #map{ min-width:760px; } }
+  @media (max-width:1100px){ #map{ min-width:640px; } }
   #map .edge{ fill:none; stroke-width:2.6; stroke-linecap:round; opacity:.75; transition:opacity .2s, stroke-width .2s; }
   #map .edge.read{ stroke-dasharray:6 6; stroke-width:2; }
   #map .node{ cursor:pointer; transition:opacity .2s; }
@@ -93,8 +104,12 @@
   .cites p{ font-size:.95rem; margin:0 0 10px; }
   .cites h4{ font:400 1.15rem var(--sans); color:var(--ink); margin:26px 0 10px; }
 
+  @media (max-width:900px){
+    .split{ grid-template-columns:minmax(0,1fr); gap:0; padding:0 16px 60px; }
+    .col-essay{ position:static; height:auto; overflow:visible; border-left:0; padding:0; border-top:2px solid var(--rule); margin-top:50px; }
+  }
   @media (max-width:700px){
-    .paper{ padding:6px 16px 70px; }
+    .paper{ padding:6px 16px 10px; }
     .cover{ padding:34px 22px 40px; }
     .run{ margin-top:52px; }
   }
@@ -106,8 +121,8 @@
   <a class="logo" href="index.html">anna<span>_</span>le</a>
 </header>
 
-<main class="paper">
-
+<main>
+<div class="paper">
   <!-- ===================== COVER ===================== -->
   <div class="run"><span>Project 1 / Unmaking Human</span><span>Visual essay</span></div>
   <div class="cover">
@@ -115,23 +130,14 @@
     <div class="sub">Beauty, Advertising,<br>and the Human</div>
   </div>
   <p class="question">How do beauty advertisements define which human features should be visible, valued, or improved?</p>
-  <p class="meta">Eight visual examples / Product marketing, comparison interfaces, and campaigns questioning perfection<br>Anna Le / VPA 5314</p>
   <button class="filter-switch" id="perfect-switch" type="button" aria-pressed="false"><span class="knob" aria-hidden="true"></span><span id="perfect-label">perfect: off</span></button>
   <p class="switch-note">Turn it on to see every image in the archive smoothed toward the "perfect" finish.</p>
 
-  <!-- ===================== INTRODUCTION ===================== -->
-  <div class="run"><span>Project 1 / Unmaking Human</span><span>Introduction</span></div>
-  <h2 class="essay">Reading the perfect face</h2>
-  <p class="note-small">Introduction: 592 words</p>
+</div>
 
-  <p>A face in a beauty advertisement can look effortless, but the image teaches viewers how to evaluate a body. Smooth skin, an even complexion, and a youthful appearance can become signs of a desirable person. Pores, lines, and unevenness may instead appear as problems requiring correction. This archive asks: How do beauty advertisements define which human features should be visible, valued, or improved? Its eight examples examine the relationship between beauty, consumer identity, and the idea of a normal human face.</p>
-  <p>The archive begins with product advertising and moves toward campaigns that question beauty standards. Maybelline’s foundation page combines a pore-blurring promise with a grid of skin shades. COVERGIRL’s Simply Ageless banner offers products for mature skin while emphasizing youthfulness. L’Oréal’s makeup tutorial makes a mature face visible through a side-by-side portrait. Clinique’s banner presents improved skin as something available in a bottle. Together, these images frame the human as a consumer who can work on appearance through products and routines.</p>
-  <p>These examples also complicate a simple opposition between exclusion and inclusion. A shade range acknowledges that customers have different skin tones. A portrait of mature skin acknowledges that beauty is not limited to young faces. Yet both forms of inclusion can coexist with expectations of smoother or more perfected skin. The issue is therefore not only who appears in an advertisement. It is also what those people are asked to change in order to fit its ideal. Representation can expand while the pressure to improve remains.</p>
-  <p>Rosi Braidotti’s introduction to <em>The Posthuman</em> offers one way to understand this tension. She questions the apparent universality of the familiar human subject and explains that this category has not represented everyone equally (Introduction, pp. 1-3). Applied to beauty advertising, her argument encourages us to examine the standard against which faces are measured. This is my application of her framework, rather than a claim that Braidotti specifically analyzes cosmetics. The archive asks whose bodily differences become acceptable and whose differences are framed as needing adjustment.</p>
-  <p>Braidotti’s discussion of a nature-culture continuum also challenges the idea that a face and its representation belong to separate worlds. Cosmetics, cameras, lighting, websites, and digital editing participate in how faces become publicly visible. Maybelline’s comparison slider makes the viewer an active evaluator of a before-and-after image. The body is presented through a designed encounter with technology and commercial language. This does not make the person less human. It shows that the appearance through which we recognize someone is shaped by material and cultural relationships.</p>
-  <p>Nicholas Mirzoeff’s introduction to <em>How to See the World</em> provides a second course connection. He describes making and sharing images as ways people understand their world and their place within it. His discussion of digitally assembled imagery highlights the gap between a convincing appearance and its production (Introduction, pp. 6-10). In this archive, that distinction matters when reading Dove’s Reverse Selfie comparison: the polished face can conceal the process of creating it. A critical viewer asks how the image was made and which features its construction changes.</p>
-  <p>The final examples offer alternatives to a single perfected face. Dove’s group portrait emphasizes visible variety, while its Beauty in the AI Age campaign pairs faces with a promise of authenticity. These images challenge uniformity, but they are still selected, composed, branded representations. Their commercial setting deserves attention too. Overall, the archive argues that beauty advertising helps construct the human as both a person worthy of recognition and a project requiring improvement. Looking carefully allows us to question that expectation without judging individuals who enjoy makeup or self-expression.</p>
-
+<div class="split">
+  <!-- LEFT: the live archive (map + images) -->
+  <section class="col-archive" aria-label="visual archive">
   <!-- ===================== MAP ===================== -->
   <div class="run"><span>Project 1 / Unmaking Human</span><span>Connection map</span></div>
   <h2 class="essay">What connects to what</h2>
@@ -224,6 +230,22 @@
 
   </div>
 
+  </section>
+
+  <!-- RIGHT: the essay, scrolls on its own -->
+  <aside class="col-essay" aria-label="essay">
+  <!-- ===================== INTRODUCTION ===================== -->
+  <div class="run"><span>Project 1 / Unmaking Human</span><span>Introduction</span></div>
+  <h2 class="essay">Reading the perfect face</h2>
+
+  <p>A face in a beauty advertisement can look effortless, but the image teaches viewers how to evaluate a body. Smooth skin, an even complexion, and a youthful appearance can become signs of a desirable person. Pores, lines, and unevenness may instead appear as problems requiring correction. This archive asks: How do beauty advertisements define which human features should be visible, valued, or improved? Its eight examples examine the relationship between beauty, consumer identity, and the idea of a normal human face.</p>
+  <p>The archive begins with product advertising and moves toward campaigns that question beauty standards. Maybelline’s foundation page combines a pore-blurring promise with a grid of skin shades. COVERGIRL’s Simply Ageless banner offers products for mature skin while emphasizing youthfulness. L’Oréal’s makeup tutorial makes a mature face visible through a side-by-side portrait. Clinique’s banner presents improved skin as something available in a bottle. Together, these images frame the human as a consumer who can work on appearance through products and routines.</p>
+  <p>These examples also complicate a simple opposition between exclusion and inclusion. A shade range acknowledges that customers have different skin tones. A portrait of mature skin acknowledges that beauty is not limited to young faces. Yet both forms of inclusion can coexist with expectations of smoother or more perfected skin. The issue is therefore not only who appears in an advertisement. It is also what those people are asked to change in order to fit its ideal. Representation can expand while the pressure to improve remains.</p>
+  <p>Rosi Braidotti’s introduction to <em>The Posthuman</em> offers one way to understand this tension. She questions the apparent universality of the familiar human subject and explains that this category has not represented everyone equally (Introduction, pp. 1-3). Applied to beauty advertising, her argument encourages us to examine the standard against which faces are measured. This is my application of her framework, rather than a claim that Braidotti specifically analyzes cosmetics. The archive asks whose bodily differences become acceptable and whose differences are framed as needing adjustment.</p>
+  <p>Braidotti’s discussion of a nature-culture continuum also challenges the idea that a face and its representation belong to separate worlds. Cosmetics, cameras, lighting, websites, and digital editing participate in how faces become publicly visible. Maybelline’s comparison slider makes the viewer an active evaluator of a before-and-after image. The body is presented through a designed encounter with technology and commercial language. This does not make the person less human. It shows that the appearance through which we recognize someone is shaped by material and cultural relationships.</p>
+  <p>Nicholas Mirzoeff’s introduction to <em>How to See the World</em> provides a second course connection. He describes making and sharing images as ways people understand their world and their place within it. His discussion of digitally assembled imagery highlights the gap between a convincing appearance and its production (Introduction, pp. 6-10). In this archive, that distinction matters when reading Dove’s Reverse Selfie comparison: the polished face can conceal the process of creating it. A critical viewer asks how the image was made and which features its construction changes.</p>
+  <p>The final examples offer alternatives to a single perfected face. Dove’s group portrait emphasizes visible variety, while its Beauty in the AI Age campaign pairs faces with a promise of authenticity. These images challenge uniformity, but they are still selected, composed, branded representations. Their commercial setting deserves attention too. Overall, the archive argues that beauty advertising helps construct the human as both a person worthy of recognition and a project requiring improvement. Looking carefully allows us to question that expectation without judging individuals who enjoy makeup or self-expression.</p>
+
   <!-- ===================== REFLECTION ===================== -->
   <div class="run"><span>Project 1 / Unmaking Human</span><span>Final reflection</span></div>
   <h2 class="essay">What changed in how I understand “the human”?</h2>
@@ -250,7 +272,8 @@
     <p class="note-small" style="margin-top:16px">All web visuals were captured on October 11, 2026. Sources are credited to the publishing brands; individual photographers are not identified on the captured sections. Screenshots are cropped for layout. Product claims are analyzed as advertising language, not endorsed as factual outcomes. Images are reproduced for criticism and educational commentary.</p>
   </div>
   <div class="page-foot"><span>The perfect face / visual archive</span><span>Anna Le</span></div>
-
+  </aside>
+</div>
 </main>
 
 <script src="main.js" defer></script>
