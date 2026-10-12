@@ -4,286 +4,437 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>anna_le: the perfect face</title>
-<meta name="description" content="The Perfect Face: Beauty, Advertising, and the Human. A visual essay by Anna Le on which human features beauty advertising makes visible, valued, or improved.">
+<meta name="description" content="The Perfect Face: Beauty, Advertising, and the Human. A visual essay and live archive by Anna Le.">
 <link rel="stylesheet" href="style.css">
 <style>
-  /* ---------- page head ---------- */
-  .kicker{ font-family:var(--mono); color:var(--green-dim); font-size:1.1rem; letter-spacing:.06em; margin:0 0 6px; }
-  .hero-sub{ font-family:var(--mono); color:var(--sky); font-size:1.35rem; margin:-4px 0 20px; }
-  .question{
-    font-size:1.35rem; line-height:1.45; color:var(--cream); max-width:34ch;
-    border-left:3px solid var(--teal); padding:4px 0 4px 18px; margin:10px 0 18px;
+  /* ============ paper look, like the visual essay PDF ============ */
+  :root{
+    --paper:#f8f7f2; --ink:#26353a; --ink-soft:#4a575b; --run:#4a6b5f; --rule:#e6b9ab; --rose:#ddb7ae;
+    --serif: Georgia, 'Times New Roman', serif;
+    --sans: 'Helvetica Neue', Arial, system-ui, sans-serif;
+    /* map colors */
+    --c-texture:#d9776a; --c-age:#c99a2e; --c-inclusion:#8a6cc0; --c-consumer:#e08a3c; --c-evaluate:#2f9c8f; --c-authentic:#4a7cc9;
+    --c-braidotti:#26353a; --c-mirzoeff:#7a4f8c;
   }
-  .course{ font-family:var(--mono); color:var(--green-dim); font-size:1.05rem; margin:0 0 26px; }
-  h2{ color:var(--teal); margin:60px 0 14px; }
-  .lead{ font-size:1.15rem; color:var(--cream); }
-  em.book{ font-style:italic; color:var(--cream); }
+  body{ background:var(--paper) !important; background-image:none !important; color:var(--ink); font-family:var(--sans); }
+  header.nav .logo{ color:var(--run); }
+  header.nav .logo span{ color:var(--rule); }
+  .paper{ max-width:900px; margin:0 auto; padding:10px 32px 90px; }
+  p{ color:var(--ink); max-width:none; font-size:1.06rem; line-height:1.62; }
 
-  /* the course readings, as two notes */
-  .readings{ display:grid; grid-template-columns:repeat(auto-fit, minmax(260px,1fr)); gap:18px; margin:26px 0 8px; max-width:900px; }
-  .reading{ border:1.5px solid #2c3a46; background:#111922; padding:14px 16px; }
-  .reading .who{ font-family:var(--mono); font-size:1.15rem; color:var(--sky); }
-  .reading .what{ font-size:.95rem; color:#b9cbc3; margin-top:4px; }
+  /* running header + footer, like each PDF page */
+  .run{ display:flex; justify-content:space-between; gap:12px; font:700 .74rem/1.2 var(--sans); letter-spacing:.04em; color:var(--run); text-transform:uppercase; margin:70px 0 26px; }
+  .run:first-of-type{ margin-top:10px; }
+  .page-foot{ display:flex; justify-content:space-between; border-top:1px solid var(--rule); padding-top:8px; margin-top:34px; font:.74rem var(--sans); color:var(--run); text-transform:uppercase; letter-spacing:.03em; }
 
-  /* "perfect" switch: smooths every image toward the advertised ideal */
-  .filter-switch{
-    display:inline-flex; align-items:center; gap:12px; margin:8px 0 4px;
-    font-family:var(--mono); font-size:1.15rem; color:var(--cream);
-    background:#111922; border:1.5px solid #2c3a46; padding:8px 14px; cursor:pointer;
-  }
-  .filter-switch .knob{ width:38px; height:20px; border-radius:20px; background:#2c3a46; position:relative; transition:background .2s; }
-  .filter-switch .knob::after{ content:''; position:absolute; top:3px; left:3px; width:14px; height:14px; border-radius:50%; background:var(--cream); transition:left .2s; }
-  .filter-switch[aria-pressed="true"] .knob{ background:var(--teal); }
-  .filter-switch[aria-pressed="true"] .knob::after{ left:21px; }
-  .switch-note{ font-family:var(--mono); color:var(--green-dim); font-size:1rem; margin:0 0 10px; }
-  /* what "perfect: on" does: heavy skin-smoothing blur, glow, brighter and warmer color */
-  body.perfected .archive img{ filter:blur(2.2px) brightness(1.14) contrast(.82) saturate(1.35) sepia(.12); }
-  .media{ position:relative; }
-  .media::after{
-    content:'✦ perfected'; position:absolute; top:10px; left:10px;
-    font-family:var(--mono); font-size:1.05rem; color:var(--bg); background:var(--teal);
-    padding:2px 10px; opacity:0; transform:translateY(-4px); transition:opacity .3s, transform .3s; pointer-events:none;
-  }
-  body.perfected .media::after{ opacity:1; transform:none; }
-  body.perfected .media img{ box-shadow:0 0 28px rgba(255,240,220,.35), 6px 6px 0 rgba(0,0,0,.4); }
+  /* cover */
+  .cover{ background:var(--rose); padding:52px 36px 60px; }
+  .cover h1{ font:700 clamp(2rem,5vw,2.6rem)/1.1 var(--serif); color:var(--ink); margin:0 0 26px; letter-spacing:.01em; }
+  .cover .sub{ font:400 clamp(1.5rem,3.6vw,2rem)/1.3 var(--serif); color:var(--ink); }
+  .question{ font:400 clamp(1.5rem,3.6vw,2.05rem)/1.4 var(--serif); color:var(--ink); margin:52px 0 30px; }
+  .meta{ color:var(--ink-soft); font-size:1rem; }
 
-  /* ---------- visual archive ---------- */
-  .archive{ display:flex; flex-direction:column; gap:72px; margin-top:30px; }
-  .item{ display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); gap:32px; align-items:start; }
-  .item:nth-child(even) .media{ order:2; }
-  .num{ font-family:var(--mono); color:var(--teal); font-size:1.3rem; }
-  .item h3{ color:var(--cream); margin:2px 0 4px; font-size:1.1rem; }
-  .tag{ font-family:var(--mono); color:var(--green-dim); font-size:1rem; letter-spacing:.08em; margin-bottom:12px; }
-  .item p{ margin:0 0 12px; }
-  .credit{ font-family:var(--mono); font-size:1rem; color:var(--green-dim); line-height:1.3; }
-  .credit a{ color:var(--sky); }
-  .media img{
-    width:100%; height:auto; border:2px solid var(--green-dim); box-shadow:6px 6px 0 rgba(0,0,0,.4);
-    background:#111922; transition:filter .4s ease;
-  }
+  h2.essay{ font:700 clamp(1.9rem,4.4vw,2.5rem)/1.15 var(--serif); color:var(--ink); margin:0 0 6px; }
+  .note-small{ font-size:.86rem; color:var(--ink-soft); margin:0 0 22px; }
+  h3.small-h{ font:400 1.9rem/1.2 var(--serif); color:var(--ink); margin:40px 0 12px; }
+  a{ color:var(--run); }
 
-  .reflection{ border-left:3px solid var(--teal); padding:4px 0 4px 20px; max-width:72ch; }
-  .one-line{
-    margin:30px 0 0; max-width:60ch; padding:18px 20px; background:#111922; border:1.5px solid #2c3a46;
-  }
-  .one-line .lbl{ font-family:var(--mono); color:var(--green-dim); font-size:1rem; letter-spacing:.06em; }
-  .one-line p{ margin:6px 0 0; font-size:1.15rem; color:var(--cream); }
-  .cites p{ padding-left:2em; text-indent:-2em; max-width:85ch; font-size:.98rem; margin:0 0 10px; }
-  .cites a{ color:var(--sky); overflow-wrap:anywhere; }
-  .cites h3{ color:var(--sky); margin:22px 0 10px; font-size:1rem; }
-  .note{ font-size:.92rem; color:#9fb3ab; max-width:85ch; }
+  /* perfect switch */
+  .filter-switch{ display:inline-flex; align-items:center; gap:10px; margin:20px 0 0; font:600 .85rem var(--sans); letter-spacing:.06em; text-transform:uppercase;
+    color:var(--ink); background:transparent; border:1.5px solid var(--ink); padding:8px 14px; cursor:pointer; }
+  .filter-switch .knob{ width:34px; height:18px; border-radius:18px; background:#cfd3cd; position:relative; transition:background .2s; }
+  .filter-switch .knob::after{ content:''; position:absolute; top:3px; left:3px; width:12px; height:12px; border-radius:50%; background:#fff; transition:left .2s; }
+  .filter-switch[aria-pressed="true"] .knob{ background:var(--c-evaluate); }
+  .filter-switch[aria-pressed="true"] .knob::after{ left:19px; }
+  .switch-note{ font-size:.86rem; color:var(--ink-soft); margin:8px 0 0; }
+  body.perfected .card img{ filter:blur(2.2px) brightness(1.12) contrast(.82) saturate(1.35) sepia(.12); }
+  .shot{ position:relative; }
+  .shot::after{ content:'✦ perfected'; position:absolute; top:10px; left:10px; font:600 .78rem var(--sans); letter-spacing:.06em; text-transform:uppercase;
+    color:#fff; background:var(--c-evaluate); padding:3px 9px; opacity:0; transition:opacity .3s; pointer-events:none; }
+  body.perfected .shot::after{ opacity:1; }
 
-  @media (max-width:820px){
-    .item{ grid-template-columns:1fr; gap:16px; }
-    .item:nth-child(even) .media{ order:0; }
-    .page{ padding:16px 18px 80px; }
-    .eyebrow{ flex-wrap:wrap; }
-    .eyebrow .path{ font-size:1.05rem; overflow-wrap:anywhere; }
-    .question{ font-size:1.15rem; }
+  /* ============ connection map ============ */
+  .map-wrap{ background:#fff; border:1px solid #e3e0d6; padding:16px 10px 10px; margin-top:6px; }
+  .map-scroll{ overflow-x:auto; }
+  #map{ display:block; width:100%; height:auto; }
+  @media (max-width:760px){ #map{ min-width:760px; } }
+  #map .edge{ fill:none; stroke-width:2.6; stroke-linecap:round; opacity:.75; transition:opacity .2s, stroke-width .2s; }
+  #map .edge.read{ stroke-dasharray:6 6; stroke-width:2; }
+  #map .node{ cursor:pointer; transition:opacity .2s; }
+  #map.focus .edge:not(.lit){ opacity:.07; }
+  #map.focus .node:not(.lit){ opacity:.25; }
+  #map .edge.lit{ opacity:1; stroke-width:3.6; }
+  #map text{ font-family:var(--sans); }
+  .map-help{ font-size:.86rem; color:var(--ink-soft); margin:10px 6px 2px; }
+  .legend{ display:flex; flex-wrap:wrap; gap:8px 16px; margin:10px 6px 4px; font-size:.82rem; color:var(--ink-soft); }
+  .legend span{ display:inline-flex; align-items:center; gap:6px; }
+  .legend i{ width:22px; height:3px; display:inline-block; border-radius:2px; }
+  .legend i.dash{ height:0; border-top:2px dashed var(--ink); }
+
+  /* ============ live archive ============ */
+  .filters{ position:sticky; top:0; z-index:5; background:var(--paper); padding:10px 0; border-bottom:1px solid var(--rule); display:flex; flex-wrap:nowrap; overflow-x:auto; gap:8px; align-items:center; scrollbar-width:thin; }
+  .chip{ white-space:nowrap; flex:0 0 auto; }
+  .chip{ font:600 .74rem var(--sans); letter-spacing:.05em; text-transform:uppercase; padding:6px 11px; border:1.5px solid var(--c, var(--ink)); color:var(--c, var(--ink)); background:transparent; cursor:pointer; border-radius:999px; }
+  .chip.on{ background:var(--c, var(--ink)); color:#fff; }
+  .count{ font-size:.82rem; color:var(--ink-soft); margin-left:auto; white-space:nowrap; padding:0 4px; }
+  .cards{ display:flex; flex-direction:column; }
+  .card{ padding-top:10px; scroll-margin-top:64px; }
+  .card[hidden]{ display:none; }
+  .card.flash h3.vt{ background:linear-gradient(transparent 62%, rgba(221,183,174,.7) 0); }
+  .card h3.vt{ font:700 clamp(1.7rem,4vw,2.3rem)/1.15 var(--serif); color:var(--ink); margin:0 0 6px; }
+  .gtag{ font-size:.86rem; letter-spacing:.03em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:18px; }
+  .shot{ border-top:1px solid var(--ink-soft); padding-top:0; margin-bottom:22px; }
+  .shot img{ width:100%; height:auto; display:block; transition:filter .4s ease; }
+  .credit{ font-size:.84rem; color:var(--run); margin:0 0 4px; }
+  .links{ display:flex; flex-wrap:wrap; gap:6px; margin:14px 0 0; align-items:center; }
+  .links .lbl{ font-size:.78rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin-right:2px; }
+  .links button{ font:600 .72rem var(--sans); letter-spacing:.04em; text-transform:uppercase; border:0; color:#fff; background:var(--c); padding:4px 9px; border-radius:999px; cursor:pointer; }
+
+  .cites p{ font-size:.95rem; margin:0 0 10px; }
+  .cites h4{ font:400 1.15rem var(--sans); color:var(--ink); margin:26px 0 10px; }
+
+  @media (max-width:700px){
+    .paper{ padding:6px 16px 70px; }
+    .cover{ padding:34px 22px 40px; }
+    .run{ margin-top:52px; }
   }
 </style>
 </head>
-<body data-petals="6">
+<body data-petals="0">
 
 <header class="nav">
   <a class="logo" href="index.html">anna<span>_</span>le</a>
 </header>
 
-<main class="page">
+<main class="paper">
 
-  <div class="kicker">project 1 / unmaking human · visual essay</div>
-  <div class="eyebrow">
-    <h1>the perfect face</h1>
-    <span class="path">~/anna/research/the-perfect-face</span>
+  <!-- ===================== COVER ===================== -->
+  <div class="run"><span>Project 1 / Unmaking Human</span><span>Visual essay</span></div>
+  <div class="cover">
+    <h1>THE<br>PERFECT FACE</h1>
+    <div class="sub">Beauty, Advertising,<br>and the Human</div>
   </div>
-  <div class="hero-sub">Beauty, Advertising, and the Human</div>
-
   <p class="question">How do beauty advertisements define which human features should be visible, valued, or improved?</p>
-  <p class="course">eight visual examples · product marketing, comparison interfaces, and campaigns questioning perfection · Anna Le · VPA 5314</p>
-
-  <button class="filter-switch" id="perfect-switch" type="button" aria-pressed="false">
-    <span class="knob" aria-hidden="true"></span> <span id="perfect-label">perfect: off</span>
-  </button>
-  <p class="switch-note">turn it on to see every image in this archive smoothed toward the "perfect" finish</p>
+  <p class="meta">Eight visual examples / Product marketing, comparison interfaces, and campaigns questioning perfection<br>Anna Le / VPA 5314</p>
+  <button class="filter-switch" id="perfect-switch" type="button" aria-pressed="false"><span class="knob" aria-hidden="true"></span><span id="perfect-label">perfect: off</span></button>
+  <p class="switch-note">Turn it on to see every image in the archive smoothed toward the "perfect" finish.</p>
 
   <!-- ===================== INTRODUCTION ===================== -->
-  <h2>Reading the perfect face</h2>
+  <div class="run"><span>Project 1 / Unmaking Human</span><span>Introduction</span></div>
+  <h2 class="essay">Reading the perfect face</h2>
+  <p class="note-small">Introduction: 592 words</p>
 
-  <p class="lead">A face in a beauty advertisement can look effortless, but the image teaches viewers how to evaluate a body. Smooth skin, an even complexion, and a youthful appearance can become signs of a desirable person. Pores, lines, and unevenness may instead appear as problems requiring correction. This archive asks: How do beauty advertisements define which human features should be visible, valued, or improved? Its eight examples examine the relationship between beauty, consumer identity, and the idea of a normal human face.</p>
-
+  <p>A face in a beauty advertisement can look effortless, but the image teaches viewers how to evaluate a body. Smooth skin, an even complexion, and a youthful appearance can become signs of a desirable person. Pores, lines, and unevenness may instead appear as problems requiring correction. This archive asks: How do beauty advertisements define which human features should be visible, valued, or improved? Its eight examples examine the relationship between beauty, consumer identity, and the idea of a normal human face.</p>
   <p>The archive begins with product advertising and moves toward campaigns that question beauty standards. Maybelline’s foundation page combines a pore-blurring promise with a grid of skin shades. COVERGIRL’s Simply Ageless banner offers products for mature skin while emphasizing youthfulness. L’Oréal’s makeup tutorial makes a mature face visible through a side-by-side portrait. Clinique’s banner presents improved skin as something available in a bottle. Together, these images frame the human as a consumer who can work on appearance through products and routines.</p>
-
   <p>These examples also complicate a simple opposition between exclusion and inclusion. A shade range acknowledges that customers have different skin tones. A portrait of mature skin acknowledges that beauty is not limited to young faces. Yet both forms of inclusion can coexist with expectations of smoother or more perfected skin. The issue is therefore not only who appears in an advertisement. It is also what those people are asked to change in order to fit its ideal. Representation can expand while the pressure to improve remains.</p>
-
-  <p>Rosi Braidotti’s introduction to <em class="book">The Posthuman</em> offers one way to understand this tension. She questions the apparent universality of the familiar human subject and explains that this category has not represented everyone equally (Introduction, pp. 1-3). Applied to beauty advertising, her argument encourages us to examine the standard against which faces are measured. This is my application of her framework, rather than a claim that Braidotti specifically analyzes cosmetics. The archive asks whose bodily differences become acceptable and whose differences are framed as needing adjustment.</p>
-
+  <p>Rosi Braidotti’s introduction to <em>The Posthuman</em> offers one way to understand this tension. She questions the apparent universality of the familiar human subject and explains that this category has not represented everyone equally (Introduction, pp. 1-3). Applied to beauty advertising, her argument encourages us to examine the standard against which faces are measured. This is my application of her framework, rather than a claim that Braidotti specifically analyzes cosmetics. The archive asks whose bodily differences become acceptable and whose differences are framed as needing adjustment.</p>
   <p>Braidotti’s discussion of a nature-culture continuum also challenges the idea that a face and its representation belong to separate worlds. Cosmetics, cameras, lighting, websites, and digital editing participate in how faces become publicly visible. Maybelline’s comparison slider makes the viewer an active evaluator of a before-and-after image. The body is presented through a designed encounter with technology and commercial language. This does not make the person less human. It shows that the appearance through which we recognize someone is shaped by material and cultural relationships.</p>
-
-  <p>Nicholas Mirzoeff’s introduction to <em class="book">How to See the World</em> provides a second course connection. He describes making and sharing images as ways people understand their world and their place within it. His discussion of digitally assembled imagery highlights the gap between a convincing appearance and its production (Introduction, pp. 6-10). In this archive, that distinction matters when reading Dove’s Reverse Selfie comparison: the polished face can conceal the process of creating it. A critical viewer asks how the image was made and which features its construction changes.</p>
-
+  <p>Nicholas Mirzoeff’s introduction to <em>How to See the World</em> provides a second course connection. He describes making and sharing images as ways people understand their world and their place within it. His discussion of digitally assembled imagery highlights the gap between a convincing appearance and its production (Introduction, pp. 6-10). In this archive, that distinction matters when reading Dove’s Reverse Selfie comparison: the polished face can conceal the process of creating it. A critical viewer asks how the image was made and which features its construction changes.</p>
   <p>The final examples offer alternatives to a single perfected face. Dove’s group portrait emphasizes visible variety, while its Beauty in the AI Age campaign pairs faces with a promise of authenticity. These images challenge uniformity, but they are still selected, composed, branded representations. Their commercial setting deserves attention too. Overall, the archive argues that beauty advertising helps construct the human as both a person worthy of recognition and a project requiring improvement. Looking carefully allows us to question that expectation without judging individuals who enjoy makeup or self-expression.</p>
 
-  <div class="readings">
-    <div class="reading">
-      <div class="who">Braidotti · The Posthuman</div>
-      <div class="what">questioning the "universal" human standard; the nature-culture continuum</div>
-    </div>
-    <div class="reading">
-      <div class="who">Mirzoeff · How to See the World</div>
-      <div class="what">images as ways of understanding the world; the gap between a convincing image and its production</div>
-    </div>
+  <!-- ===================== MAP ===================== -->
+  <div class="run"><span>Project 1 / Unmaking Human</span><span>Connection map</span></div>
+  <h2 class="essay">What connects to what</h2>
+  <p class="note-small">The eight images run from selling perfection to questioning it. Colored lines join each image to the ideas it shows; dashed lines join it to the course reading its caption uses.</p>
+  <div class="map-wrap">
+    <div class="map-scroll"><svg id="map" viewBox="0 0 1100 640" role="img" aria-label="Map connecting the eight images to six ideas and two course readings"></svg></div>
+    <div class="legend" id="legend"></div>
+    <p class="map-help">Hover or tap any circle to see its connections. Tap an image to jump to it; tap an idea or a reading to show only the images linked to it.</p>
   </div>
 
-  <!-- ===================== VISUAL ARCHIVE ===================== -->
-  <h2>Visual Archive</h2>
+  <!-- ===================== LIVE ARCHIVE ===================== -->
+  <div class="run"><span>Project 1 / Unmaking Human</span><span>Visual archive</span></div>
+  <h2 class="essay">The archive</h2>
+  <p class="note-small">Filter by kind of image, idea, or reading.</p>
+  <div class="filters" id="filters"></div>
 
-  <div class="archive">
+  <div class="cards" id="cards">
 
-    <article class="item">
-      <div class="media"><img src="perfect-face/01-maybelline-pores.jpg" width="1250" height="580" loading="lazy"
-        alt="Maybelline Fit Me Matte + Poreless foundation page: the bottle, a liquid swatch, and a grid of skin shades"></div>
-      <div>
-        <div class="num">01</div>
-        <h3>Pores as a problem</h3>
-        <div class="tag">product promise / texture</div>
-        <p>The bottle, liquid swatch, and shade grid give the face a commercial vocabulary: tone can be matched and texture can be improved. The promise of blurred pores places ordinary skin features within a problem-and-solution format. The shade grid recognizes varied complexions, yet the preferred finish remains smooth and even. This image belongs in the archive because inclusion across skin tones can coexist with a shared expectation of correction. Braidotti’s critique of the universal human helps us question the appearance treated as the standard.</p>
-        <div class="credit">Maybelline, Fit Me Matte + Poreless foundation product page. Screenshot, October 11, 2026. <a href="https://www.maybelline.com/face-makeup/foundation-makeup/fit-me-matte-poreless-foundation" target="_blank" rel="noopener">view original source ↗</a></div>
-      </div>
+    <article class="card" id="v1" data-group="promise" data-links="texture inclusion braidotti">
+      <div class="run"><span>Visual 01 / 08</span><span>Product promise / Texture</span></div>
+      <h3 class="vt">01 / Pores as a problem</h3>
+      <div class="gtag">Product promise / Texture</div>
+      <div class="shot"><img src="perfect-face/01-maybelline-pores.jpg" width="1250" height="580" loading="lazy" alt="Maybelline Fit Me Matte + Poreless foundation page: the bottle, a liquid swatch, and a grid of skin shades"></div>
+      <p>The bottle, liquid swatch, and shade grid give the face a commercial vocabulary: tone can be matched and texture can be improved. The promise of blurred pores places ordinary skin features within a problem-and-solution format. The shade grid recognizes varied complexions, yet the preferred finish remains smooth and even. This image belongs in the archive because inclusion across skin tones can coexist with a shared expectation of correction. Braidotti’s critique of the universal human helps us question the appearance treated as the standard.</p>
+      <p class="credit">Maybelline, Fit Me Matte + Poreless foundation product page. Screenshot, October 11, 2026. <a href="https://www.maybelline.com/face-makeup/foundation-makeup/fit-me-matte-poreless-foundation" target="_blank" rel="noopener">View original source</a></p>
     </article>
 
-    <article class="item">
-      <div class="media"><img src="perfect-face/02-covergirl-ageless.jpg" width="1250" height="610" loading="lazy"
-        alt="COVERGIRL Simply Ageless banner: large lettering and oversized bottles against a sky background"></div>
-      <div>
-        <div class="num">02</div>
-        <h3>Mature skin, youthful ideal</h3>
-        <div class="tag">product promise / age</div>
-        <p>Large lettering and oversized bottles make agelessness the collection’s visual identity. Its wording addresses mature skin while linking the desired outcome with a youthful appearance. Older consumers are acknowledged, but visible aging remains something to manage. The sky background and clean product arrangement make improvement look light and uncomplicated. This example helps ask what kind of human is imagined: a person allowed to age, or a consumer expected to make aging less visible? The caption analyzes the promotional framing, rather than claiming the products erase age.</p>
-        <div class="credit">COVERGIRL, Simply Ageless collection banner. Screenshot, October 11, 2026. <a href="https://www.covergirl.com/collection-makeup/simply-ageless" target="_blank" rel="noopener">view original source ↗</a></div>
-      </div>
+    <article class="card" id="v2" data-group="promise" data-links="age consumer">
+      <div class="run"><span>Visual 02 / 08</span><span>Product promise / Age</span></div>
+      <h3 class="vt">02 / Mature skin, youthful ideal</h3>
+      <div class="gtag">Product promise / Age</div>
+      <div class="shot"><img src="perfect-face/02-covergirl-ageless.jpg" width="1250" height="610" loading="lazy" alt="COVERGIRL Simply Ageless banner: large lettering and oversized bottles against a sky background"></div>
+      <p>Large lettering and oversized bottles make agelessness the collection’s visual identity. Its wording addresses mature skin while linking the desired outcome with a youthful appearance. Older consumers are acknowledged, but visible aging remains something to manage. The sky background and clean product arrangement make improvement look light and uncomplicated. This example helps ask what kind of human is imagined: a person allowed to age, or a consumer expected to make aging less visible? The caption analyzes the promotional framing, rather than claiming the products erase age.</p>
+      <p class="credit">COVERGIRL, Simply Ageless collection banner. Screenshot, October 11, 2026. <a href="https://www.covergirl.com/collection-makeup/simply-ageless" target="_blank" rel="noopener">View original source</a></p>
     </article>
 
-    <article class="item">
-      <div class="media"><img src="perfect-face/03-loreal-mature-face.jpg" width="1250" height="510" loading="lazy"
-        alt="L'Oréal Paris makeup routine header: a side-by-side close-up portrait of a mature woman before and after makeup"></div>
-      <div>
-        <div class="num">03</div>
-        <h3>Making mature faces visible</h3>
-        <div class="tag">representation / maturity</div>
-        <p>The side-by-side portrait places a mature face at the center of makeup advice. Visible lines remain part of the image, and the right portrait emphasizes lipstick, blush, and a styled appearance. This offers a contrast to advertising that makes mature people absent altogether. At the same time, the arrangement invites comparison between two presentations of one face. Through Braidotti, we can ask how inclusion works: does the image broaden beauty, or make recognition depend on a polished result? The screenshot does not establish whether either portrait was digitally retouched.</p>
-        <div class="credit">L’Oréal Paris, Your Easy Age Perfect Makeup Routine, header portrait. Screenshot, October 11, 2026. <a href="https://www.lorealparisusa.com/beauty-magazine/makeup/makeup-looks/age-perfect-makeup-routine" target="_blank" rel="noopener">view original source ↗</a></div>
-      </div>
+    <article class="card" id="v3" data-group="representation" data-links="age inclusion braidotti">
+      <div class="run"><span>Visual 03 / 08</span><span>Representation / Maturity</span></div>
+      <h3 class="vt">03 / Making mature faces visible</h3>
+      <div class="gtag">Representation / Maturity</div>
+      <div class="shot"><img src="perfect-face/03-loreal-mature-face.jpg" width="1250" height="510" loading="lazy" alt="L'Oréal Paris makeup routine header: a side-by-side close-up portrait of a mature woman before and after makeup"></div>
+      <p>The side-by-side portrait places a mature face at the center of makeup advice. Visible lines remain part of the image, and the right portrait emphasizes lipstick, blush, and a styled appearance. This offers a contrast to advertising that makes mature people absent altogether. At the same time, the arrangement invites comparison between two presentations of one face. Through Braidotti, we can ask how inclusion works: does the image broaden beauty, or make recognition depend on a polished result? The screenshot does not establish whether either portrait was digitally retouched.</p>
+      <p class="credit">L’Oréal Paris, Your Easy Age Perfect Makeup Routine, header portrait. Screenshot, October 11, 2026. <a href="https://www.lorealparisusa.com/beauty-magazine/makeup/makeup-looks/age-perfect-makeup-routine" target="_blank" rel="noopener">View original source</a></p>
     </article>
 
-    <article class="item">
-      <div class="media"><img src="perfect-face/04-clinique-bottle.jpg" width="1250" height="365" loading="lazy"
-        alt="Clinique Even Better banner: a glossy sweep of makeup beside foundation bottles, with the words Even Better skin in a bottle"></div>
-      <div>
-        <div class="num">04</div>
-        <h3>Improvement in a bottle</h3>
-        <div class="tag">consumption / authority</div>
-        <p>A glossy sweep of makeup sits beside carefully arranged bottles. The face itself is absent, replaced by a promise of better skin and products presented with clinical authority. This absence matters: the viewer is invited to imagine their own face as the site needing improvement. The smooth surface makes an ideal finish visible while leaving ordinary skin variation outside the frame. The human appears here primarily as a potential consumer. This example shows how an image can define expectations for bodies even when it contains no person.</p>
-        <div class="credit">Clinique, Even Better makeup collection banner. Screenshot, October 11, 2026. <a href="https://www.clinique.com/pages/even-better-makeup" target="_blank" rel="noopener">view original source ↗</a></div>
-      </div>
+    <article class="card" id="v4" data-group="consumption" data-links="texture consumer">
+      <div class="run"><span>Visual 04 / 08</span><span>Consumption / Authority</span></div>
+      <h3 class="vt">04 / Improvement in a bottle</h3>
+      <div class="gtag">Consumption / Authority</div>
+      <div class="shot"><img src="perfect-face/04-clinique-bottle.jpg" width="1250" height="365" loading="lazy" alt="Clinique Even Better banner: a glossy sweep of makeup beside foundation bottles, with the words Even Better skin in a bottle"></div>
+      <p>A glossy sweep of makeup sits beside carefully arranged bottles. The face itself is absent, replaced by a promise of better skin and products presented with clinical authority. This absence matters: the viewer is invited to imagine their own face as the site needing improvement. The smooth surface makes an ideal finish visible while leaving ordinary skin variation outside the frame. The human appears here primarily as a potential consumer. This example shows how an image can define expectations for bodies even when it contains no person.</p>
+      <p class="credit">Clinique, Even Better makeup collection banner. Screenshot, October 11, 2026. <a href="https://www.clinique.com/pages/even-better-makeup" target="_blank" rel="noopener">View original source</a></p>
     </article>
 
-    <article class="item">
-      <div class="media"><img src="perfect-face/05-maybelline-slider.jpg" width="1070" height="710" loading="lazy"
-        alt="Maybelline before-and-after slider: one face divided by a vertical line, the two sides showing different shine and evenness"></div>
-      <div>
-        <div class="num">05</div>
-        <h3>The face as a comparison</h3>
-        <div class="tag">interface / comparison</div>
-        <p>The dividing line makes one face into a visual test. Skin on the two sides appears different in shine and evenness, while the slider invites viewers to inspect and compare. Ordinary texture becomes the evidence against which the advertised finish is assessed. The framing turns a living face into a surface to evaluate. Mirzoeff’s attention to constructed images helps us examine how the interface organizes looking. This is an application comparison presented by the brand; it is not evidence that a social media filter was used.</p>
-        <div class="credit">Maybelline, Fit Me before-and-after application slider. Screenshot, October 11, 2026. <a href="https://www.maybelline.com/face-makeup/foundation-makeup/fit-me-matte-poreless-foundation" target="_blank" rel="noopener">view original source ↗</a></div>
-      </div>
+    <article class="card" id="v5" data-group="interface" data-links="evaluate mirzoeff braidotti">
+      <div class="run"><span>Visual 05 / 08</span><span>Interface / Comparison</span></div>
+      <h3 class="vt">05 / The face as a comparison</h3>
+      <div class="gtag">Interface / Comparison</div>
+      <div class="shot"><img src="perfect-face/05-maybelline-slider.jpg" width="1070" height="710" loading="lazy" alt="Maybelline before-and-after slider: one face divided by a vertical line, the two sides showing different shine and evenness"></div>
+      <p>The dividing line makes one face into a visual test. Skin on the two sides appears different in shine and evenness, while the slider invites viewers to inspect and compare. Ordinary texture becomes the evidence against which the advertised finish is assessed. The framing turns a living face into a surface to evaluate. Mirzoeff’s attention to constructed images helps us examine how the interface organizes looking. This is an application comparison presented by the brand; it is not evidence that a social media filter was used.</p>
+      <p class="credit">Maybelline, Fit Me before-and-after application slider. Screenshot, October 11, 2026. <a href="https://www.maybelline.com/face-makeup/foundation-makeup/fit-me-matte-poreless-foundation" target="_blank" rel="noopener">View original source</a></p>
     </article>
 
-    <article class="item">
-      <div class="media"><img src="perfect-face/06-dove-reverse-selfie.jpg" width="1250" height="560" loading="lazy"
-        alt="Dove Reverse Selfie graphic: a split face, one half less polished and one half visibly styled, beside the title Reverse Selfie: digital distortion in the social media age"></div>
-      <div>
-        <div class="num">06</div>
-        <h3>Showing digital distortion</h3>
-        <div class="tag">counterimage / distortion</div>
-        <p>The split-face graphic contrasts a less polished presentation with a visibly styled one. Unlike a product advertisement that celebrates an improved result, this campaign identifies digital distortion as something to question. The comparison encourages viewers to notice the distance between a face and a manufactured beauty image. It connects with Mirzoeff’s distinction between what looks convincing and how an image is produced. However, the critique also builds Dove’s commercial identity around confidence. Resistance to perfection becomes both a message and a form of branding.</p>
-        <div class="credit">Dove, Reverse Selfie campaign webpage, split-face graphic. Screenshot, October 11, 2026. <a href="https://www.dove.com/au/stories/campaigns/confidence.html" target="_blank" rel="noopener">view original source ↗</a></div>
-      </div>
+    <article class="card" id="v6" data-group="counter" data-links="evaluate authentic mirzoeff">
+      <div class="run"><span>Visual 06 / 08</span><span>Counterimage / Distortion</span></div>
+      <h3 class="vt">06 / Showing digital distortion</h3>
+      <div class="gtag">Counterimage / Distortion</div>
+      <div class="shot"><img src="perfect-face/06-dove-reverse-selfie.jpg" width="1250" height="560" loading="lazy" alt="Dove Reverse Selfie graphic: a split face, one half less polished and one half visibly styled"></div>
+      <p>The split-face graphic contrasts a less polished presentation with a visibly styled one. Unlike a product advertisement that celebrates an improved result, this campaign identifies digital distortion as something to question. The comparison encourages viewers to notice the distance between a face and a manufactured beauty image. It connects with Mirzoeff’s distinction between what looks convincing and how an image is produced. However, the critique also builds Dove’s commercial identity around confidence. Resistance to perfection becomes both a message and a form of branding.</p>
+      <p class="credit">Dove, Reverse Selfie campaign webpage, split-face graphic. Screenshot, October 11, 2026. <a href="https://www.dove.com/au/stories/campaigns/confidence.html" target="_blank" rel="noopener">View original source</a></p>
     </article>
 
-    <article class="item">
-      <div class="media"><img src="perfect-face/07-dove-real-beauty.jpg" width="920" height="330" loading="lazy"
-        alt="Dove Real Beauty Pledge group portrait: women of varied skin tones, body sizes, hair and ages laughing together in a white studio"></div>
-      <div>
-        <div class="num">07</div>
-        <h3>A wider field of beauty</h3>
-        <div class="tag">counterimage / variety</div>
-        <p>The group portrait presents varied skin tones, body sizes, hair, clothing, and visible ages within one composition. Shared laughter and physical closeness shift attention from an isolated face toward relationships between people. It challenges the idea that beauty has one universal form. Yet the white studio setting, styling, and arrangement remind us that authenticity is also represented through deliberate choices. Braidotti helps ask whether the image expands the human standard or questions the need for one. No single group portrait can stand for everyone.</p>
-        <div class="credit">Dove, Real Beauty Pledge webpage, group portrait. Screenshot, October 11, 2026. <a href="https://www.dove.com/us/en/campaigns/purpose/real-beauty-pledge.html" target="_blank" rel="noopener">view original source ↗</a></div>
-      </div>
+    <article class="card" id="v7" data-group="counter" data-links="inclusion authentic braidotti">
+      <div class="run"><span>Visual 07 / 08</span><span>Counterimage / Variety</span></div>
+      <h3 class="vt">07 / A wider field of beauty</h3>
+      <div class="gtag">Counterimage / Variety</div>
+      <div class="shot"><img src="perfect-face/07-dove-real-beauty.jpg" width="920" height="330" loading="lazy" alt="Dove Real Beauty Pledge group portrait: women of varied skin tones, body sizes, hair and ages laughing together in a white studio"></div>
+      <p>The group portrait presents varied skin tones, body sizes, hair, clothing, and visible ages within one composition. Shared laughter and physical closeness shift attention from an isolated face toward relationships between people. It challenges the idea that beauty has one universal form. Yet the white studio setting, styling, and arrangement remind us that authenticity is also represented through deliberate choices. Braidotti helps ask whether the image expands the human standard or questions the need for one. No single group portrait can stand for everyone.</p>
+      <p class="credit">Dove, Real Beauty Pledge webpage, group portrait. Screenshot, October 11, 2026. <a href="https://www.dove.com/us/en/campaigns/purpose/real-beauty-pledge.html" target="_blank" rel="noopener">View original source</a></p>
     </article>
 
-    <article class="item">
-      <div class="media"><img src="perfect-face/08-dove-ai-age.jpg" width="1178" height="420" loading="lazy"
-        alt="Dove Beauty in the AI age banner: two smiling faces with curly hair outdoors, beside the words keep beauty real"></div>
-      <div>
-        <div class="num">08</div>
-        <h3>Authenticity in the AI age</h3>
-        <div class="tag">counterimage / authenticity</div>
-        <p>The banner pairs two smiling faces with the language of keeping beauty real. Curly hair, proximity, and an outdoor setting make connection central to the image’s appeal. The campaign positions human representation as something to protect in an age of synthetic imagery. Braidotti’s nature-culture continuum complicates a simple real-versus-technological divide: this campaign is itself a designed digital representation. Its promise can still be meaningful, but viewers must examine how authenticity is framed and sold. The archive ends by questioning who gets to define a real face.</p>
-        <div class="credit">Dove, Keep Beauty Real campaign, Beauty in the AI Age banner. Screenshot, October 11, 2026. <a href="https://www.dove.com/us/en/campaigns/purpose/keep-beauty-real.html" target="_blank" rel="noopener">view original source ↗</a></div>
-      </div>
+    <article class="card" id="v8" data-group="counter" data-links="authentic braidotti">
+      <div class="run"><span>Visual 08 / 08</span><span>Counterimage / Authenticity</span></div>
+      <h3 class="vt">08 / Authenticity in the AI age</h3>
+      <div class="gtag">Counterimage / Authenticity</div>
+      <div class="shot"><img src="perfect-face/08-dove-ai-age.jpg" width="1178" height="420" loading="lazy" alt="Dove Beauty in the AI age banner: two smiling faces with curly hair outdoors, beside the words keep beauty real"></div>
+      <p>The banner pairs two smiling faces with the language of keeping beauty real. Curly hair, proximity, and an outdoor setting make connection central to the image’s appeal. The campaign positions human representation as something to protect in an age of synthetic imagery. Braidotti’s nature-culture continuum complicates a simple real-versus-technological divide: this campaign is itself a designed digital representation. Its promise can still be meaningful, but viewers must examine how authenticity is framed and sold. The archive ends by questioning who gets to define a real face.</p>
+      <p class="credit">Dove, Keep Beauty Real campaign, Beauty in the AI Age banner. Screenshot, October 11, 2026. <a href="https://www.dove.com/us/en/campaigns/purpose/keep-beauty-real.html" target="_blank" rel="noopener">View original source</a></p>
     </article>
 
   </div>
 
   <!-- ===================== REFLECTION ===================== -->
-  <h2>What changed in how I understand “the human”?</h2>
-  <div class="reflection">
-    <p>Building this archive changes the question from whether a face is beautiful to how an image teaches us to judge that face. The product pages make pores, unevenness, and aging visible mainly as things to improve. The counterimages show that variety and ordinary features can also become sources of recognition. I understand the human less as a fixed visual ideal and more as a person represented through relationships with products, cameras, interfaces, and cultural expectations. I also notice that broader representation does not automatically remove the pressure to change. A campaign can celebrate difference while continuing to sell a beauty ideal. The most useful shift is learning to ask what an image rewards, what it hides, and whose appearance it treats as normal.</p>
-  </div>
-  <div class="one-line">
-    <div class="lbl">the archive in one sentence</div>
-    <p>Beauty advertising can recognize more kinds of people while still asking their faces to meet a shared ideal of improvement.</p>
-  </div>
+  <div class="run"><span>Project 1 / Unmaking Human</span><span>Final reflection</span></div>
+  <h2 class="essay">What changed in how I understand “the human”?</h2>
+  <p style="margin-top:22px">Building this archive changes the question from whether a face is beautiful to how an image teaches us to judge that face. The product pages make pores, unevenness, and aging visible mainly as things to improve. The counterimages show that variety and ordinary features can also become sources of recognition. I understand the human less as a fixed visual ideal and more as a person represented through relationships with products, cameras, interfaces, and cultural expectations. I also notice that broader representation does not automatically remove the pressure to change. A campaign can celebrate difference while continuing to sell a beauty ideal. The most useful shift is learning to ask what an image rewards, what it hides, and whose appearance it treats as normal.</p>
+  <h3 class="small-h">The archive in one sentence</h3>
+  <p>Beauty advertising can recognize more kinds of people while still asking their faces to meet a shared ideal of improvement.</p>
 
   <!-- ===================== SOURCES ===================== -->
-  <h2>Course readings &amp; image credits</h2>
+  <div class="run"><span>Project 1 / Unmaking Human</span><span>Sources</span></div>
+  <h2 class="essay">Course readings &amp; image credits</h2>
   <div class="cites">
-    <h3>Course readings</h3>
+    <h4>Course readings</h4>
     <p>Braidotti, Rosi. <em>The Posthuman</em>. Polity, 2013. Introduction, pp. 1-3.</p>
     <p>Mirzoeff, Nicholas. <em>How to See the World</em>. Pelican, 2015. Introduction, pp. 6-10.</p>
-
-    <h3>Image sources</h3>
-    <p>01. Maybelline, Fit Me Matte + Poreless foundation product page. <a href="https://www.maybelline.com/face-makeup/foundation-makeup/fit-me-matte-poreless-foundation" target="_blank" rel="noopener">maybelline.com</a></p>
-    <p>02. COVERGIRL, Simply Ageless collection banner. <a href="https://www.covergirl.com/collection-makeup/simply-ageless" target="_blank" rel="noopener">covergirl.com</a></p>
-    <p>03. L’Oréal Paris, Your Easy Age Perfect Makeup Routine, header portrait. <a href="https://www.lorealparisusa.com/beauty-magazine/makeup/makeup-looks/age-perfect-makeup-routine" target="_blank" rel="noopener">lorealparisusa.com</a></p>
-    <p>04. Clinique, Even Better makeup collection banner. <a href="https://www.clinique.com/pages/even-better-makeup" target="_blank" rel="noopener">clinique.com</a></p>
-    <p>05. Maybelline, Fit Me before-and-after application slider. <a href="https://www.maybelline.com/face-makeup/foundation-makeup/fit-me-matte-poreless-foundation" target="_blank" rel="noopener">maybelline.com</a></p>
-    <p>06. Dove, Reverse Selfie campaign webpage, split-face graphic. <a href="https://www.dove.com/au/stories/campaigns/confidence.html" target="_blank" rel="noopener">dove.com</a></p>
-    <p>07. Dove, Real Beauty Pledge webpage, group portrait. <a href="https://www.dove.com/us/en/campaigns/purpose/real-beauty-pledge.html" target="_blank" rel="noopener">dove.com</a></p>
-    <p>08. Dove, Keep Beauty Real campaign, Beauty in the AI Age banner. <a href="https://www.dove.com/us/en/campaigns/purpose/keep-beauty-real.html" target="_blank" rel="noopener">dove.com</a></p>
-    <p class="note">All web visuals were captured on October 11, 2026. Sources are credited to the publishing brands; individual photographers are not identified on the captured sections. Screenshots are cropped for layout. Product claims are analyzed as advertising language, not endorsed as factual outcomes. Images are reproduced for criticism and educational commentary.</p>
+    <h4>Image sources</h4>
+    <p>01. Maybelline, Fit Me Matte + Poreless foundation product page. <a href="https://www.maybelline.com/face-makeup/foundation-makeup/fit-me-matte-poreless-foundation" target="_blank" rel="noopener">Original webpage</a>.</p>
+    <p>02. COVERGIRL, Simply Ageless collection banner. <a href="https://www.covergirl.com/collection-makeup/simply-ageless" target="_blank" rel="noopener">Original webpage</a>.</p>
+    <p>03. L’Oréal Paris, Your Easy Age Perfect Makeup Routine, header portrait. <a href="https://www.lorealparisusa.com/beauty-magazine/makeup/makeup-looks/age-perfect-makeup-routine" target="_blank" rel="noopener">Original webpage</a>.</p>
+    <p>04. Clinique, Even Better makeup collection banner. <a href="https://www.clinique.com/pages/even-better-makeup" target="_blank" rel="noopener">Original webpage</a>.</p>
+    <p>05. Maybelline, Fit Me before-and-after application slider. <a href="https://www.maybelline.com/face-makeup/foundation-makeup/fit-me-matte-poreless-foundation" target="_blank" rel="noopener">Original webpage</a>.</p>
+    <p>06. Dove, Reverse Selfie campaign webpage, split-face graphic. <a href="https://www.dove.com/au/stories/campaigns/confidence.html" target="_blank" rel="noopener">Original webpage</a>.</p>
+    <p>07. Dove, Real Beauty Pledge webpage, group portrait. <a href="https://www.dove.com/us/en/campaigns/purpose/real-beauty-pledge.html" target="_blank" rel="noopener">Original webpage</a>.</p>
+    <p>08. Dove, Keep Beauty Real campaign, Beauty in the AI Age banner. <a href="https://www.dove.com/us/en/campaigns/purpose/keep-beauty-real.html" target="_blank" rel="noopener">Original webpage</a>.</p>
+    <p class="note-small" style="margin-top:16px">All web visuals were captured on October 11, 2026. Sources are credited to the publishing brands; individual photographers are not identified on the captured sections. Screenshots are cropped for layout. Product claims are analyzed as advertising language, not endorsed as factual outcomes. Images are reproduced for criticism and educational commentary.</p>
   </div>
+  <div class="page-foot"><span>The perfect face / visual archive</span><span>Anna Le</span></div>
 
 </main>
 
-<footer class="site-footer">© anna_le </footer>
-
 <script src="main.js" defer></script>
 <script>
-  // the "perfect" switch: smooths every image in the archive
-  (function(){
-    const sw = document.getElementById('perfect-switch');
-    sw.addEventListener('click', ()=>{
-      const on = sw.getAttribute('aria-pressed') !== 'true';
-      sw.setAttribute('aria-pressed', on);
-      document.body.classList.toggle('perfected', on);
-      document.getElementById('perfect-label').textContent = on ? 'perfect: on' : 'perfect: off';
-      // jump to the first image so the change is seen right away
-      if(on){ const first = document.querySelector('.archive .media'); if(first && first.getBoundingClientRect().top > window.innerHeight) first.scrollIntoView({ behavior:'smooth', block:'center' }); }
+(function(){
+  // ============================================================
+  // DATA: what connects to what (taken from the captions)
+  // ============================================================
+  const IDEAS = {
+    texture:  { label:'skin texture as a problem',       lines:['skin texture','as a problem'],      c:'var(--c-texture)' },
+    age:      { label:'aging as something to manage',    lines:['aging as something','to manage'],   c:'var(--c-age)' },
+    inclusion:{ label:'inclusion that still corrects',   lines:['inclusion that','still corrects'],  c:'var(--c-inclusion)' },
+    consumer: { label:'the human as a consumer',         lines:['the human','as a consumer'],        c:'var(--c-consumer)' },
+    evaluate: { label:'the face as a surface to judge',  lines:['the face as a','surface to judge'], c:'var(--c-evaluate)' },
+    authentic:{ label:'authenticity as branding',        lines:['authenticity','as branding'],       c:'var(--c-authentic)' },
+  };
+  const READINGS = {
+    braidotti:{ label:'Braidotti', sub:'The Posthuman', c:'var(--c-braidotti)' },
+    mirzoeff: { label:'Mirzoeff',  sub:'How to See the World', c:'var(--c-mirzoeff)' },
+  };
+  const GROUPS = {
+    promise:       { label:'Product promise', c:'#b5574b' },
+    representation:{ label:'Representation',  c:'#9a7a1c' },
+    consumption:   { label:'Consumption',     c:'#b8641f' },
+    interface:     { label:'Interface',       c:'#22786e' },
+    counter:       { label:'Counterimage',    c:'#3a63a8' },
+  };
+  const cards = [...document.querySelectorAll('.card')];
+  const IMAGES = cards.map((el, i)=>({
+    id: el.id, n: i+1, el,
+    title: el.querySelector('h3.vt').textContent.replace(/^\d+ \/ /,''),
+    src: el.querySelector('img').getAttribute('src'),
+    links: el.dataset.links.split(' '),
+    group: el.dataset.group,
+  }));
+
+  // ============================================================
+  // MAP
+  // ============================================================
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.getElementById('map');
+  const mk = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for(const k in attrs) e.setAttribute(k, attrs[k]); (parent || svg).appendChild(e); return e; };
+
+  // positions
+  const imgPos = {}; IMAGES.forEach((im, i)=> imgPos[im.id] = { x: 85 + i*133, y: 150 });
+  const ideaOrder = ['texture','age','inclusion','consumer','evaluate','authentic'];
+  const ideaPos = {}; ideaOrder.forEach((k, i)=> ideaPos[k] = { x: 120 + i*172, y: 375 });
+  const readPos = { braidotti:{ x:360, y:560 }, mirzoeff:{ x:780, y:560 } };
+
+  const defs = mk('defs', {});
+  const grad = mk('linearGradient', { id:'spectrum', x1:'0', x2:'1', y1:'0', y2:'0' }, defs);
+  [['0%','#d9776a'],['50%','#c99a2e'],['100%','#4a7cc9']].forEach(([o,c])=> mk('stop', { offset:o, 'stop-color':c }, grad));
+  const mark = mk('marker', { id:'sp-arrow', viewBox:'0 0 10 10', refX:'8', refY:'5', markerWidth:'7', markerHeight:'7', orient:'auto' }, defs);
+  mk('path', { d:'M0 0L10 5L0 10z', fill:'#4a7cc9' }, mark);
+
+  // spectrum line on top
+  mk('line', { x1:60, y1:52, x2:1040, y2:52, stroke:'url(#spectrum)', 'stroke-width':4, 'marker-end':'url(#sp-arrow)' });
+  const t1 = mk('text', { x:60, y:34, 'font-size':13, 'font-weight':700, fill:'#b5574b', 'letter-spacing':'.06em' }); t1.textContent = 'SELLING PERFECTION';
+  const t2 = mk('text', { x:1020, y:34, 'font-size':13, 'font-weight':700, fill:'#3a63a8', 'text-anchor':'end', 'letter-spacing':'.06em' }); t2.textContent = 'QUESTIONING PERFECTION';
+
+  const edges = mk('g', {});
+  const nodes = mk('g', {});
+  const curve = (a, b) => { const my = (a.y + b.y)/2; return `M${a.x} ${a.y}C${a.x} ${my} ${b.x} ${my} ${b.x} ${b.y}`; };
+
+  // edges: image -> idea (colored), image -> reading (dashed)
+  IMAGES.forEach(im=>{
+    im.links.forEach(l=>{
+      const a = { x: imgPos[im.id].x, y: imgPos[im.id].y + 48 };
+      if(IDEAS[l]){
+        const b = { x: ideaPos[l].x, y: ideaPos[l].y - 26 };
+        mk('path', { class:'edge', d:curve(a, b), stroke:IDEAS[l].c, 'data-a':im.id, 'data-b':l }, edges);
+      } else if(READINGS[l]){
+        const b = { x: readPos[l].x, y: readPos[l].y - 34 };
+        mk('path', { class:'edge read', d:curve(a, b), stroke:READINGS[l].c, 'data-a':im.id, 'data-b':l }, edges);
+      }
     });
-  })();
+  });
+
+  // image nodes: round thumbnails
+  IMAGES.forEach(im=>{
+    const p = imgPos[im.id], g = mk('g', { class:'node', 'data-id':im.id, tabindex:0, role:'button', 'aria-label':`${im.n}: ${im.title}` }, nodes);
+    const cp = mk('clipPath', { id:'cp-'+im.id }, defs); mk('circle', { cx:p.x, cy:p.y, r:46 }, cp);
+    mk('circle', { cx:p.x, cy:p.y, r:50, fill:'#fff', stroke:GROUPS[im.group].c, 'stroke-width':4 }, g);
+    mk('image', { href:im.src, x:p.x-80, y:p.y-46, width:160, height:92, preserveAspectRatio:'xMidYMid slice', 'clip-path':`url(#cp-${im.id})` }, g);
+    mk('circle', { cx:p.x+36, cy:p.y-36, r:14, fill:GROUPS[im.group].c }, g);
+    const n = mk('text', { x:p.x+36, y:p.y-31, 'text-anchor':'middle', 'font-size':13, 'font-weight':700, fill:'#fff' }, g); n.textContent = String(im.n).padStart(2,'0');
+    const tip = mk('title', {}, g); tip.textContent = `${String(im.n).padStart(2,'0')} / ${im.title}`;
+  });
+
+  // idea nodes: colored pills
+  ideaOrder.forEach(k=>{
+    const p = ideaPos[k], it = IDEAS[k], g = mk('g', { class:'node', 'data-id':k, tabindex:0, role:'button', 'aria-label':'idea: ' + it.label }, nodes);
+    mk('rect', { x:p.x - 78, y:p.y - 26, width:156, height:52, rx:26, fill:it.c }, g);
+    it.lines.forEach((ln, j)=>{ const t = mk('text', { x:p.x, y:p.y - 3 + j*16, 'text-anchor':'middle', 'font-size':12.5, 'font-weight':700, fill:'#fff' }, g); t.textContent = ln; });
+  });
+
+  // reading nodes
+  Object.entries(READINGS).forEach(([k, r])=>{
+    const p = readPos[k], g = mk('g', { class:'node', 'data-id':k, tabindex:0, role:'button', 'aria-label':'reading: ' + r.label }, nodes);
+    mk('rect', { x:p.x - 120, y:p.y - 34, width:240, height:68, rx:6, fill:'#fff', stroke:r.c, 'stroke-width':2.5, 'stroke-dasharray':'7 5' }, g);
+    const a = mk('text', { x:p.x, y:p.y - 4, 'text-anchor':'middle', 'font-size':20, 'font-weight':700, fill:r.c, 'font-family':'Georgia, serif' }, g); a.textContent = r.label;
+    const b = mk('text', { x:p.x, y:p.y + 18, 'text-anchor':'middle', 'font-size':12.5, fill:'#4a575b', 'font-style':'italic' }, g); b.textContent = r.sub;
+  });
+
+  // highlight on hover / focus
+  function neighbours(id){
+    const s = new Set([id]);
+    IMAGES.forEach(im=>{ if(im.id === id) im.links.forEach(l=> s.add(l)); if(im.links.includes(id)) s.add(im.id); });
+    return s;
+  }
+  function light(id){
+    const lit = id ? neighbours(id) : null;
+    svg.classList.toggle('focus', !!id);
+    svg.querySelectorAll('.node').forEach(n=> n.classList.toggle('lit', !!lit && lit.has(n.dataset.id)));
+    svg.querySelectorAll('.edge').forEach(e=> e.classList.toggle('lit', !!id && (e.dataset.a === id || e.dataset.b === id)));
+  }
+  svg.querySelectorAll('.node').forEach(n=>{
+    n.addEventListener('mouseenter', ()=> light(n.dataset.id));
+    n.addEventListener('focus', ()=> light(n.dataset.id));
+    n.addEventListener('mouseleave', ()=> light(null));
+    n.addEventListener('blur', ()=> light(null));
+    const go = ()=>{
+      const id = n.dataset.id;
+      if(id.startsWith('v')){ setFilter('all'); jumpTo(document.getElementById(id)); }
+      else { setFilter(id); jumpTo(document.getElementById('filters')); }
+    };
+    n.addEventListener('click', go);
+    n.addEventListener('keydown', e=>{ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); go(); } });
+  });
+
+  // legend
+  document.getElementById('legend').innerHTML =
+    Object.values(IDEAS).map(it=> `<span><i style="background:${it.c}"></i>${it.label}</span>`).join('') +
+    `<span><i class="dash"></i>course reading used in the caption</span>`;
+
+  // ============================================================
+  // LIVE ARCHIVE: filters + "connected to" chips on each card
+  // ============================================================
+  const filtersEl = document.getElementById('filters');
+  const FILTERS = [['all','all eight', 'var(--ink)']]
+    .concat(Object.entries(GROUPS).map(([k,g])=> [k, g.label, g.c]))
+    .concat(Object.entries(IDEAS).map(([k,g])=> [k, g.label, g.c]))
+    .concat(Object.entries(READINGS).map(([k,g])=> [k, g.label, g.c]));
+  filtersEl.innerHTML = FILTERS.map(([k,l,c])=> `<button class="chip" type="button" data-f="${k}" style="--c:${c}">${l}</button>`).join('') + '<span class="count" id="count"></span>';
+  function setFilter(f){
+    filtersEl.querySelectorAll('.chip').forEach(b=> b.classList.toggle('on', b.dataset.f === f));
+    let shown = 0;
+    IMAGES.forEach(im=>{
+      const show = f === 'all' || im.group === f || im.links.includes(f);
+      im.el.hidden = !show; if(show) shown++;
+    });
+    document.getElementById('count').textContent = f === 'all' ? '8 images' : `showing ${shown} of 8`;
+  }
+  filtersEl.addEventListener('click', e=>{ const b = e.target.closest('.chip'); if(b) setFilter(b.dataset.f); });
+  setFilter('all');
+
+  IMAGES.forEach(im=>{
+    const box = document.createElement('div'); box.className = 'links';
+    box.innerHTML = '<span class="lbl">connects to</span>' + im.links.map(l=>{
+      const it = IDEAS[l] || READINGS[l];
+      return `<button type="button" data-f="${l}" style="--c:${it.c}">${it.label}</button>`;
+    }).join('');
+    box.addEventListener('click', e=>{ const b = e.target.closest('button'); if(b){ setFilter(b.dataset.f); jumpTo(filtersEl); } });
+    im.el.querySelector('.credit').after(box);
+  });
+
+  function jumpTo(el){
+    if(!el) return;
+    el.scrollIntoView({ behavior:'smooth', block:'start' });
+    if(el.classList.contains('card')){ el.classList.add('flash'); setTimeout(()=> el.classList.remove('flash'), 1600); }
+  }
+
+  // ============================================================
+  // PERFECT SWITCH
+  // ============================================================
+  const sw = document.getElementById('perfect-switch');
+  sw.addEventListener('click', ()=>{
+    const on = sw.getAttribute('aria-pressed') !== 'true';
+    sw.setAttribute('aria-pressed', on);
+    document.body.classList.toggle('perfected', on);
+    document.getElementById('perfect-label').textContent = on ? 'perfect: on' : 'perfect: off';
+    if(on) jumpTo(cards.find(c => !c.hidden));
+  });
+})();
 </script>
 </body>
 </html>
