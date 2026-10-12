@@ -36,7 +36,16 @@
   .filter-switch[aria-pressed="true"] .knob{ background:var(--teal); }
   .filter-switch[aria-pressed="true"] .knob::after{ left:21px; }
   .switch-note{ font-family:var(--mono); color:var(--green-dim); font-size:1rem; margin:0 0 10px; }
-  body.perfected .archive img{ filter:blur(.8px) brightness(1.08) contrast(.9) saturate(1.15); }
+  /* what "perfect: on" does: heavy skin-smoothing blur, glow, brighter and warmer color */
+  body.perfected .archive img{ filter:blur(2.2px) brightness(1.14) contrast(.82) saturate(1.35) sepia(.12); }
+  .media{ position:relative; }
+  .media::after{
+    content:'✦ perfected'; position:absolute; top:10px; left:10px;
+    font-family:var(--mono); font-size:1.05rem; color:var(--bg); background:var(--teal);
+    padding:2px 10px; opacity:0; transform:translateY(-4px); transition:opacity .3s, transform .3s; pointer-events:none;
+  }
+  body.perfected .media::after{ opacity:1; transform:none; }
+  body.perfected .media img{ box-shadow:0 0 28px rgba(255,240,220,.35), 6px 6px 0 rgba(0,0,0,.4); }
 
   /* ---------- visual archive ---------- */
   .archive{ display:flex; flex-direction:column; gap:72px; margin-top:30px; }
@@ -271,6 +280,8 @@
       sw.setAttribute('aria-pressed', on);
       document.body.classList.toggle('perfected', on);
       document.getElementById('perfect-label').textContent = on ? 'perfect: on' : 'perfect: off';
+      // jump to the first image so the change is seen right away
+      if(on){ const first = document.querySelector('.archive .media'); if(first && first.getBoundingClientRect().top > window.innerHeight) first.scrollIntoView({ behavior:'smooth', block:'center' }); }
     });
   })();
 </script>
