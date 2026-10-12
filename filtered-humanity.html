@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>anna_le: the perfect face</title>
+<meta name="description" content="The Perfect Face: Beauty, Advertising, and the Human. A visual essay by Anna Le on which human features beauty advertising makes visible, valued, or improved.">
+<link rel="stylesheet" href="style.css">
+<style>
+  /* ---------- page head ---------- */
+  .kicker{ font-family:var(--mono); color:var(--green-dim); font-size:1.1rem; letter-spacing:.06em; margin:0 0 6px; }
+  .hero-sub{ font-family:var(--mono); color:var(--sky); font-size:1.35rem; margin:-4px 0 20px; }
+  .question{
+    font-size:1.35rem; line-height:1.45; color:var(--cream); max-width:34ch;
+    border-left:3px solid var(--teal); padding:4px 0 4px 18px; margin:10px 0 18px;
+  }
+  .course{ font-family:var(--mono); color:var(--green-dim); font-size:1.05rem; margin:0 0 26px; }
+  h2{ color:var(--teal); margin:60px 0 14px; }
+  .lead{ font-size:1.15rem; color:var(--cream); }
+  em.book{ font-style:italic; color:var(--cream); }
+
+  /* the course readings, as two notes */
+  .readings{ display:grid; grid-template-columns:repeat(auto-fit, minmax(260px,1fr)); gap:18px; margin:26px 0 8px; max-width:900px; }
+  .reading{ border:1.5px solid #2c3a46; background:#111922; padding:14px 16px; }
+  .reading .who{ font-family:var(--mono); font-size:1.15rem; color:var(--sky); }
+  .reading .what{ font-size:.95rem; color:#b9cbc3; margin-top:4px; }
+
+  /* "perfect" switch: smooths every image toward the advertised ideal */
+  .filter-switch{
+    display:inline-flex; align-items:center; gap:12px; margin:8px 0 4px;
+    font-family:var(--mono); font-size:1.15rem; color:var(--cream);
+    background:#111922; border:1.5px solid #2c3a46; padding:8px 14px; cursor:pointer;
+  }
+  .filter-switch .knob{ width:38px; height:20px; border-radius:20px; background:#2c3a46; position:relative; transition:background .2s; }
+  .filter-switch .knob::after{ content:''; position:absolute; top:3px; left:3px; width:14px; height:14px; border-radius:50%; background:var(--cream); transition:left .2s; }
+  .filter-switch[aria-pressed="true"] .knob{ background:var(--teal); }
+  .filter-switch[aria-pressed="true"] .knob::after{ left:21px; }
+  .switch-note{ font-family:var(--mono); color:var(--green-dim); font-size:1rem; margin:0 0 10px; }
+  body.perfected .archive img{ filter:blur(.8px) brightness(1.08) contrast(.9) saturate(1.15); }
+
+  /* ---------- visual archive ---------- */
+  .archive{ display:flex; flex-direction:column; gap:72px; margin-top:30px; }
+  .item{ display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); gap:32px; align-items:start; }
+  .item:nth-child(even) .media{ order:2; }
+  .num{ font-family:var(--mono); color:var(--teal); font-size:1.3rem; }
+  .item h3{ color:var(--cream); margin:2px 0 4px; font-size:1.1rem; }
+  .tag{ font-family:var(--mono); color:var(--green-dim); font-size:1rem; letter-spacing:.08em; margin-bottom:12px; }
+  .item p{ margin:0 0 12px; }
+  .credit{ font-family:var(--mono); font-size:1rem; color:var(--green-dim); line-height:1.3; }
+  .credit a{ color:var(--sky); }
+  .media img{
+    width:100%; height:auto; border:2px solid var(--green-dim); box-shadow:6px 6px 0 rgba(0,0,0,.4);
+    background:#111922; transition:filter .4s ease;
+  }
+
+  .reflection{ border-left:3px solid var(--teal); padding:4px 0 4px 20px; max-width:72ch; }
+  .one-line{
+    margin:30px 0 0; max-width:60ch; padding:18px 20px; background:#111922; border:1.5px solid #2c3a46;
+  }
+  .one-line .lbl{ font-family:var(--mono); color:var(--green-dim); font-size:1rem; letter-spacing:.06em; }
+  .one-line p{ margin:6px 0 0; font-size:1.15rem; color:var(--cream); }
+  .cites p{ padding-left:2em; text-indent:-2em; max-width:85ch; font-size:.98rem; margin:0 0 10px; }
+  .cites a{ color:var(--sky); overflow-wrap:anywhere; }
+  .cites h3{ color:var(--sky); margin:22px 0 10px; font-size:1rem; }
+  .note{ font-size:.92rem; color:#9fb3ab; max-width:85ch; }
+
+  @media (max-width:820px){
+    .item{ grid-template-columns:1fr; gap:16px; }
+    .item:nth-child(even) .media{ order:0; }
+    .page{ padding:16px 18px 80px; }
+    .eyebrow{ flex-wrap:wrap; }
+    .eyebrow .path{ font-size:1.05rem; overflow-wrap:anywhere; }
+    .question{ font-size:1.15rem; }
+  }
+</style>
+</head>
+<body data-petals="6">
+
+<header class="nav">
+  <a class="logo" href="index.html">anna<span>_</span>le</a>
+</header>
+
+<main class="page">
+
+  <div class="kicker">project 1 / unmaking human · visual essay</div>
+  <div class="eyebrow">
+    <h1>the perfect face</h1>
+    <span class="path">~/anna/research/the-perfect-face</span>
+  </div>
+  <div class="hero-sub">Beauty, Advertising, and the Human</div>
+
+  <p class="question">How do beauty advertisements define which human features should be visible, valued, or improved?</p>
+  <p class="course">eight visual examples · product marketing, comparison interfaces, and campaigns questioning perfection · Anna Le · VPA 5314</p>
+
+  <button class="filter-switch" id="perfect-switch" type="button" aria-pressed="false">
+    <span class="knob" aria-hidden="true"></span> <span id="perfect-label">perfect: off</span>
+  </button>
+  <p class="switch-note">turn it on to see every image in this archive smoothed toward the "perfect" finish</p>
+
+  <!-- ===================== INTRODUCTION ===================== -->
+  <h2>Reading the perfect face</h2>
+
+  <p class="lead">A face in a beauty advertisement can look effortless, but the image teaches viewers how to evaluate a body. Smooth skin, an even complexion, and a youthful appearance can become signs of a desirable person. Pores, lines, and unevenness may instead appear as problems requiring correction. This archive asks: How do beauty advertisements define which human features should be visible, valued, or improved? Its eight examples examine the relationship between beauty, consumer identity, and the idea of a normal human face.</p>
+
+  <p>The archive begins with product advertising and moves toward campaigns that question beauty standards. Maybelline’s foundation page combines a pore-blurring promise with a grid of skin shades. COVERGIRL’s Simply Ageless banner offers products for mature skin while emphasizing youthfulness. L’Oréal’s makeup tutorial makes a mature face visible through a side-by-side portrait. Clinique’s banner presents improved skin as something available in a bottle. Together, these images frame the human as a consumer who can work on appearance through products and routines.</p>
+
+  <p>These examples also complicate a simple opposition between exclusion and inclusion. A shade range acknowledges that customers have different skin tones. A portrait of mature skin acknowledges that beauty is not limited to young faces. Yet both forms of inclusion can coexist with expectations of smoother or more perfected skin. The issue is therefore not only who appears in an advertisement. It is also what those people are asked to change in order to fit its ideal. Representation can expand while the pressure to improve remains.</p>
+
+  <p>Rosi Braidotti’s introduction to <em class="book">The Posthuman</em> offers one way to understand this tension. She questions the apparent universality of the familiar human subject and explains that this category has not represented everyone equally (Introduction, pp. 1-3). Applied to beauty advertising, her argument encourages us to examine the standard against which faces are measured. This is my application of her framework, rather than a claim that Braidotti specifically analyzes cosmetics. The archive asks whose bodily differences become acceptable and whose differences are framed as needing adjustment.</p>
+
+  <p>Braidotti’s discussion of a nature-culture continuum also challenges the idea that a face and its representation belong to separate worlds. Cosmetics, cameras, lighting, websites, and digital editing participate in how faces become publicly visible. Maybelline’s comparison slider makes the viewer an active evaluator of a before-and-after image. The body is presented through a designed encounter with technology and commercial language. This does not make the person less human. It shows that the appearance through which we recognize someone is shaped by material and cultural relationships.</p>
+
+  <p>Nicholas Mirzoeff’s introduction to <em class="book">How to See the World</em> provides a second course connection. He describes making and sharing images as ways people understand their world and their place within it. His discussion of digitally assembled imagery highlights the gap between a convincing appearance and its production (Introduction, pp. 6-10). In this archive, that distinction matters when reading Dove’s Reverse Selfie comparison: the polished face can conceal the process of creating it. A critical viewer asks how the image was made and which features its construction changes.</p>
+
+  <p>The final examples offer alternatives to a single perfected face. Dove’s group portrait emphasizes visible variety, while its Beauty in the AI Age campaign pairs faces with a promise of authenticity. These images challenge uniformity, but they are still selected, composed, branded representations. Their commercial setting deserves attention too. Overall, the archive argues that beauty advertising helps construct the human as both a person worthy of recognition and a project requiring improvement. Looking carefully allows us to question that expectation without judging individuals who enjoy makeup or self-expression.</p>
+
+  <div class="readings">
+    <div class="reading">
+      <div class="who">Braidotti · The Posthuman</div>
+      <div class="what">questioning the "universal" human standard; the nature-culture continuum</div>
+    </div>
+    <div class="reading">
+      <div class="who">Mirzoeff · How to See the World</div>
+      <div class="what">images as ways of understanding the world; the gap between a convincing image and its production</div>
+    </div>
+  </div>
+
+  <!-- ===================== VISUAL ARCHIVE ===================== -->
+  <h2>Visual Archive</h2>
+
+  <div class="archive">
+
+    <article class="item">
+      <div class="media"><img src="perfect-face/01-maybelline-pores.jpg" width="1250" height="580" loading="lazy"
+        alt="Maybelline Fit Me Matte + Poreless foundation page: the bottle, a liquid swatch, and a grid of skin shades"></div>
+      <div>
+        <div class="num">01</div>
+        <h3>Pores as a problem</h3>
+        <div class="tag">product promise / texture</div>
+        <p>The bottle, liquid swatch, and shade grid give the face a commercial vocabulary: tone can be matched and texture can be improved. The promise of blurred pores places ordinary skin features within a problem-and-solution format. The shade grid recognizes varied complexions, yet the preferred finish remains smooth and even. This image belongs in the archive because inclusion across skin tones can coexist with a shared expectation of correction. Braidotti’s critique of the universal human helps us question the appearance treated as the standard.</p>
+        <div class="credit">Maybelline, Fit Me Matte + Poreless foundation product page. Screenshot, October 11, 2026. <a href="https://www.maybelline.com/face-makeup/foundation-makeup/fit-me-matte-poreless-foundation" target="_blank" rel="noopener">view original source ↗</a></div>
+      </div>
+    </article>
+
+    <article class="item">
+      <div class="media"><img src="perfect-face/02-covergirl-ageless.jpg" width="1250" height="610" loading="lazy"
+        alt="COVERGIRL Simply Ageless banner: large lettering and oversized bottles against a sky background"></div>
+      <div>
+        <div class="num">02</div>
+        <h3>Mature skin, youthful ideal</h3>
+        <div class="tag">product promise / age</div>
+        <p>Large lettering and oversized bottles make agelessness the collection’s visual identity. Its wording addresses mature skin while linking the desired outcome with a youthful appearance. Older consumers are acknowledged, but visible aging remains something to manage. The sky background and clean product arrangement make improvement look light and uncomplicated. This example helps ask what kind of human is imagined: a person allowed to age, or a consumer expected to make aging less visible? The caption analyzes the promotional framing, rather than claiming the products erase age.</p>
+        <div class="credit">COVERGIRL, Simply Ageless collection banner. Screenshot, October 11, 2026. <a href="https://www.covergirl.com/collection-makeup/simply-ageless" target="_blank" rel="noopener">view original source ↗</a></div>
+      </div>
+    </article>
+
+    <article class="item">
+      <div class="media"><img src="perfect-face/03-loreal-mature-face.jpg" width="1250" height="510" loading="lazy"
+        alt="L'Oréal Paris makeup routine header: a side-by-side close-up portrait of a mature woman before and after makeup"></div>
+      <div>
+        <div class="num">03</div>
+        <h3>Making mature faces visible</h3>
+        <div class="tag">representation / maturity</div>
+        <p>The side-by-side portrait places a mature face at the center of makeup advice. Visible lines remain part of the image, and the right portrait emphasizes lipstick, blush, and a styled appearance. This offers a contrast to advertising that makes mature people absent altogether. At the same time, the arrangement invites comparison between two presentations of one face. Through Braidotti, we can ask how inclusion works: does the image broaden beauty, or make recognition depend on a polished result? The screenshot does not establish whether either portrait was digitally retouched.</p>
+        <div class="credit">L’Oréal Paris, Your Easy Age Perfect Makeup Routine, header portrait. Screenshot, October 11, 2026. <a href="https://www.lorealparisusa.com/beauty-magazine/makeup/makeup-looks/age-perfect-makeup-routine" target="_blank" rel="noopener">view original source ↗</a></div>
+      </div>
+    </article>
+
+    <article class="item">
+      <div class="media"><img src="perfect-face/04-clinique-bottle.jpg" width="1250" height="365" loading="lazy"
+        alt="Clinique Even Better banner: a glossy sweep of makeup beside foundation bottles, with the words Even Better skin in a bottle"></div>
+      <div>
+        <div class="num">04</div>
+        <h3>Improvement in a bottle</h3>
+        <div class="tag">consumption / authority</div>
+        <p>A glossy sweep of makeup sits beside carefully arranged bottles. The face itself is absent, replaced by a promise of better skin and products presented with clinical authority. This absence matters: the viewer is invited to imagine their own face as the site needing improvement. The smooth surface makes an ideal finish visible while leaving ordinary skin variation outside the frame. The human appears here primarily as a potential consumer. This example shows how an image can define expectations for bodies even when it contains no person.</p>
+        <div class="credit">Clinique, Even Better makeup collection banner. Screenshot, October 11, 2026. <a href="https://www.clinique.com/pages/even-better-makeup" target="_blank" rel="noopener">view original source ↗</a></div>
+      </div>
+    </article>
+
+    <article class="item">
+      <div class="media"><img src="perfect-face/05-maybelline-slider.jpg" width="1070" height="710" loading="lazy"
+        alt="Maybelline before-and-after slider: one face divided by a vertical line, the two sides showing different shine and evenness"></div>
+      <div>
+        <div class="num">05</div>
+        <h3>The face as a comparison</h3>
+        <div class="tag">interface / comparison</div>
+        <p>The dividing line makes one face into a visual test. Skin on the two sides appears different in shine and evenness, while the slider invites viewers to inspect and compare. Ordinary texture becomes the evidence against which the advertised finish is assessed. The framing turns a living face into a surface to evaluate. Mirzoeff’s attention to constructed images helps us examine how the interface organizes looking. This is an application comparison presented by the brand; it is not evidence that a social media filter was used.</p>
+        <div class="credit">Maybelline, Fit Me before-and-after application slider. Screenshot, October 11, 2026. <a href="https://www.maybelline.com/face-makeup/foundation-makeup/fit-me-matte-poreless-foundation" target="_blank" rel="noopener">view original source ↗</a></div>
+      </div>
+    </article>
+
+    <article class="item">
+      <div class="media"><img src="perfect-face/06-dove-reverse-selfie.jpg" width="1250" height="560" loading="lazy"
+        alt="Dove Reverse Selfie graphic: a split face, one half less polished and one half visibly styled, beside the title Reverse Selfie: digital distortion in the social media age"></div>
+      <div>
+        <div class="num">06</div>
+        <h3>Showing digital distortion</h3>
+        <div class="tag">counterimage / distortion</div>
+        <p>The split-face graphic contrasts a less polished presentation with a visibly styled one. Unlike a product advertisement that celebrates an improved result, this campaign identifies digital distortion as something to question. The comparison encourages viewers to notice the distance between a face and a manufactured beauty image. It connects with Mirzoeff’s distinction between what looks convincing and how an image is produced. However, the critique also builds Dove’s commercial identity around confidence. Resistance to perfection becomes both a message and a form of branding.</p>
+        <div class="credit">Dove, Reverse Selfie campaign webpage, split-face graphic. Screenshot, October 11, 2026. <a href="https://www.dove.com/au/stories/campaigns/confidence.html" target="_blank" rel="noopener">view original source ↗</a></div>
+      </div>
+    </article>
+
+    <article class="item">
+      <div class="media"><img src="perfect-face/07-dove-real-beauty.jpg" width="920" height="330" loading="lazy"
+        alt="Dove Real Beauty Pledge group portrait: women of varied skin tones, body sizes, hair and ages laughing together in a white studio"></div>
+      <div>
+        <div class="num">07</div>
+        <h3>A wider field of beauty</h3>
+        <div class="tag">counterimage / variety</div>
+        <p>The group portrait presents varied skin tones, body sizes, hair, clothing, and visible ages within one composition. Shared laughter and physical closeness shift attention from an isolated face toward relationships between people. It challenges the idea that beauty has one universal form. Yet the white studio setting, styling, and arrangement remind us that authenticity is also represented through deliberate choices. Braidotti helps ask whether the image expands the human standard or questions the need for one. No single group portrait can stand for everyone.</p>
+        <div class="credit">Dove, Real Beauty Pledge webpage, group portrait. Screenshot, October 11, 2026. <a href="https://www.dove.com/us/en/campaigns/purpose/real-beauty-pledge.html" target="_blank" rel="noopener">view original source ↗</a></div>
+      </div>
+    </article>
+
+    <article class="item">
+      <div class="media"><img src="perfect-face/08-dove-ai-age.jpg" width="1178" height="420" loading="lazy"
+        alt="Dove Beauty in the AI age banner: two smiling faces with curly hair outdoors, beside the words keep beauty real"></div>
+      <div>
+        <div class="num">08</div>
+        <h3>Authenticity in the AI age</h3>
+        <div class="tag">counterimage / authenticity</div>
+        <p>The banner pairs two smiling faces with the language of keeping beauty real. Curly hair, proximity, and an outdoor setting make connection central to the image’s appeal. The campaign positions human representation as something to protect in an age of synthetic imagery. Braidotti’s nature-culture continuum complicates a simple real-versus-technological divide: this campaign is itself a designed digital representation. Its promise can still be meaningful, but viewers must examine how authenticity is framed and sold. The archive ends by questioning who gets to define a real face.</p>
+        <div class="credit">Dove, Keep Beauty Real campaign, Beauty in the AI Age banner. Screenshot, October 11, 2026. <a href="https://www.dove.com/us/en/campaigns/purpose/keep-beauty-real.html" target="_blank" rel="noopener">view original source ↗</a></div>
+      </div>
+    </article>
+
+  </div>
+
+  <!-- ===================== REFLECTION ===================== -->
+  <h2>What changed in how I understand “the human”?</h2>
+  <div class="reflection">
+    <p>Building this archive changes the question from whether a face is beautiful to how an image teaches us to judge that face. The product pages make pores, unevenness, and aging visible mainly as things to improve. The counterimages show that variety and ordinary features can also become sources of recognition. I understand the human less as a fixed visual ideal and more as a person represented through relationships with products, cameras, interfaces, and cultural expectations. I also notice that broader representation does not automatically remove the pressure to change. A campaign can celebrate difference while continuing to sell a beauty ideal. The most useful shift is learning to ask what an image rewards, what it hides, and whose appearance it treats as normal.</p>
+  </div>
+  <div class="one-line">
+    <div class="lbl">the archive in one sentence</div>
+    <p>Beauty advertising can recognize more kinds of people while still asking their faces to meet a shared ideal of improvement.</p>
+  </div>
+
+  <!-- ===================== SOURCES ===================== -->
+  <h2>Course readings &amp; image credits</h2>
+  <div class="cites">
+    <h3>Course readings</h3>
+    <p>Braidotti, Rosi. <em>The Posthuman</em>. Polity, 2013. Introduction, pp. 1-3.</p>
+    <p>Mirzoeff, Nicholas. <em>How to See the World</em>. Pelican, 2015. Introduction, pp. 6-10.</p>
+
+    <h3>Image sources</h3>
+    <p>01. Maybelline, Fit Me Matte + Poreless foundation product page. <a href="https://www.maybelline.com/face-makeup/foundation-makeup/fit-me-matte-poreless-foundation" target="_blank" rel="noopener">maybelline.com</a></p>
+    <p>02. COVERGIRL, Simply Ageless collection banner. <a href="https://www.covergirl.com/collection-makeup/simply-ageless" target="_blank" rel="noopener">covergirl.com</a></p>
+    <p>03. L’Oréal Paris, Your Easy Age Perfect Makeup Routine, header portrait. <a href="https://www.lorealparisusa.com/beauty-magazine/makeup/makeup-looks/age-perfect-makeup-routine" target="_blank" rel="noopener">lorealparisusa.com</a></p>
+    <p>04. Clinique, Even Better makeup collection banner. <a href="https://www.clinique.com/pages/even-better-makeup" target="_blank" rel="noopener">clinique.com</a></p>
+    <p>05. Maybelline, Fit Me before-and-after application slider. <a href="https://www.maybelline.com/face-makeup/foundation-makeup/fit-me-matte-poreless-foundation" target="_blank" rel="noopener">maybelline.com</a></p>
+    <p>06. Dove, Reverse Selfie campaign webpage, split-face graphic. <a href="https://www.dove.com/au/stories/campaigns/confidence.html" target="_blank" rel="noopener">dove.com</a></p>
+    <p>07. Dove, Real Beauty Pledge webpage, group portrait. <a href="https://www.dove.com/us/en/campaigns/purpose/real-beauty-pledge.html" target="_blank" rel="noopener">dove.com</a></p>
+    <p>08. Dove, Keep Beauty Real campaign, Beauty in the AI Age banner. <a href="https://www.dove.com/us/en/campaigns/purpose/keep-beauty-real.html" target="_blank" rel="noopener">dove.com</a></p>
+    <p class="note">All web visuals were captured on October 11, 2026. Sources are credited to the publishing brands; individual photographers are not identified on the captured sections. Screenshots are cropped for layout. Product claims are analyzed as advertising language, not endorsed as factual outcomes. Images are reproduced for criticism and educational commentary.</p>
+  </div>
+
+</main>
+
+<footer class="site-footer">© anna_le </footer>
+
+<script src="main.js" defer></script>
+<script>
+  // the "perfect" switch: smooths every image in the archive
+  (function(){
+    const sw = document.getElementById('perfect-switch');
+    sw.addEventListener('click', ()=>{
+      const on = sw.getAttribute('aria-pressed') !== 'true';
+      sw.setAttribute('aria-pressed', on);
+      document.body.classList.toggle('perfected', on);
+      document.getElementById('perfect-label').textContent = on ? 'perfect: on' : 'perfect: off';
+    });
+  })();
+</script>
+</body>
+</html>
