@@ -8,6 +8,8 @@
 //   identity-machine/videos/2026-10-07/1430-k3x9/part-1.mp4
 //   identity-machine/videos/2026-10-07/1430-k3x9/part-2.mp4
 //   identity-machine/videos/2026-10-07/1430-k3x9/info.json   (their words + EEG summary)
+// The two-person machine saves each participant's parts in a/ and b/, and
+// info.json then also records how long the pair was in sync.
 //
 // Only visitors who ticked "save my film" on the words screen are archived.
 //
@@ -35,7 +37,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: false, error: 'Blob storage is not connected yet (see setup notes in api/archive.js)' });
   }
 
-  const { kind, visitorId, day, part, url, info } = req.body || {};
+  const { kind, visitorId, day, part, url, info, person } = req.body || {};
   // visitor folder name like "1430-k3x9", day like "2026-10-07"
   if (!/^[0-9]{4}-[a-z0-9]{4,8}$/.test(String(visitorId)) || !/^\d{4}-\d{2}-\d{2}$/.test(String(day))) {
     return res.status(400).json({ error: 'bad visitor id' });
@@ -50,7 +52,9 @@ export default async function handler(req, res) {
       if (!r.ok) throw new Error('could not download the video: ' + r.status);
       const buf = Buffer.from(await r.arrayBuffer());
       if (buf.length > MAX_BYTES) throw new Error('video too large');
-      const blob = await put(`${base}/part-${n}.mp4`, buf, {
+      // two-person machine: each participant's film goes in their own subfolder (a/ or b/)
+      const sub = person === 'a' || person === 'b' ? `${person}/` : '';
+      const blob = await put(`${base}/${sub}part-${n}.mp4`, buf, {
         access: 'public', contentType: 'video/mp4', addRandomSuffix: false, allowOverwrite: true,
       });
       return res.status(200).json({ ok: true, url: blob.url });
@@ -58,17 +62,25 @@ export default async function handler(req, res) {
 
     if (kind === 'info') {
       const i = info || {};
-      const record = {
-        time: new Date().toISOString(),
-        words: cleanVisitorWords(i.words),
-        state: String(i.state || '').slice(0, 60),
-        reading: String(i.meta || '').slice(0, 200),
-        baseline: i.personal ? 'personal' : 'typical',
-        parts: (Array.isArray(i.parts) ? i.parts : []).slice(0, 9).map(p => ({
-          band: String(p.band || '').slice(0, 10),
-          change: Math.round(Number(p.change || 0) * 100) / 100,
-        })),
+      const one = p => {
+        p = p || {};
+        return {
+          words: cleanVisitorWords(p.words),
+          state: String(p.state || '').slice(0, 60),
+          reading: String(p.meta || '').slice(0, 200),
+          baseline: p.personal ? 'personal' : 'typical',
+          parts: (Array.isArray(p.parts) ? p.parts : []).slice(0, 9).map(x => ({
+            band: String(x.band || '').slice(0, 10),
+            change: Math.round(Number(x.change || 0) * 100) / 100,
+          })),
+        };
       };
+      const num = v => Math.round(Number(v || 0) * 1000) / 1000;
+      const record = i.pair
+        ? { time: new Date().toISOString(), pair: true, a: one(i.a), b: one(i.b),
+            sync: i.sync ? { seconds: num(i.sync.seconds), fraction: num(i.sync.fraction), moments: Math.round(Number(i.sync.moments || 0)),
+                             peak: num(i.sync.peak), mean: num(i.sync.mean), level: String(i.sync.level || '').slice(0, 12) } : null }
+        : { time: new Date().toISOString(), ...one(i) };
       const blob = await put(`${base}/info.json`, JSON.stringify(record, null, 2), {
         access: 'public', contentType: 'application/json', addRandomSuffix: false, allowOverwrite: true,
       });

@@ -247,6 +247,8 @@
   #intent-input:focus{ border-color:#43e0c9; }
   #intent-input::placeholder{ color:#3f4d52; }
   .intent-count{ font-size:11px; color:#3f4d52; letter-spacing:.08em; text-align:right; }
+  .consent{ display:flex; align-items:center; gap:10px; font-size:12px; letter-spacing:.08em; color:#8a9aa0; cursor:pointer; }
+  .consent input{ width:18px; height:18px; accent-color:#43e0c9; }
   .intent-actions{ display:flex; align-items:center; justify-content:center; gap:22px; }
   .phase-tag{ font-size:11px; letter-spacing:.2em; color:#43e0c9; text-transform:uppercase; text-align:center; min-height:14px; }
   #reading{ justify-content:flex-start; overflow-y:auto; gap:12px; }
@@ -271,6 +273,52 @@
     #dashboard{ flex-wrap:wrap; gap:18px; }
     .panel-screen{ padding-top:150px; }
   }
+
+  /* ================= two participants ================= */
+  /* split screens for portraits and films: A on the left, B on the right */
+  .half{ position:absolute; top:0; bottom:0; width:50%; overflow:hidden; background:#000; }
+  .half.a{ left:0; }
+  .half.b{ right:0; border-left:1px solid #1e2a2e; }
+  .half-tag{ position:absolute; z-index:5; top:8px; left:8px; font-size:11px; font-weight:700; letter-spacing:.12em; color:#0a0d10; background:var(--pc); padding:1px 8px; border-radius:2px; }
+  .half .video-count{ right:8px; }
+
+  /* scan screen, two people */
+  .pair-cols{ display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-top:8px; }
+  .pname{ font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--pc); margin-bottom:4px; }
+  .pcol .sensors{ justify-content:flex-start; gap:12px; margin:4px 0; }
+  .pcol .sensor{ font-size:10px; }
+  .pcol .bands{ grid-template-columns:52px 1fr 38px; gap:5px 8px; margin-top:6px; }
+  .pcol .band-fill{ background:var(--pc); }
+  .sync-row{ display:grid; grid-template-columns:52px 1fr 52px; gap:10px; align-items:center; margin-top:16px; }
+  .sync-label{ font-size:11px; letter-spacing:.18em; color:#8a9aa0; text-transform:uppercase; }
+  .sync-track{ position:relative; height:14px; background:#141c20; overflow:hidden; }
+  .sync-fill{ position:absolute; left:0; top:0; bottom:0; width:0; background:linear-gradient(90deg,#43e0c9,#f5b942); transition:width .15s linear; }
+  .sync-mark{ position:absolute; top:-2px; bottom:-2px; width:2px; background:#e6eef0; opacity:.7; }
+  .sync-val{ font-size:12px; color:#c8d4d8; text-align:right; }
+  .sync-state{ text-align:center; margin-top:10px; font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:#5a6f75; min-height:16px; transition:color .3s; }
+  .scan-panel.in-sync{ box-shadow:0 0 0 1px #f5b942, 0 0 34px rgba(245,185,66,.35); }
+  .scan-panel.in-sync .sync-state{ color:#f5b942; }
+  .connect-row{ display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+
+  /* words screen, two people */
+  .intent-pair{ display:grid; grid-template-columns:1fr 1fr; gap:18px; width:min(900px, 92vw); }
+  .intent-pair .intent-box{ width:auto; }
+  .intent-pair textarea{
+    width:100%; min-height:96px; resize:none;
+    background:#0d1114; border:1px solid #1e2a2e; color:#e6eef0; outline:none;
+    font-family:'Space Mono', monospace; font-size:16px; line-height:1.5; padding:12px 14px;
+  }
+  .intent-pair textarea:focus{ border-color:var(--pc); }
+  .intent-pair textarea::placeholder{ color:#3f4d52; }
+
+  /* reading screen, two people */
+  .pair-read{ display:grid; grid-template-columns:1fr 1fr; gap:18px; width:min(900px, 92vw); }
+  .pr{ border:1px solid #1e2a2e; background:#0d1114; padding:14px 16px; border-top:3px solid var(--pc); }
+  .pr .reading-state{ font-size:44px; color:var(--pc); text-align:left; }
+  .pr .reading-meta{ text-align:left; margin:4px 0 10px; }
+  .pr .pr-words{ font-size:13px; color:#e6eef0; margin-bottom:8px; }
+  .sync-summary{ font-size:13px; letter-spacing:.14em; text-transform:uppercase; color:#f5b942; text-align:center; }
+  @media (max-width:700px){ .pair-cols, .intent-pair, .pair-read{ grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
@@ -331,7 +379,7 @@
       </div>
     </div>
     <div class="status-led"><div class="led-dot" id="led-1"></div> camera feed</div>
-    <div class="reading-caption" id="cap-1">tap the camera to begin</div>
+    <div class="reading-caption" id="cap-1">participant A: tap the camera to take your photo</div>
   </div>
 
   <div class="module" id="m2">
@@ -340,10 +388,11 @@
       <div class="corner tl"></div><div class="corner tr"></div>
       <div class="corner bl"></div><div class="corner br"></div>
       <div class="rig-screen" id="studio-screen">
-        <canvas class="static-canvas" id="static-canvas-1"></canvas>
+        <div class="half a" id="half-2a" style="--pc:#43e0c9"><canvas class="static-canvas" id="static-2a"></canvas><span class="half-tag">A</span></div>
+        <div class="half b" id="half-2b" style="--pc:#f5b942"><canvas class="static-canvas" id="static-2b"></canvas><span class="half-tag">B</span></div>
       </div>
     </div>
-    <div class="status-led"><div class="led-dot" id="led-2"></div> <span id="status-2">synthetic portrait</span></div>
+    <div class="status-led"><div class="led-dot" id="led-2"></div> <span id="status-2">mirrored portraits</span></div>
     <div class="reading-caption" id="cap-2"></div>
   </div>
 
@@ -353,65 +402,89 @@
       <div class="corner tl"></div><div class="corner tr"></div>
       <div class="corner bl"></div><div class="corner br"></div>
       <div class="rig-screen tappable" id="video-screen">
-        <canvas class="static-canvas" id="static-canvas-2"></canvas>
+        <div class="half a" id="half-3a" style="--pc:#43e0c9"><canvas class="static-canvas" id="static-3a"></canvas><span class="half-tag">A</span></div>
+        <div class="half b" id="half-3b" style="--pc:#f5b942"><canvas class="static-canvas" id="static-3b"></canvas><span class="half-tag">B</span></div>
       </div>
     </div>
-    <div class="status-led"><div class="led-dot" id="led-3"></div> <span id="status-3">animated output</span></div>
+    <div class="status-led"><div class="led-dot" id="led-3"></div> <span id="status-3">mirrored films</span></div>
     <div class="reading-caption" id="cap-3"></div>
   </div>
 </div>
 
-<!-- the visitor's own words, combined with the EEG reading -->
+<!-- both participants' own words, combined with their EEG readings -->
 <div class="screen panel-screen" id="intent">
   <div class="panel-title">who are you becoming?</div>
-  <div class="panel-sub">type a few words for your portrait, or skip and let your signal decide</div>
-  <div class="intent-box">
-    <textarea id="intent-input" maxlength="120" rows="3" autocomplete="off" spellcheck="false"
-      placeholder="e.g. a dancer by the sea · my grandmother's garden · a quiet scientist"></textarea>
-    <div class="intent-count" id="intent-count">0 / 120</div>
+  <div class="panel-sub">each of you types a few words for your portrait, or leave it empty and let your signal decide</div>
+  <div class="intent-pair">
+    <div class="intent-box" style="--pc:#43e0c9">
+      <div class="pname">participant A</div>
+      <textarea id="intent-a" maxlength="120" rows="3" autocomplete="off" spellcheck="false" placeholder="e.g. a dancer by the sea"></textarea>
+      <div class="intent-count" id="intent-count-a">0 / 120</div>
+    </div>
+    <div class="intent-box" style="--pc:#f5b942">
+      <div class="pname">participant B</div>
+      <textarea id="intent-b" maxlength="120" rows="3" autocomplete="off" spellcheck="false" placeholder="e.g. a quiet scientist"></textarea>
+      <div class="intent-count" id="intent-count-b">0 / 120</div>
+    </div>
   </div>
+  <label class="consent"><input type="checkbox" id="archive-consent"> save our films in the artist's archive</label>
   <div class="intent-actions">
     <button class="btn" id="intent-go">continue</button>
-    <button class="btn-link" id="intent-skip">skip</button>
+    <button class="btn-link" id="intent-skip">skip words</button>
   </div>
 </div>
 
-<!-- neural scan: personal baseline first, then the reading -->
+<!-- neural scan: both baselines first, then the reading; sync is listened for live -->
 <div class="screen panel-screen" id="scan">
-  <div class="panel-title">neural scan</div>
+  <div class="panel-title">neural scan · two minds</div>
   <div class="phase-tag" id="scan-phase"></div>
   <div class="panel-sub" id="scan-instruction">relax · eyes open · stay still</div>
-  <div class="scan-panel">
+  <div class="scan-panel" id="scan-panel">
     <canvas id="wave-canvas"></canvas>
-    <div class="sensors" id="sensors"></div>
-    <div class="bands" id="bands"></div>
+    <div class="pair-cols">
+      <div class="pcol" style="--pc:#43e0c9"><div class="pname">participant A</div><div class="sensors" id="sensors-a"></div><div class="bands" id="bands-a"></div></div>
+      <div class="pcol" style="--pc:#f5b942"><div class="pname">participant B</div><div class="sensors" id="sensors-b"></div><div class="bands" id="bands-b"></div></div>
+    </div>
+    <div class="sync-row">
+      <div class="sync-label">sync</div>
+      <div class="sync-track"><div class="sync-fill" id="sync-fill"></div><div class="sync-mark" id="sync-mark"></div></div>
+      <div class="sync-val" id="sync-val">·</div>
+    </div>
+    <div class="sync-state" id="sync-state"></div>
     <div class="connect-overlay" id="connect-overlay">
-      <div class="connect-msg" id="connect-msg">headset not connected. turn on the Muse, then press connect.</div>
-      <button class="btn" id="connect-btn">connect muse</button>
-      <button class="btn-link" id="use-sim-btn">use simulated signal instead</button>
+      <div class="connect-msg" id="connect-msg">turn on both Muse headbands, then connect them one at a time.</div>
+      <div class="connect-row">
+        <button class="btn" id="connect-a">connect muse A</button>
+        <button class="btn" id="connect-b">connect muse B</button>
+      </div>
+      <button class="btn-link" id="sim-b-btn">simulate participant B</button>
+      <button class="btn-link" id="use-sim-btn">simulate both</button>
     </div>
   </div>
   <div class="progress"><div class="progress-fill" id="scan-progress"></div></div>
   <div class="scan-hint" id="scan-hint"></div>
 </div>
 
-<!-- reading result -->
+<!-- reading result, both participants -->
 <div class="screen panel-screen" id="reading">
-  <div class="panel-sub">signal interpreted as</div>
-  <div class="reading-state" id="reading-state">·</div>
-  <div class="reading-meta" id="reading-meta"></div>
-  <div class="prompt-box" id="reading-words-box">
-    <div class="prompt-box-label">your words</div>
-    <div class="prompt-box-text" id="reading-words"></div>
+  <div class="panel-sub">signals interpreted as</div>
+  <div class="pair-read">
+    <div class="pr" style="--pc:#43e0c9">
+      <div class="pname">participant A</div>
+      <div class="reading-state" id="state-a">·</div>
+      <div class="reading-meta" id="meta-a"></div>
+      <div class="pr-words" id="words-a"></div>
+      <div class="prompt-box-text" id="portrait-a"></div>
+    </div>
+    <div class="pr" style="--pc:#f5b942">
+      <div class="pname">participant B</div>
+      <div class="reading-state" id="state-b">·</div>
+      <div class="reading-meta" id="meta-b"></div>
+      <div class="pr-words" id="words-b"></div>
+      <div class="prompt-box-text" id="portrait-b"></div>
+    </div>
   </div>
-  <div class="prompt-box">
-    <div class="prompt-box-label">portrait prompt</div>
-    <div class="prompt-box-text" id="reading-portrait"></div>
-  </div>
-  <div class="prompt-box">
-    <div class="prompt-box-label" id="reading-motion-label">motion prompts</div>
-    <div class="prompt-box-text" id="reading-motion"></div>
-  </div>
+  <div class="sync-summary" id="sync-summary"></div>
   <div class="panel-sub" id="reading-countdown"></div>
 </div>
 
@@ -426,8 +499,22 @@
   // A correct code returns a short-lived pass that the AI routes require.
   let accessToken = null;
   const params = new URLSearchParams(location.search);
-  // ?muse=1  → use the real Muse 2 headset. Default is simulated signal.
+  // ?muse=1  → use two real Muse 2 headsets (A and B). Default is simulated signal.
+  // ?muse=1&partner=sim → one real headset for A, participant B simulated (for testing)
   let USE_MUSE = params.get('muse') === '1';
+  const PARTNER_SIM = params.get('partner') === 'sim';
+
+  // TWO PARTICIPANTS + SYNC
+  // "in sync" = the two band patterns are at least SYNC_THRESHOLD similar
+  // (1 = identical) for SYNC_HOLD_SECONDS in a row.  ?sync=0.85 to make it easier
+  const SYNC_THRESHOLD = Math.min(0.99, Math.max(0.5, Number(params.get('sync')) || 0.9));
+  const SYNC_HOLD_SECONDS = 2;
+  // how much of the reading they spent in sync decides how alike their portraits are
+  const MIRROR_FULL = 0.35;           // 35% or more → same world (same place and light)
+  const MIRROR_SOME = 0.10;           // 10% or more → their worlds echo each other
+  const SOUND_VOLUME = 0.14;          // the two tones (0 to 1)
+  const PERSON = { a:{ name:'A', color:'#43e0c9', turn:'body and gaze turned slightly toward the right of the frame' },
+                   b:{ name:'B', color:'#f5b942', turn:'body and gaze turned slightly toward the left of the frame' } };
   // ?scan=20 → scan length in seconds
   const SCAN_SECONDS = Math.max(5, Number(params.get('scan')) || 15);
   // ?baseline=15 → personal baseline length in seconds (recorded before the scan)
@@ -436,10 +523,13 @@
   // the visitor's own words (optional), mixed with the EEG reading
   const INTENT_MAX = 120;
   const INTENT_IDLE_SECONDS = 90;      // nobody typing → continue without words
+  // archive: films are copied to your Vercel Blob folder only when the visitor ticks the box
+  const ARCHIVE_DEFAULT = false;       // set to true to have the box ticked to start with
   // the film: one continuous video that keeps growing. Each new part starts
   // from the last frame of the part before, so it plays as one unbroken shot.
-  // ?parts=1 → one part only (cheaper for testing) · Veo part length: 4, 6 or 8 s
-  const FILM_PARTS = Math.min(6, Math.max(1, Number(params.get('parts')) || 4));
+  // each participant gets their own film of FILM_PARTS parts (2 x 8 s = 16 s each)
+  // ?parts=1 → one part each (cheaper for testing) · Veo part length: 4, 6 or 8 s
+  const FILM_PARTS = Math.min(4, Math.max(1, Number(params.get('parts')) || 2));
   const VIDEO_SECONDS = 8;
   const FILM_CAMERA = 'one continuous slow camera move, no cuts, no scene change';
   const PORTRAIT_HOLD_SECONDS = 6;    // how long the finished portrait stays up before switching to the video screen          // how long the "signal interpreted as" screen stays up
@@ -593,34 +683,38 @@
   }
   const authHeaders = extra => ({ ...(extra || {}), 'x-im-token': accessToken || '' });
 
+
   /* =====================================================================
-     EEG BUFFERS + ANALYSIS (shared by simulated and Muse sources)
+     EEG BUFFERS + ANALYSIS, one set per participant
      ===================================================================== */
   const FS = 256, NCH = 4, BUF = 512;
   const CH_NAMES = ['TP9','AF7','AF8','TP10'];
-  const eeg = {
-    buf: Array.from({length:NCH}, ()=>new Float32Array(BUF)),
-    idx: new Array(NCH).fill(0),
-    count: new Array(NCH).fill(0),
-    lastSampleAt: 0
-  };
-  function pushSamples(ch, samples){
+  const PEOPLE = ['a','b'];
+  function makeEEG(){
+    return {
+      buf: Array.from({length:NCH}, ()=>new Float32Array(BUF)),
+      idx: new Array(NCH).fill(0),
+      count: new Array(NCH).fill(0),
+      lastSampleAt: 0, lastBlinkAt: 0
+    };
+  }
+  function pushSamples(e, ch, samples){
     if(ch < 0 || ch >= NCH) return;
     for(const s of samples){
       if(!Number.isFinite(s)) continue;
-      eeg.buf[ch][eeg.idx[ch]] = s;
-      eeg.idx[ch] = (eeg.idx[ch] + 1) % BUF;
-      eeg.count[ch]++;
+      e.buf[ch][e.idx[ch]] = s;
+      e.idx[ch] = (e.idx[ch] + 1) % BUF;
+      e.count[ch]++;
     }
-    eeg.lastSampleAt = performance.now();
+    e.lastSampleAt = performance.now();
   }
-  function lastN(ch, n){
+  function lastN(e, ch, n){
     const out = new Float32Array(n);
-    const start = eeg.idx[ch] - n;
-    for(let i=0;i<n;i++) out[i] = eeg.buf[ch][(start + i + BUF*2) % BUF];
+    const start = e.idx[ch] - n;
+    for(let i=0;i<n;i++) out[i] = e.buf[ch][(start + i + BUF*2) % BUF];
     return out;
   }
-  function signalLive(){ return performance.now() - eeg.lastSampleAt < 1000 && eeg.count[0] >= 256; }
+  function signalLive(e){ return performance.now() - e.lastSampleAt < 1000 && e.count[0] >= 256; }
 
   // in-place radix-2 FFT
   function fft(re, im){
@@ -647,12 +741,13 @@
   }
   const HANN = Float32Array.from({length:256}, (_,i)=> 0.5 - 0.5*Math.cos(2*Math.PI*i/255));
 
-  // returns { rel:{delta..gamma}, quality:['good'|'noisy'|'flat'] x4 }
-  function analyze(){
+
+  // returns { rel:{delta..gamma}, quality:['good'|'noisy'|'flat'] x4 } for one participant
+  function analyze(e){
     const quality = [], rels = [];
     for(let ch=0; ch<NCH; ch++){
-      if(eeg.count[ch] < 256){ quality.push('flat'); continue; }
-      const x = lastN(ch, 256);
+      if(e.count[ch] < 256){ quality.push('flat'); continue; }
+      const x = lastN(e, ch, 256);
       let mean = 0; for(const v of x) mean += v; mean /= 256;
       let varSum = 0;
       const re = new Float32Array(256), im = new Float32Array(256);
@@ -677,162 +772,280 @@
   }
 
   // blink = big swing on the forehead sensors (AF7 + AF8)
-  let lastBlinkAt = 0;
-  function detectBlink(){
-    if(eeg.count[1] < 64) return false;
-    const a = lastN(1, 40), b = lastN(2, 40);
+  function detectBlink(e){
+    if(e.count[1] < 64) return false;
+    const a = lastN(e, 1, 40), b = lastN(e, 2, 40);
     let mn = Infinity, mx = -Infinity;
     for(let i=0;i<40;i++){ const v = (a[i]+b[i])/2; if(v<mn) mn=v; if(v>mx) mx=v; }
     const now = performance.now();
-    if(mx - mn > BLINK_THRESHOLD_UV && now - lastBlinkAt > 400){ lastBlinkAt = now; return true; }
+    if(mx - mn > BLINK_THRESHOLD_UV && now - e.lastBlinkAt > 400){ e.lastBlinkAt = now; return true; }
     return false;
   }
 
-  /* =====================================================================
-     SIGNAL SOURCE 1: SIMULATED EEG
-     Each scan picks a random "mood" so different visitors get different
-     readings. During a scan press D / T / A / B / G to push it toward a band.
-     ===================================================================== */
-  const sim = {
-    running:false, t:0, generated:0, startedAt:0,
-    amp:{}, target:{}, comps:[], force:null, nextBlinkT:2,
-    start(){
-      if(this.running) return;
-      this.running = true;
-      // 3 sine components per band, per channel, with random freq/phase
-      this.comps = [];
-      for(let ch=0; ch<NCH; ch++){
-        for(const b of BANDS){
-          const [lo,hi] = BAND_HZ[b];
-          for(let k=0;k<3;k++) this.comps.push({ ch, b, f: lo + Math.random()*(hi-lo), ph: Math.random()*Math.PI*2, drift: (Math.random()-.5)*.4 });
-        }
-      }
-      this.newMood();
-      for(const b of BANDS) this.amp[b] = this.target[b];
-      this.startedAt = performance.now();
-      this.generated = 0;
-      this.timer = setInterval(()=> this.tick(), 40);
-    },
-    stop(){ this.running = false; clearInterval(this.timer); },
-    neutral(){
-      // resting state for the baseline: close to typical values, small random variation
-      for(const b of BANDS) this.target[b] = Math.sqrt(REF[b]*(0.85 + Math.random()*.3)*800/3);
-    },
-    newMood(){
-      const pw = { ...REF };
-      const dom = this.force || BANDS[Math.floor(Math.random()*BANDS.length)];
-      let sec; do{ sec = BANDS[Math.floor(Math.random()*BANDS.length)]; } while(sec === dom);
-      pw[dom] *= 2.2 + Math.random()*1.2;
-      pw[sec] *= 1.3 + Math.random()*.4;
-      // amplitude in µV so total std ≈ 20 µV
-      for(const b of BANDS) this.target[b] = Math.sqrt(pw[b]*800/3);
-    },
-    tick(){
-      const due = Math.floor((performance.now() - this.startedAt) * FS / 1000);
-      let n = Math.min(due - this.generated, BUF);
-      if(n <= 0) return;
-      this.generated = due;
-      // ease toward target amplitudes
-      for(const b of BANDS) this.amp[b] += (this.target[b] - this.amp[b]) * 0.04;
-      const out = Array.from({length:NCH}, ()=>new Float32Array(n));
-      for(let i=0;i<n;i++){
-        const t = this.t; this.t += 1/FS;
-        const wobble = 1 + 0.25*Math.sin(t*0.9);
-        for(const c of this.comps){
-          out[c.ch][i] += this.amp[c.b] * wobble * Math.sin(2*Math.PI*(c.f + c.drift*Math.sin(t*.3))*t + c.ph);
-        }
-        for(let ch=0; ch<NCH; ch++) out[ch][i] += (Math.random()-.5)*4;
-        // occasional blink on the forehead channels
-        if(t >= this.nextBlinkT){
-          const dt = t - this.nextBlinkT;
-          if(dt < 0.18){ const s = Math.sin(Math.PI*dt/0.18) * 180; out[1][i] += s; out[2][i] += s; }
-          else this.nextBlinkT = t + 1.5 + Math.random()*5;
-        }
-      }
-      for(let ch=0; ch<NCH; ch++) pushSamples(ch, out[ch]);
+  // how alike two band patterns are (1 = the same shape, 0 = opposite).
+  // Everyone's EEG has more slow than fast waves, so raw patterns always look
+  // fairly alike. Instead we compare how each person's pattern DIFFERS from
+  // the typical one (REF): which bands stand out, and which are quiet.
+  // When both are close to typical, there is little shape to compare, so the
+  // score stays near the middle instead of jumping around.
+  function similarity(ra, rb){
+    let dot = 0, na = 0, nb = 0;
+    for(const b of BANDS){
+      const x = (ra[b]||0) - REF[b], y = (rb[b]||0) - REF[b];
+      dot += x*y; na += x*x; nb += y*y;
     }
-  };
+    na = Math.sqrt(na); nb = Math.sqrt(nb);
+    if(!na || !nb) return 0.5;
+    const cos = dot / (na * nb);
+    const strength = Math.min(1, (na + nb) / 2 / 0.08);
+    return 0.5 + 0.5 * cos * strength;
+  }
+
+  /* =====================================================================
+     SIGNAL SOURCE 1: SIMULATED EEG (one simulator per participant)
+     During the scan: D T A B G steer participant A, Shift + D T A B G steer B,
+     S makes B follow A (to test the sync sound).
+     ===================================================================== */
+  function makeSim(e){
+    return {
+      running:false, t:0, generated:0, startedAt:0,
+      amp:{}, target:{}, comps:[], force:null, nextBlinkT:2 + Math.random()*3,
+      start(){
+        if(this.running) return;
+        this.running = true;
+        this.comps = [];
+        for(let ch=0; ch<NCH; ch++){
+          for(const b of BANDS){
+            const [lo,hi] = BAND_HZ[b];
+            for(let k=0;k<3;k++) this.comps.push({ ch, b, f: lo + Math.random()*(hi-lo), ph: Math.random()*Math.PI*2, drift: (Math.random()-.5)*.4 });
+          }
+        }
+        this.newMood();
+        for(const b of BANDS) this.amp[b] = this.target[b];
+        this.startedAt = performance.now();
+        this.generated = 0;
+        this.timer = setInterval(()=> this.tick(), 40);
+      },
+      stop(){ this.running = false; clearInterval(this.timer); },
+      neutral(){
+        for(const b of BANDS) this.target[b] = Math.sqrt(REF[b]*(0.85 + Math.random()*.3)*800/3);
+      },
+      newMood(){
+        const pw = { ...REF };
+        const dom = this.force || BANDS[Math.floor(Math.random()*BANDS.length)];
+        let sec; do{ sec = BANDS[Math.floor(Math.random()*BANDS.length)]; } while(sec === dom);
+        pw[dom] *= 2.2 + Math.random()*1.2;
+        pw[sec] *= 1.3 + Math.random()*.4;
+        for(const b of BANDS) this.target[b] = Math.sqrt(pw[b]*800/3);
+      },
+      copyFrom(other){ for(const b of BANDS) this.target[b] = other.target[b]; },
+      tick(){
+        const due = Math.floor((performance.now() - this.startedAt) * FS / 1000);
+        let n = Math.min(due - this.generated, BUF);
+        if(n <= 0) return;
+        this.generated = due;
+        for(const b of BANDS) this.amp[b] += (this.target[b] - this.amp[b]) * 0.04;
+        const out = Array.from({length:NCH}, ()=>new Float32Array(n));
+        for(let i=0;i<n;i++){
+          const t = this.t; this.t += 1/FS;
+          const wobble = 1 + 0.25*Math.sin(t*0.9);
+          for(const c of this.comps){
+            out[c.ch][i] += this.amp[c.b] * wobble * Math.sin(2*Math.PI*(c.f + c.drift*Math.sin(t*.3))*t + c.ph);
+          }
+          for(let ch=0; ch<NCH; ch++) out[ch][i] += (Math.random()-.5)*4;
+          if(t >= this.nextBlinkT){
+            const dt = t - this.nextBlinkT;
+            if(dt < 0.18){ const s = Math.sin(Math.PI*dt/0.18) * 180; out[1][i] += s; out[2][i] += s; }
+            else this.nextBlinkT = t + 1.5 + Math.random()*5;
+          }
+        }
+        for(let ch=0; ch<NCH; ch++) pushSamples(e, ch, out[ch]);
+      }
+    };
+  }
+
+  // one record per participant: their buffers, simulator, headset, and signal source
+  const P = {};
+  PEOPLE.forEach(k=>{
+    const e = makeEEG();
+    P[k] = { eeg:e, sim:makeSim(e), muse:{ client:null, connected:false, connecting:false },
+             source: (USE_MUSE && !(k === 'b' && PARTNER_SIM)) ? 'muse' : 'sim' };
+  });
+  let followB = false;     // testing: participant B's simulator copies A's
+
   window.addEventListener('keydown', e=>{
-    if(USE_MUSE || !scanScreen.classList.contains('active') || e.target === intentInput) return;
-    const map = { d:'delta', t:'theta', a:'alpha', b:'beta', g:'gamma' };
-    const band = map[e.key.toLowerCase()];
-    if(band){ sim.force = band; sim.newMood(); $('scan-hint').textContent = `simulating: ${band}`; }
+    if(!scanScreen.classList.contains('active') || e.target.tagName === 'TEXTAREA') return;
+    const key = e.key.toLowerCase();
+    if(key === 's'){
+      followB = !followB;
+      $('scan-hint').textContent = followB ? 'simulating: B follows A' : 'simulating: B on its own';
+      if(!followB && P.b.source === 'sim') P.b.sim.newMood();
+      return;
+    }
+    const band = { d:'delta', t:'theta', a:'alpha', b:'beta', g:'gamma' }[key];
+    if(!band) return;
+    const k = e.shiftKey ? 'b' : 'a';
+    if(P[k].source !== 'sim') return;
+    P[k].sim.force = band; P[k].sim.newMood();
+    $('scan-hint').textContent = `simulating ${k.toUpperCase()}: ${band}`;
   });
 
   /* =====================================================================
-     SIGNAL SOURCE 2: MUSE 2 over Web Bluetooth (muse-js)
+     SIGNAL SOURCE 2: TWO MUSE 2 HEADSETS over Web Bluetooth (muse-js)
+     Both connect to this one laptop; each gets its own browser popup.
      ===================================================================== */
-  const muse = { client:null, connected:false, connecting:false, libPromise:null };
+  let museLib = null;
   function loadMuseLib(){
-    if(!muse.libPromise){
-      muse.libPromise = import(MUSE_LIB).catch(()=> import(MUSE_LIB_CDN));
-    }
-    return muse.libPromise;
+    if(!museLib) museLib = import(MUSE_LIB).catch(()=> import(MUSE_LIB_CDN));
+    return museLib;
   }
   if(USE_MUSE) loadMuseLib(); // preload so the connect click stays a direct user gesture
 
-  async function connectMuse(){
-    if(muse.connected || muse.connecting) return;
+  async function connectMuse(k){
+    const m = P[k].muse;
+    if(m.connected || m.connecting) return;
     if(!navigator.bluetooth){
       flashError('this browser has no Bluetooth access, open the page in Chrome or Edge');
       return;
     }
-    muse.connecting = true; updateSourceUI();
-    $('connect-msg').textContent = 'pick the Muse in the browser popup…';
+    m.connecting = true; updateSourceUI();
+    $('connect-msg').textContent = `pick muse ${k.toUpperCase()} in the browser popup…`;
     try{
       const { MuseClient } = await loadMuseLib();
       const client = new MuseClient();
       await client.connect();
       await client.start();
-      client.eegReadings.subscribe(r => pushSamples(r.electrode, r.samples)); // 0 TP9, 1 AF7, 2 AF8, 3 TP10 (4 = aux, ignored)
+      client.eegReadings.subscribe(r => pushSamples(P[k].eeg, r.electrode, r.samples));
       client.connectionStatus.subscribe(ok => {
-        muse.connected = ok; updateSourceUI();
-        if(!ok && scanScreen.classList.contains('active')) showConnectOverlay('headset disconnected. turn it back on and reconnect.');
+        m.connected = ok; updateSourceUI();
+        if(!ok && scanScreen.classList.contains('active')) showConnectOverlay(`muse ${k.toUpperCase()} disconnected. turn it back on and reconnect.`);
       });
-      muse.client = client;
-      muse.connected = true;
+      m.client = client;
+      m.connected = true;
+      $('connect-msg').textContent = needsConnecting().length ? `muse ${k.toUpperCase()} connected. now connect the other one.` : 'both connected.';
     } catch(err){
       console.error(err);
       $('connect-msg').textContent = 'could not connect (' + (err && err.message ? err.message : 'cancelled') + '). make sure the Muse is on and not paired to the phone app, then try again.';
     }
-    muse.connecting = false; updateSourceUI();
+    m.connecting = false; updateSourceUI();
   }
+  const needsConnecting = () => PEOPLE.filter(k => P[k].source === 'muse' && !P[k].muse.connected);
 
   function updateSourceUI(){
     const led = $('source-led'), txt = $('source-text');
     led.className = 'led-dot';
-    if(!USE_MUSE){ txt.textContent = 'signal: simulated'; led.classList.add('warn'); return; }
-    if(muse.connected){ txt.textContent = 'muse 2: connected'; led.classList.add('on'); }
-    else if(muse.connecting){ txt.textContent = 'muse 2: connecting…'; led.classList.add('warn','pulse'); }
-    else { txt.textContent = 'muse 2: tap to connect'; led.classList.add('bad'); }
+    const part = k => {
+      const p = P[k];
+      if(p.source === 'sim') return `${k.toUpperCase()}: sim`;
+      return `${k.toUpperCase()}: ` + (p.muse.connected ? 'muse ✓' : p.muse.connecting ? 'connecting…' : 'muse ✕');
+    };
+    txt.textContent = PEOPLE.map(part).join(' · ');
+    const anyMuse = PEOPLE.some(k => P[k].source === 'muse');
+    if(!anyMuse) led.classList.add('warn');
+    else if(!needsConnecting().length) led.classList.add('on');
+    else if(PEOPLE.some(k => P[k].muse.connecting)) led.classList.add('warn','pulse');
+    else led.classList.add('bad');
+    $('connect-a').style.display = P.a.source === 'muse' && !P.a.muse.connected ? '' : 'none';
+    $('connect-b').style.display = P.b.source === 'muse' && !P.b.muse.connected ? '' : 'none';
   }
-  $('source-badge').addEventListener('click', ()=>{ if(USE_MUSE) connectMuse(); });
-  updateSourceUI();
+  $('source-badge').addEventListener('click', ()=>{ const k = needsConnecting()[0]; if(k) connectMuse(k); });
 
   /* =====================================================================
-     NEURAL SCAN SCREEN
+     SOUND: each mind is a soft tone. The closer their patterns, the more the
+     two tones tune toward each other; in sync they meet in one note and a
+     chord blooms over them, with a chime each time they arrive.
      ===================================================================== */
-  // build sensor dots + band bars once
-  $('sensors').innerHTML = CH_NAMES.map((n,i)=>`<div class="sensor"><span class="led-dot" id="sensor-${i}"></span>${n}</div>`).join('');
-  $('bands').innerHTML = BANDS.map(b=>`
-    <div class="band-name">${b}</div>
-    <div class="band-track"><div class="band-fill" id="fill-${b}"></div><div class="band-ref" id="ref-${b}"></div></div>
-    <div class="band-val" id="val-${b}">·</div>`).join('');
+  const sound = {
+    ctx:null, n:null,
+    unlock(){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) return;
+      if(!this.ctx) this.ctx = new AC();
+      if(this.ctx.state === 'suspended') this.ctx.resume();
+    },
+    start(){
+      if(!this.ctx || this.n) return;
+      const c = this.ctx, t = c.currentTime;
+      const master = c.createGain(); master.gain.value = 0;
+      const tone = c.createBiquadFilter(); tone.type = 'lowpass'; tone.frequency.value = 1600;
+      // a little space: a soft echo
+      const delay = c.createDelay(1); delay.delayTime.value = 0.32;
+      const fb = c.createGain(); fb.gain.value = 0.32;
+      const wet = c.createGain(); wet.gain.value = 0.35;
+      tone.connect(master); tone.connect(delay); delay.connect(fb); fb.connect(delay); delay.connect(wet); wet.connect(master);
+      master.connect(c.destination);
+      const voice = (type, gain) => { const o = c.createOscillator(); o.type = type; const g = c.createGain(); g.gain.value = gain; o.connect(g); g.connect(tone); o.start(); return { o, g }; };
+      const a = voice('triangle', 0.5), b = voice('triangle', 0.5);
+      const bloom = c.createGain(); bloom.gain.value = 0; bloom.connect(tone);
+      const chord = [1, 1.5, 2, 2.5].map(() => { const o = c.createOscillator(); o.type = 'sine'; o.connect(bloom); o.start(); return o; });
+      master.gain.setTargetAtTime(SOUND_VOLUME, t, 0.8);
+      this.n = { master, a, b, bloom, chord };
+    },
+    // centroid of the band pattern → pitch (slower rhythms sound lower)
+    pitch(rel){
+      let c = 0; BANDS.forEach((b, i) => c += (rel[b]||0) * i);
+      return 174.6 * Math.pow(2, (Math.min(3, Math.max(0, c)) - 1.2) * 0.55);
+    },
+    update(relA, relB, sim, inSync){
+      if(!this.n) return;
+      const t = this.ctx.currentTime;
+      const fa = this.pitch(relA), fb = this.pitch(relB), mid = (fa + fb) / 2;
+      // pull 0 → each tone on its own, 1 → both on the same note
+      const pull = Math.pow(Math.min(1, Math.max(0, (sim - 0.6) / (SYNC_THRESHOLD - 0.6))), 2);
+      this.n.a.o.frequency.setTargetAtTime(fa + (mid - fa) * pull, t, 0.25);
+      this.n.b.o.frequency.setTargetAtTime(fb + (mid - fb) * pull, t, 0.25);
+      [1, 1.5, 2, 2.5].forEach((r, i) => this.n.chord[i].frequency.setTargetAtTime(mid * r, t, 0.3));
+      this.n.bloom.gain.setTargetAtTime(inSync ? 0.32 : 0, t, inSync ? 0.5 : 0.8);
+    },
+    chime(){
+      if(!this.ctx || !this.n) return;
+      const c = this.ctx, t = c.currentTime;
+      [880, 1318.5, 1760].forEach((f, i) => {
+        const o = c.createOscillator(); o.type = 'sine'; o.frequency.value = f;
+        const g = c.createGain(); g.gain.setValueAtTime(0, t + i*0.09);
+        g.gain.linearRampToValueAtTime(0.18, t + i*0.09 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + i*0.09 + 2.2);
+        o.connect(g); g.connect(this.n.master); o.start(t + i*0.09); o.stop(t + i*0.09 + 2.4);
+      });
+    },
+    stop(){
+      if(!this.n) return;
+      const n = this.n, t = this.ctx.currentTime; this.n = null;
+      n.master.gain.setTargetAtTime(0, t, 0.6);
+      setTimeout(()=>{ try{ [n.a.o, n.b.o, ...n.chord].forEach(o => o.stop()); n.master.disconnect(); }catch(e){} }, 4000);
+    }
+  };
+
+  /* =====================================================================
+     NEURAL SCAN SCREEN (two participants + live sync meter)
+     ===================================================================== */
+  PEOPLE.forEach(k=>{
+    $(`sensors-${k}`).innerHTML = CH_NAMES.map((n,i)=>`<div class="sensor"><span class="led-dot" id="sensor-${k}-${i}"></span>${n}</div>`).join('');
+    $(`bands-${k}`).innerHTML = BANDS.map(b=>`
+      <div class="band-name">${b}</div>
+      <div class="band-track"><div class="band-fill" id="fill-${k}-${b}"></div><div class="band-ref" id="ref-${k}-${b}"></div></div>
+      <div class="band-val" id="val-${k}-${b}">·</div>`).join('');
+  });
+  $('sync-mark').style.left = (SYNC_THRESHOLD * 100) + '%';
 
   const waveCanvas = $('wave-canvas');
-  const scan = { active:false, phase:'idle', startAt:0, frames:[], blinks:0, resolve:null, raf:0 };
+  const scan = { active:false, phase:'idle', startAt:0, resolve:null, raf:0 };
 
   function showConnectOverlay(msg){
-    $('connect-msg').textContent = msg || 'headset not connected. turn on the Muse, then press connect.';
+    $('connect-msg').textContent = msg || 'turn on both Muse headbands, then connect them one at a time.';
     $('connect-overlay').classList.add('show');
+    updateSourceUI();
     scan.phase = 'waiting';
   }
-  $('connect-btn').addEventListener('click', connectMuse);
+  $('connect-a').addEventListener('click', ()=> connectMuse('a'));
+  $('connect-b').addEventListener('click', ()=> connectMuse('b'));
+  $('sim-b-btn').addEventListener('click', ()=>{ P.b.source = 'sim'; P.b.sim.start(); updateSourceUI(); if(!needsConnecting().length) $('connect-overlay').classList.remove('show'); });
   $('use-sim-btn').addEventListener('click', ()=>{
-    USE_MUSE = false; updateSourceUI(); sim.start();
-    $('connect-overlay').classList.remove('show');
+    PEOPLE.forEach(k=>{ P[k].source = 'sim'; P[k].sim.start(); });
+    updateSourceUI(); $('connect-overlay').classList.remove('show');
   });
 
+  // four lanes: A forehead, A behind the ears, B forehead, B behind the ears
   function drawWaves(){
     const w = waveCanvas.clientWidth, h = waveCanvas.clientHeight;
     const dpr = window.devicePixelRatio || 1;
@@ -840,107 +1053,153 @@
     const ctx = waveCanvas.getContext('2d');
     ctx.setTransform(dpr,0,0,dpr,0,0);
     ctx.clearRect(0,0,w,h);
-    const lane = h / NCH;
-    for(let ch=0; ch<NCH; ch++){
-      const mid = lane*ch + lane/2;
+    const lanes = [['a',[1,2],'A · forehead'],['a',[0,3],'A · ears'],['b',[1,2],'B · forehead'],['b',[0,3],'B · ears']];
+    const lane = h / lanes.length;
+    lanes.forEach(([k, chs, label], li)=>{
+      const mid = lane*li + lane/2, e = P[k].eeg;
       ctx.strokeStyle = '#1e2a2e'; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(0,mid); ctx.lineTo(w,mid); ctx.stroke();
       ctx.fillStyle = '#3f4d52'; ctx.font = '10px Space Mono, monospace';
-      ctx.fillText(CH_NAMES[ch], 4, lane*ch + 12);
-      if(eeg.count[ch] < 8) continue;
-      const x = lastN(ch, BUF);
+      ctx.fillText(label, 4, lane*li + 12);
+      if(e.count[chs[0]] < 8) return;
+      const x1 = lastN(e, chs[0], BUF), x2 = lastN(e, chs[1], BUF);
+      const x = x1.map((v,i)=> (v + x2[i]) / 2);
       let mean = 0; for(const v of x) mean += v; mean /= BUF;
-      const scale = (lane/2) / 100; // ±100 µV fills the lane
-      ctx.strokeStyle = ch === 1 || ch === 2 ? '#43e0c9' : '#2fa894';
-      ctx.lineWidth = 1.2;
+      const scale = (lane/2) / 100;
+      ctx.strokeStyle = PERSON[k].color; ctx.globalAlpha = li % 2 ? 0.6 : 1; ctx.lineWidth = 1.2;
       ctx.beginPath();
       for(let i=0;i<BUF;i++){
         const px = i / (BUF-1) * w;
         const py = mid - Math.max(-lane/2, Math.min(lane/2, (x[i]-mean)*scale));
         i ? ctx.lineTo(px,py) : ctx.moveTo(px,py);
       }
-      ctx.stroke();
-    }
+      ctx.stroke(); ctx.globalAlpha = 1;
+    });
   }
 
-  function updateBars(rel, ref){
+  function updateBars(k, rel, ref){
     for(const b of BANDS){
-      $(`fill-${b}`).style.width = Math.min(100, rel[b]/0.6*100) + '%';
-      $(`ref-${b}`).style.left = Math.min(100, ref[b]/0.6*100) + '%';
-      $(`val-${b}`).textContent = (rel[b]*100).toFixed(0) + '%';
+      $(`fill-${k}-${b}`).style.width = Math.min(100, rel[b]/0.6*100) + '%';
+      $(`ref-${k}-${b}`).style.left = Math.min(100, ref[b]/0.6*100) + '%';
+      $(`val-${k}-${b}`).textContent = (rel[b]*100).toFixed(0) + '%';
     }
   }
 
-  // runs the scan in two parts:
-  //   1. BASELINE: the visitor rests, eyes open. This is their personal "normal".
-  //   2. READING: the visitor holds their words (or the question) in mind.
-  // The reading is then described as a change from their own baseline,
-  // instead of comparing them to a fixed "typical brain".
-  function runScan(intent){
+  const fmtTime = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+
+  // runs the scan for both participants at the same time:
+  //   1. BASELINE: both rest, eyes open (each person's own "normal")
+  //   2. READING: each holds their own words in mind
+  // All the while the page listens for the moments their patterns meet.
+  function runScan(intents){
     return new Promise(resolve=>{
       scan.active = true; scan.resolve = resolve;
-      scan.baseFrames = []; scan.frames = []; scan.baseBlinks = 0; scan.blinks = 0;
+      const rec = {};
+      PEOPLE.forEach(k=> rec[k] = { baseFrames:[], frames:[], baseBlinks:0, blinks:0, personal:null });
+      const sync = { rel:{}, smooth:0.5, holdFrom:null, inSync:false, seconds:0, moments:0, peak:0, sum:0, n:0, series:[] };
       $('scan-progress').style.width = '0%';
       $('scan-phase').textContent = '';
-      $('scan-hint').textContent = USE_MUSE ? '' : 'simulated signal · press D T A B G to steer it';
+      $('sync-state').textContent = '';
+      $('scan-panel').classList.remove('in-sync');
+      const anySim = PEOPLE.some(k => P[k].source === 'sim');
+      $('scan-hint').textContent = anySim ? 'simulated signal · D T A B G steer A · shift + key steers B · S: B follows A' : '';
       $('scan-instruction').textContent = 'relax · eyes open · stay still';
       $('connect-overlay').classList.remove('show');
       showScreen(scanScreen);
+      sound.start();
 
-      if(USE_MUSE && !muse.connected) showConnectOverlay();
-      else { if(!USE_MUSE){ sim.force = null; sim.neutral(); } scan.phase = 'settling'; scan.startAt = performance.now(); }
+      PEOPLE.forEach(k=>{ if(P[k].source === 'sim'){ P[k].sim.start(); P[k].sim.force = null; P[k].sim.neutral(); } });
+      followB = false;
+      if(needsConnecting().length) showConnectOverlay();
+      else { scan.phase = 'settling'; scan.startAt = performance.now(); }
 
       const total = BASELINE_SECONDS + SCAN_SECONDS;
-      const readingText = intent
-        ? `now hold this in mind: “${intent}”`
-        : 'now imagine the self you would like to become';
-      let personal = null;       // the visitor's baseline, once recorded
+      const bothLive = () => PEOPLE.every(k => signalLive(P[k].eeg));
+      let lastT = performance.now();
 
       const loop = ()=>{
         if(!scan.active) return;
+        const now = performance.now(), dt = Math.min(0.2, (now - lastT) / 1000); lastT = now;
         drawWaves();
-        const { rel, quality } = analyze();
-        quality.forEach((q,i)=>{
-          const d = $(`sensor-${i}`);
-          d.className = 'led-dot ' + (q === 'good' ? 'on' : q === 'noisy' ? 'warn' : 'bad');
+        if(followB && P.b.source === 'sim') P.b.sim.copyFrom(P.a.sim);
+        const res = {};
+        PEOPLE.forEach(k=>{
+          res[k] = analyze(P[k].eeg);
+          res[k].quality.forEach((q,i)=>{ $(`sensor-${k}-${i}`).className = 'led-dot ' + (q === 'good' ? 'on' : q === 'noisy' ? 'warn' : 'bad'); });
+          updateBars(k, res[k].rel, rec[k].personal || REF);
         });
-        // red marks = what we compare against: typical values during the baseline,
-        // then the visitor's own baseline during the reading
-        updateBars(rel, personal || REF);
 
-        if(scan.phase === 'waiting' && ((USE_MUSE && muse.connected && signalLive()) || (!USE_MUSE && signalLive()))){
+        // ---- sync: how alike are the two patterns right now? ----
+        // each pattern is smoothed over about 1.5 s first, so single noisy moments don't count
+        PEOPLE.forEach(k=>{
+          if(!sync.rel[k]) sync.rel[k] = { ...res[k].rel };
+          for(const b of BANDS) sync.rel[k][b] += (res[k].rel[b] - sync.rel[k][b]) * Math.min(1, dt / 1.5);
+        });
+        const s = similarity(sync.rel.a, sync.rel.b);
+        sync.smooth += (s - sync.smooth) * Math.min(1, dt * 3);
+        const recording = scan.phase === 'baseline' || scan.phase === 'reading';
+        if(recording && bothLive() && sync.smooth >= SYNC_THRESHOLD){
+          if(sync.holdFrom === null) sync.holdFrom = now;
+          if(!sync.inSync && now - sync.holdFrom >= SYNC_HOLD_SECONDS*1000){
+            sync.inSync = true; sound.chime();
+            if(scan.phase === 'reading') sync.moments++;
+          }
+        } else { sync.holdFrom = null; sync.inSync = false; }
+        $('sync-fill').style.width = (sync.smooth * 100).toFixed(1) + '%';
+        $('sync-val').textContent = Math.round(sync.smooth * 100) + '%';
+        $('scan-panel').classList.toggle('in-sync', sync.inSync);
+        sound.update(sync.rel.a, sync.rel.b, sync.smooth, sync.inSync);
+
+        if(scan.phase === 'waiting' && !needsConnecting().length && bothLive()){
           $('connect-overlay').classList.remove('show');
           scan.phase = 'settling'; scan.startAt = performance.now();
         }
-        const now = performance.now();
-        // 1.5 s settling so the buffer is full of fresh data before recording
         if(scan.phase === 'settling' && now - scan.startAt > 1500){ scan.phase = 'baseline'; scan.startAt = now; }
 
-        if(scan.phase === 'baseline' || scan.phase === 'reading'){
+        if(recording){
           const isBase = scan.phase === 'baseline';
-          $('scan-phase').textContent = isBase ? `01 · your baseline` : `02 · your reading`;
-          const goodCount = quality.filter(q=>q==='good').length;
-          if(!signalLive()){
-            $('scan-instruction').textContent = 'waiting for signal…';
+          $('scan-phase').textContent = isBase ? '01 · your baselines' : '02 · your readings';
+          const poor = PEOPLE.filter(k => res[k].quality.filter(q => q === 'good').length < 2);
+          if(!bothLive()){
+            $('scan-instruction').textContent = 'waiting for both signals…';
           } else {
-            $('scan-instruction').textContent = goodCount < 2
-              ? 'adjust the headband, sensors need skin contact'
-              : isBase ? 'baseline · eyes open · breathe normally · stay still' : readingText;
-            if(isBase){ scan.baseFrames.push(rel); if(detectBlink()) scan.baseBlinks++; }
-            else { scan.frames.push(rel); if(detectBlink()) scan.blinks++; }
+            $('scan-instruction').textContent = poor.length
+              ? `adjust ${poor.map(k=>k.toUpperCase()).join(' and ')}'s headband, sensors need skin contact`
+              : isBase ? 'baselines · eyes open · breathe normally · stay still'
+                       : 'now each of you hold your own words in mind · listen for your two tones meeting';
+            PEOPLE.forEach(k=>{
+              const r = rec[k];
+              if(isBase){ r.baseFrames.push(res[k].rel); if(detectBlink(P[k].eeg)) r.baseBlinks++; }
+              else { r.frames.push(res[k].rel); if(detectBlink(P[k].eeg)) r.blinks++; }
+            });
+            if(!isBase){
+              sync.sum += sync.smooth; sync.n++; sync.peak = Math.max(sync.peak, sync.smooth);
+              if(sync.inSync) sync.seconds += dt;
+              sync.series.push(sync.smooth);
+            }
           }
+          $('sync-state').textContent = sync.inSync ? '✦ in sync ✦' : (!isBase && sync.seconds > 0 ? `in sync for ${fmtTime(sync.seconds)}` : 'listening for sync');
           const elapsed = (now - scan.startAt) / 1000;
           const done = isBase ? elapsed : BASELINE_SECONDS + elapsed;
           $('scan-progress').style.width = Math.min(100, done/total*100) + '%';
 
           if(isBase && elapsed >= BASELINE_SECONDS){
-            personal = averageFrames(scan.baseFrames);
+            PEOPLE.forEach(k=> rec[k].personal = averageFrames(rec[k].baseFrames));
             scan.phase = 'reading'; scan.startAt = now;
-            // the simulated signal shifts away from rest, like a real response would
-            if(!USE_MUSE && !sim.force) sim.newMood();
+            // simulated minds move away from rest; sometimes toward the same state, like real pairs can
+            PEOPLE.forEach(k=>{ if(P[k].source === 'sim' && !P[k].sim.force) P[k].sim.newMood(); });
+            if(P.b.source === 'sim' && P.a.source === 'sim' && !P.b.sim.force && Math.random() < 0.4) P.b.sim.copyFrom(P.a.sim);
           } else if(!isBase && elapsed >= SCAN_SECONDS){
             scan.active = false;
-            resolve(summarize(scan.baseFrames, scan.frames, scan.baseBlinks, scan.blinks));
+            sound.stop();
+            $('scan-panel').classList.remove('in-sync');
+            const out = {};
+            PEOPLE.forEach(k=>{ const r = rec[k]; out[k] = summarize(r.baseFrames, r.frames, r.baseBlinks, r.blinks); });
+            out.sync = {
+              seconds: sync.seconds, fraction: Math.min(1, sync.seconds / SCAN_SECONDS),
+              moments: sync.moments, peak: sync.peak, mean: sync.n ? sync.sum / sync.n : 0
+            };
+            resolve(out);
             return;
           }
         }
@@ -951,7 +1210,7 @@
   }
 
   /* =====================================================================
-     READING → PROMPTS
+     READING → PROMPTS (each person from their own baseline, mirrored by sync)
      ===================================================================== */
   function currentBaseline(){
     let hist = [];
@@ -968,25 +1227,20 @@
       localStorage.setItem('im-baseline', JSON.stringify(hist));
     }catch(e){}
   }
-
   function averageFrames(frames){
     if(!frames || !frames.length) return null;
     const avg = {}; for(const b of BANDS) avg[b] = 0;
     for(const f of frames) for(const b of BANDS) avg[b] += f[b]/frames.length;
     return avg;
   }
-
   function summarize(baseFrames, frames, baseBlinks, blinks){
-    // the baseline only counts if we recorded enough of it (about 3 s of frames)
     const base = baseFrames.length > 120 ? averageFrames(baseFrames) : null;
     const avg = averageFrames(frames) || { ...REF };
-    // split the reading into equal parts, one per part of the film
     const segments = [];
     for(let k=0; k<FILM_PARTS; k++){
       const a = Math.floor(frames.length*k/FILM_PARTS), z = Math.floor(frames.length*(k+1)/FILM_PARTS);
       segments.push(averageFrames(frames.slice(a, z)) || avg);
     }
-    // stability: how much alpha+theta wandered during the reading
     let cv = 0;
     if(frames.length > 10){
       const s = frames.map(f=>f.alpha + f.theta);
@@ -996,72 +1250,88 @@
     }
     return { base, avg, segments, blinks, baseBlinks, variability: cv, seconds: SCAN_SECONDS };
   }
-
-  // ratio of each band to the comparison point, biggest change first
   function rank(values, ref){
     return BANDS.map(b=>({ b, s: values[b]/Math.max(ref[b], 1e-6) })).sort((x,y)=>y.s-x.s);
   }
   const pct = s => (s >= 1 ? '+' : '-') + Math.round(Math.abs(s-1)*100) + '%';
+  const refOf = reading => reading.base || currentBaseline();
 
-  function interpret(reading, intent){
-    // compare with the visitor's own baseline; if it could not be recorded,
-    // fall back to typical values blended with past visitors
+  // shared: { dom, sec, level: 'mirrored' | 'echoing' | 'apart' }
+  function interpret(k, reading, intent, shared){
     const personal = !!reading.base;
-    const ref = reading.base || currentBaseline();
+    const ref = refOf(reading);
     const scores = rank(reading.avg, ref);
     const dom = scores[0], sec = scores[1];
     const strength = dom.s >= 1.6 ? 'intensely' : dom.s >= 1.2 ? '' : 'subtly';
     const blinkPerMin = reading.blinks / (reading.seconds/60);
     const glitchy = blinkPerMin > 25;
     const shifting = reading.variability > 0.25;
+    const L = shared.level;
 
-    // WITHOUT words: the brain reading chooses a place in nature and a quiet motion.
-    // WITH words: the visitor's words choose who they are and what they do;
-    // the brain reading only sets the light, the colors and the energy of the movement.
+    // the more the pair was in sync, the more their two worlds become one
     let portrait;
     if(intent){
-      portrait = `${VOCAB[dom.b].light}, with a touch of ${VOCAB[sec.b].light}`;
+      const main = L === 'mirrored' ? VOCAB[shared.dom].light : VOCAB[dom.b].light;
+      const touch = L === 'apart' ? VOCAB[sec.b].light : VOCAB[shared.sec].light;
+      portrait = `${main}, with a touch of ${touch}`;
     } else {
-      portrait = `${VOCAB[dom.b].portrait}, accented by ${VOCAB[sec.b].accent}`;
+      const place = L === 'mirrored' ? VOCAB[shared.dom].portrait : VOCAB[dom.b].portrait;
+      const accent = L === 'apart' ? VOCAB[sec.b].accent : VOCAB[shared.sec].accent;
+      portrait = `${place}, accented by ${accent}`;
       if(shifting) portrait += ', shifting dappled light through moving leaves';
     }
     if(strength === 'subtly') portrait += ', soft muted tones';
     if(strength === 'intensely') portrait += ', bright clear light';
     if(glitchy) portrait += ', light rain falling';
-    const portraitShown = intent ? `as “${intent}”, ${portrait}` : portrait;   // what the screen shows
+    portrait += `, ${PERSON[k].turn}`;
+    const portraitShown = intent ? `as “${intent}”, ${portrait}` : portrait;
     portrait += `. ${REALISM}. ${BEAUTY_FILTERS[BEAUTY_FILTER_LEVEL] || ''}`;
 
-    // one motion prompt per part of the film, each from its own slice of the reading
-    const scenes = reading.segments.map((seg, k)=>{
+    const scenes = reading.segments.map(seg=>{
       const sr = rank(seg, ref);
+      const lightB = L === 'mirrored' ? shared.dom : sr[0].b;
       let m;
-      if(intent){
-        m = `${VOCAB[sr[0].b].energy}, ${VOCAB[sr[0].b].light}, the camera follows the action in one continuous shot`;
-      } else {
-        m = `${VOCAB[sr[0].b].motion}, ${VOCAB[sr[1].b].motionAccent}, ${FILM_CAMERA}`;
+      if(intent) m = `${VOCAB[sr[0].b].energy}, ${VOCAB[lightB].light}, the camera follows the action in one continuous shot`;
+      else {
+        m = `${VOCAB[sr[0].b].motion}, ${VOCAB[L === 'apart' ? sr[1].b : shared.sec].motionAccent}, ${FILM_CAMERA}`;
         if(glitchy) m += ', light rain falling';
       }
       return { band: sr[0].b, change: sr[0].s, motion: m };
     });
 
     const state = [strength, VOCAB[dom.b].state].filter(Boolean).join(' ');
-    const vs = personal ? 'vs your baseline' : 'vs typical';
-    return { state, dominant: dom.b, secondary: sec.b, portrait, portraitShown, scenes, motion: scenes[0].motion,
+    const vs = personal ? 'vs own baseline' : 'vs typical';
+    return { k, state, dominant: dom.b, secondary: sec.b, portrait, portraitShown, scenes,
              intent: intent || '', personal,
              meta: `${dom.b} ${pct(dom.s)} · ${sec.b} ${pct(sec.s)} ${vs} · ${reading.blinks} blinks` };
   }
 
-  function showReading(r){
+  function interpretPair(pr, intents){
+    // the pair's combined change from their own baselines
+    const ra = refOf(pr.a), rb = refOf(pr.b);
+    const both = {}; BANDS.forEach(b=> both[b] = (pr.a.avg[b]/Math.max(ra[b],1e-6) + pr.b.avg[b]/Math.max(rb[b],1e-6)) / 2);
+    const order = BANDS.slice().sort((x,y)=> both[y] - both[x]);
+    const f = pr.sync.fraction;
+    const shared = { dom: order[0], sec: order[1], level: f >= MIRROR_FULL ? 'mirrored' : f >= MIRROR_SOME ? 'echoing' : 'apart' };
+    return {
+      shared, sync: pr.sync,
+      a: interpret('a', pr.a, intents.a, shared),
+      b: interpret('b', pr.b, intents.b, shared),
+    };
+  }
+
+  const LEVEL_TEXT = { mirrored:'mirrored: one shared world', echoing:'echoing: two worlds that echo', apart:'apart: two separate worlds' };
+  function showReading(R){
     return new Promise(resolve=>{
-      $('reading-state').textContent = r.state;
-      $('reading-meta').textContent = r.meta;
-      $('reading-portrait').textContent = r.portraitShown;
-      $('reading-words').textContent = r.intent ? `“${r.intent}”` : '';
-      $('reading-words-box').style.display = r.intent ? '' : 'none';
-      $('reading-motion-label').textContent = r.scenes.length > 1 ? `motion prompts · film in ${r.scenes.length} parts` : 'motion prompt';
-      const ol = document.createElement('ol'); ol.className = 'scene-list';
-      r.scenes.forEach(sc=>{ const li = document.createElement('li'); li.textContent = `${sc.band} ${pct(sc.change)}: ${sc.motion}`; ol.appendChild(li); });
-      $('reading-motion').replaceChildren(ol);
+      PEOPLE.forEach(k=>{
+        const r = R[k];
+        $(`state-${k}`).textContent = r.state;
+        $(`meta-${k}`).textContent = r.meta;
+        $(`words-${k}`).textContent = r.intent ? `“${r.intent}”` : '';
+        $(`portrait-${k}`).textContent = r.portraitShown;
+      });
+      const s = R.sync;
+      $('sync-summary').textContent = `in sync ${fmtTime(s.seconds)} of ${fmtTime(SCAN_SECONDS)} (${Math.round(s.fraction*100)}%) · ${s.moments} moment${s.moments === 1 ? '' : 's'} · ${LEVEL_TEXT[R.shared.level]}`;
       showScreen(readingScreen);
       let left = READING_SECONDS;
       const tick = ()=>{ $('reading-countdown').textContent = `synthesizing in ${left}… (tap to skip)`; };
@@ -1071,6 +1341,7 @@
       readingScreen.addEventListener('click', done);
     });
   }
+
 
   /* =====================================================================
      STATIC NOISE (one loop per canvas, never stacks)
@@ -1100,8 +1371,8 @@
     st.stop = ()=>{ st.on = false; };
     return st;
   }
-  const static1 = makeStatic($('static-canvas-1'));
-  const static2 = makeStatic($('static-canvas-2'));
+  const statics = { '2a':makeStatic($('static-2a')), '2b':makeStatic($('static-2b')), '3a':makeStatic($('static-3a')), '3b':makeStatic($('static-3b')) };
+  const allStatic = on => Object.values(statics).forEach(s=> on ? s.start() : s.stop());
 
   /* =====================================================================
      DASHBOARD
@@ -1124,48 +1395,71 @@
   }
 
   /* =====================================================================
-     THE VISITOR'S OWN WORDS
+     BOTH PARTICIPANTS' OWN WORDS
      ===================================================================== */
-  const intentScreen = $('intent'), intentInput = $('intent-input');
+  const intentScreen = $('intent');
   function cleanIntent(t){
     return String(t || '').replace(/[\u0000-\u001f\u007f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, INTENT_MAX);
   }
-  intentInput.addEventListener('input', ()=>{ $('intent-count').textContent = `${intentInput.value.length} / ${INTENT_MAX}`; });
-  function askIntent(){
+  PEOPLE.forEach(k=> $(`intent-${k}`).addEventListener('input', ()=>{ $(`intent-count-${k}`).textContent = `${$(`intent-${k}`).value.length} / ${INTENT_MAX}`; }));
+  function askIntents(){
     return new Promise(resolve=>{
-      intentInput.value = ''; $('intent-count').textContent = `0 / ${INTENT_MAX}`;
+      PEOPLE.forEach(k=>{ $(`intent-${k}`).value = ''; $(`intent-count-${k}`).textContent = `0 / ${INTENT_MAX}`; });
+      $('archive-consent').checked = ARCHIVE_DEFAULT;
       showScreen(intentScreen);
-      setTimeout(()=> intentInput.focus(), 50);
+      setTimeout(()=> $('intent-a').focus(), 50);
       let idle;
-      const poke = ()=>{ clearTimeout(idle); idle = setTimeout(()=> finish(''), INTENT_IDLE_SECONDS*1000); };
-      const finish = text=>{
+      const poke = ()=>{ clearTimeout(idle); idle = setTimeout(()=> finish(false), INTENT_IDLE_SECONDS*1000); };
+      const finish = keep=>{
         clearTimeout(idle);
         $('intent-go').onclick = $('intent-skip').onclick = null;
-        intentInput.removeEventListener('keydown', onKey); intentInput.removeEventListener('input', poke);
-        intentInput.blur();
-        resolve(cleanIntent(text));
+        PEOPLE.forEach(k=> $(`intent-${k}`).removeEventListener('input', poke));
+        document.activeElement && document.activeElement.blur();
+        archive.on = $('archive-consent').checked;
+        resolve({ a: keep ? cleanIntent($('intent-a').value) : '', b: keep ? cleanIntent($('intent-b').value) : '' });
       };
-      const onKey = e=>{ if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); finish(intentInput.value); } };
-      $('intent-go').onclick = ()=> finish(intentInput.value);
-      $('intent-skip').onclick = ()=> finish('');
-      intentInput.addEventListener('keydown', onKey);
-      intentInput.addEventListener('input', poke);
+      // Enter in A's box moves to B's box; Enter in B's box continues
+      $('intent-a').onkeydown = e=>{ if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); $('intent-b').focus(); } };
+      $('intent-b').onkeydown = e=>{ if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); finish(true); } };
+      $('intent-go').onclick = ()=> finish(true);
+      $('intent-skip').onclick = ()=> finish(false);
+      PEOPLE.forEach(k=> $(`intent-${k}`).addEventListener('input', poke));
       poke();
     });
   }
 
   /* =====================================================================
+     ARCHIVE: identity-machine/videos/<day>/<pair>/a/ and /b/
+     ===================================================================== */
+  const archive = { on:false, day:'', id:'' };
+  function newArchiveVisitor(){
+    const d = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    archive.day = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    archive.id = `${pad(d.getHours())}${pad(d.getMinutes())}-${Math.random().toString(36).slice(2,6).padEnd(4,'0')}`;
+  }
+  function saveToArchive(body){
+    if(!archive.on) return;
+    fetch('/api/archive', {
+      method:'POST', headers: authHeaders({ 'Content-Type':'application/json' }),
+      body: JSON.stringify({ visitorId: archive.id, day: archive.day, ...body })
+    }).then(r=>r.json()).then(d=>{ if(!d.ok) console.warn('[archive]', d.error); }).catch(()=>{});
+  }
+
+  /* =====================================================================
      MAIN FLOW
      ===================================================================== */
-  let session = 0;      // bumps on reset, so late results from an old visitor are ignored
+  let session = 0;      // bumps on reset, so late results from an old pair are ignored
   let busy = false;
+  let photos = {};      // { a: dataURL, b: dataURL }
 
   async function enterMachine(){
     showScreen(floorScreen);
     showStage(1);
     dashboard.classList.add('active');
-    static1.start(); static2.start();
-    if(!USE_MUSE) sim.start();
+    allStatic(true);
+    PEOPLE.forEach(k=>{ if(P[k].source === 'sim') P[k].sim.start(); });
+    updateSourceUI();
     logSession('participant');
     refreshStats();
 
@@ -1180,45 +1474,67 @@
     }
   }
 
-  captureScreen.addEventListener('click', async ()=>{
-    if(busy) return;
+  function grabPhoto(){
     const w = video.videoWidth, h = video.videoHeight;
-    if(!w || !h) return;
-    busy = true;
-    const sid = session;
-
-    // capture mirrored, so the portrait matches what the visitor saw
     hiddenCanvas.width = w; hiddenCanvas.height = h;
     const ctx = hiddenCanvas.getContext('2d');
-    ctx.save(); ctx.translate(w,0); ctx.scale(-1,1);
+    ctx.save(); ctx.translate(w,0); ctx.scale(-1,1);   // mirrored, as the visitor saw it
     ctx.drawImage(video, 0, 0, w, h);
     ctx.restore();
-    const dataURL = hiddenCanvas.toDataURL('image/jpeg', 0.92);
+    return hiddenCanvas.toDataURL('image/jpeg', 0.92);
+  }
+  function flashCapture(){
+    const f = document.createElement('div');
+    f.style.cssText = 'position:absolute;inset:0;background:#fff;z-index:9;opacity:.85;transition:opacity .5s';
+    captureScreen.appendChild(f); requestAnimationFrame(()=> f.style.opacity = 0); setTimeout(()=> f.remove(), 600);
+  }
 
-    const intent = await askIntent();
+  captureScreen.addEventListener('click', async ()=>{
+    if(busy) return;
+    if(!video.videoWidth || !video.videoHeight) return;
+    sound.unlock();                       // browsers only allow sound after a tap
+    if(!photos.a){
+      photos.a = grabPhoto(); flashCapture();
+      $('cap-1').textContent = 'participant B: step in front of the camera and tap';
+      return;
+    }
+    photos.b = grabPhoto(); flashCapture();
+    busy = true;
+    const sid = session;
+    const shots = { ...photos };
+
+    newArchiveVisitor();
+    const intents = await askIntents();
     if(sid !== session){ busy = false; return; }
-    const reading = await runScan(intent);
-    const r = interpret(reading, intent);
-    addToBaseline(reading.avg);
-    await showReading(r);
+    const pr = await runScan(intents);
+    if(sid !== session){ busy = false; return; }
+    const R = interpretPair(pr, intents);
+    addToBaseline(pr.a.avg); addToBaseline(pr.b.avg);
+    const info = k => ({ words:R[k].intent, state:R[k].state, meta:R[k].meta, personal:R[k].personal,
+                         parts:R[k].scenes.map(sc=>({ band:sc.band, change:sc.change })) });
+    saveToArchive({ kind:'info', info:{ pair:true, a:info('a'), b:info('b'),
+      sync:{ seconds:R.sync.seconds, fraction:R.sync.fraction, moments:R.sync.moments, peak:R.sync.peak, mean:R.sync.mean, level:R.shared.level } } });
+    await showReading(R);
     if(sid !== session){ busy = false; return; }
 
     showScreen(floorScreen);
     showStage(2);
-    $('cap-2').textContent = `read as: ${r.state}`;
+    $('cap-2').textContent = `A: ${R.a.state} · B: ${R.b.state} · ${R.shared.level}`;
     $('cap-3').textContent = '';
-    const portraitUrl = await generateStudioPortrait(dataURL, r, sid);
-    if(!portraitUrl){
-      if(sid === session){ maxStage = 1; showStage(1); busy = false; }
-      return;
-    }
+    const stopTimer = startTimer($('status-2'), 'synthesizing two portraits');
+    const urls = await Promise.all(PEOPLE.map(k=> generatePortrait(k, shots[k], R[k], sid)));
+    stopTimer();
     if(sid !== session) return;
-    // start the video right away, but let the visitor look at the portrait first
-    const videoDone = generateVideos(portraitUrl, r, sid);
+    if(!urls[0] && !urls[1]){ maxStage = 1; showStage(1); photos = {}; $('cap-1').textContent = 'participant A: tap the camera to take your photo'; busy = false; return; }
+    // start both films right away, but let the pair look at their portraits first
+    const filmsDone = Promise.all(PEOPLE.map((k, i)=> urls[i] ? generateFilm(k, urls[i], R[k], sid) : Promise.resolve()));
     await new Promise(res=>setTimeout(res, PORTRAIT_HOLD_SECONDS*1000));
     if(sid === session) showStage(3);
-    await videoDone;
-    if(sid === session) busy = false;
+    await filmsDone;
+    if(sid === session){
+      busy = false;
+      $('cap-3').textContent = `A: ${R.a.state} · B: ${R.b.state} · ${LEVEL_TEXT[R.shared.level]} · tap to finish`;
+    }
   });
 
   // ---- one-stage-at-a-time view ----
@@ -1308,15 +1624,17 @@
     throw new Error('gave up after ' + maxMinutes + ' minutes, replicate is still working or queued');
   }
 
-  // ---- stage 02: portrait from the brain reading ----
-  async function generateStudioPortrait(dataURL, r, sid){
-    static1.stop();
-    const stopGlitch = runGlitch(studioScreen, led2, $('status-2'), 'synthesizing');
+
+  // ---- stage 02: one portrait per participant (3:4, side by side) ----
+  async function generatePortrait(k, dataURL, r, sid){
+    const half = $(`half-2${k}`);
+    statics['2'+k].stop();
+    const stopGlitch = runGlitch(half, led2, null, '');
     let res = null;
     try{
       res = await fetch('/api/generate-persona', {
         method:'POST', headers: authHeaders({ 'Content-Type':'application/json' }),
-        body: JSON.stringify({ image: dataURL, prompt: r.portrait, visitor: r.intent, eeg: { state:r.state, dominant:r.dominant, secondary:r.secondary } })
+        body: JSON.stringify({ image: dataURL, prompt: r.portrait, visitor: r.intent, aspect:'3:4', eeg: { state:r.state, dominant:r.dominant, secondary:r.secondary } })
       });
       if(!res.ok) throw new Error('http');
       const data = await res.json();
@@ -1327,69 +1645,78 @@
         imageUrl = pr.url;
       }
       if(!imageUrl) throw new Error('server answered but sent no image: ' + JSON.stringify(data).slice(0,300));
-      data.image = imageUrl;
       stopGlitch();
-      if(sid !== session) return null;   // visitor reset while we were waiting
-      studioScreen.querySelectorAll('img.reveal').forEach(el=>el.remove());
+      if(sid !== session) return null;
+      half.querySelectorAll('img.reveal').forEach(el=>el.remove());
       const img = document.createElement('img');
       img.className = 'reveal';
-      img.src = data.image;
-      studioScreen.insertBefore(img, studioScreen.firstChild);
+      img.src = imageUrl;
+      half.insertBefore(img, half.firstChild);
       led2.classList.add('on');
-      logSession('portrait', data.image);
-      return data.image;
+      logSession('portrait', imageUrl);
+      return imageUrl;
     } catch(err){
       stopGlitch();
       if(sid !== session) return null;
-      static1.start();
+      statics['2'+k].start();
       const why = err.message === 'http' ? await describeFailure(res) : (res ? err.message : await describeFailure(null, err));
-      console.error('[generate-persona]', why);
+      console.error('[generate-persona ' + k + ']', why);
       flashError('the machine is resting, try again shortly', why);
       return null;
     }
   }
 
-  // ---- stage 03: one film that keeps extending ----
-  // Part 1 animates the portrait. Each next part starts from the LAST FRAME of
-  // the part before, and is added to the end of the film. The film loops while
-  // it grows, using two video layers so the switch between parts is seamless.
-  let film = [];            // finished part URLs, in order
-  let layers = null, front = 0, partIndex = 0;
-
-  function makeLayer(){
-    const v = document.createElement('video');
-    v.className = 'film-layer';
-    v.muted = true; v.playsInline = true; v.preload = 'auto';
-    v.crossOrigin = 'anonymous';           // lets us read the last frame
-    v.style.transition = 'opacity .25s linear';
-    v.addEventListener('ended', ()=>{ if(layers && v === layers[front]) advance(); });
-    return v;
+  // ---- stage 03: one film per participant that keeps extending ----
+  // Part 1 animates the portrait; each next part starts from the last frame
+  // of the part before. Two video layers per half make the joins seamless.
+  function makeFilmPlayer(container){
+    const st = { film:[], layers:null, front:0, partIndex:0 };
+    const makeLayer = ()=>{
+      const v = document.createElement('video');
+      v.className = 'film-layer';
+      v.muted = true; v.playsInline = true; v.preload = 'auto';
+      v.crossOrigin = 'anonymous';           // lets us read the last frame
+      v.style.transition = 'opacity .25s linear';
+      v.addEventListener('ended', ()=>{ if(st.layers && v === st.layers[st.front]) advance(); });
+      return v;
+    };
+    const preloadNext = ()=>{
+      if(!st.layers || st.film.length < 2) return;
+      const back = st.layers[1-st.front], next = (st.partIndex + 1) % st.film.length;
+      if(back.dataset.src !== st.film[next]){ back.dataset.src = st.film[next]; back.src = st.film[next]; back.load(); }
+    };
+    const advance = ()=>{
+      const cur = st.layers[st.front];
+      if(st.film.length < 2){ cur.currentTime = 0; cur.play().catch(()=>{}); return; }
+      st.partIndex = (st.partIndex + 1) % st.film.length;
+      const nxt = st.layers[1-st.front];
+      if(nxt.dataset.src !== st.film[st.partIndex]){ nxt.dataset.src = st.film[st.partIndex]; nxt.src = st.film[st.partIndex]; }
+      nxt.currentTime = 0; nxt.style.opacity = 1; nxt.play().catch(()=>{});
+      cur.style.opacity = 0;
+      st.front = 1 - st.front;
+      preloadNext();
+    };
+    st.add = url=>{
+      st.film.push(url);
+      if(!st.layers){
+        st.layers = [makeLayer(), makeLayer()];
+        st.layers[1].style.opacity = 0;
+        st.layers.forEach(l=> container.insertBefore(l, container.firstChild));
+        st.layers[0].dataset.src = url; st.layers[0].src = url; st.layers[0].play().catch(()=>{});
+        const tag = document.createElement('div'); tag.className = 'video-count'; container.appendChild(tag);
+      } else preloadNext();
+    };
+    st.tag = extending=>{
+      const tag = container.querySelector('.video-count');
+      if(tag) tag.textContent = `film 0:${String(st.film.length * VIDEO_SECONDS).padStart(2,'0')}` + (extending ? ' · extending…' : '');
+    };
+    st.clear = ()=>{
+      container.querySelectorAll('video.film-layer, .video-count, img.ghost-portrait').forEach(el=>el.remove());
+      st.film = []; st.layers = null; st.front = 0; st.partIndex = 0;
+    };
+    return st;
   }
-  function filmSeconds(){ return film.length * VIDEO_SECONDS; }
-  function updateFilmTag(extending){
-    const tag = videoScreen.querySelector('.video-count');
-    if(!tag) return;
-    const t = filmSeconds();
-    tag.textContent = `film 0:${String(t).padStart(2,'0')}` + (extending ? ' · extending…' : '');
-  }
-  function preloadNext(){
-    if(!layers || film.length < 2) return;
-    const back = layers[1-front], next = (partIndex + 1) % film.length;
-    if(back.dataset.src !== film[next]){ back.dataset.src = film[next]; back.src = film[next]; back.load(); }
-  }
-  function advance(){
-    const cur = layers[front];
-    if(film.length < 2){ cur.currentTime = 0; cur.play().catch(()=>{}); return; }
-    partIndex = (partIndex + 1) % film.length;
-    const nxt = layers[1-front];
-    if(nxt.dataset.src !== film[partIndex]){ nxt.dataset.src = film[partIndex]; nxt.src = film[partIndex]; }
-    nxt.currentTime = 0;
-    nxt.style.opacity = 1;
-    nxt.play().catch(()=>{});
-    cur.style.opacity = 0;
-    front = 1 - front;
-    preloadNext();
-  }
+  const players = { a: makeFilmPlayer($('half-3a')), b: makeFilmPlayer($('half-3b')) };
 
   // grab the last frame of a finished part as a JPEG, to start the next part from
   function lastFrameOf(url){
@@ -1412,12 +1739,13 @@
     });
   }
 
-  async function makePart(startImage, r, k, sid){
-    const sc = r.scenes[k];
+
+  async function makePart(k, startImage, r, i, sid){
+    const sc = r.scenes[i];
     const res = await fetch('/api/generate-video', {
       method:'POST', headers: authHeaders({ 'Content-Type':'application/json' }),
-      body: JSON.stringify({ image: startImage, prompt: sc.motion, visitor: r.intent, duration: VIDEO_SECONDS,
-                             part: k, eeg: { state:r.state, dominant:sc.band, secondary:r.secondary } })
+      body: JSON.stringify({ image: startImage, prompt: sc.motion, visitor: r.intent, duration: VIDEO_SECONDS, aspect:'9:16',
+                             part: i, eeg: { state:r.state, dominant:sc.band, secondary:r.secondary } })
     });
     if(!res.ok) throw new Error(await describeFailure(res));
     const data = await res.json();
@@ -1427,82 +1755,64 @@
     return pr.cancelled ? null : pr.url;
   }
 
-  async function generateVideos(portraitUrl, r, sid){
-    static2.stop();
-    film = []; partIndex = 0; front = 0; layers = null;
-    const parts = r.scenes.length;
-    videoScreen.querySelectorAll('img.ghost-portrait, .video-count, video.reveal, video.film-layer').forEach(el=>el.remove());
+  async function generateFilm(k, portraitUrl, r, sid){
+    const half = $(`half-3${k}`), player = players[k];
+    statics['3'+k].stop();
+    player.clear();
     const ghost = document.createElement('img');
     ghost.className = 'ghost-portrait';
     ghost.src = portraitUrl;
-    videoScreen.insertBefore(ghost, videoScreen.firstChild);
-    const stopGlitch = runGlitch(videoScreen, led3, $('status-3'), 'animating');
+    half.insertBefore(ghost, half.firstChild);
+    const stopGlitch = runGlitch(half, led3, null, '');
     let glitching = true, lastWhy = '';
     let startImage = portraitUrl;
+    const parts = r.scenes.length;
 
-    for(let k=0; k<parts; k++){
+    for(let i=0; i<parts; i++){
       if(sid !== session) return;
       let url = null;
-      try{ url = await makePart(startImage, r, k, sid); }
-      catch(err){ lastWhy = err.message; console.error('[generate-video] part ' + (k+1), err.message); }
+      try{ url = await makePart(k, startImage, r, i, sid); }
+      catch(err){ lastWhy = err.message; console.error('[generate-video ' + k + '] part ' + (i+1), err.message); }
       if(sid !== session) return;
-      if(!url) break;                       // stop extending; keep what we have
-      film.push(url);
+      if(!url) break;
+      if(glitching){ glitching = false; stopGlitch(); half.querySelectorAll('img.ghost-portrait').forEach(el=>el.remove()); led3.classList.add('on'); }
+      player.add(url);
       logSession('video', url);
-
-      if(glitching){
-        // first part ready: replace the static with the film
-        glitching = false; stopGlitch();
-        videoScreen.querySelectorAll('img.ghost-portrait').forEach(el=>el.remove());
-        layers = [makeLayer(), makeLayer()];
-        layers[1].style.opacity = 0;
-        layers.forEach(l=> videoScreen.insertBefore(l, videoScreen.firstChild));
-        layers[0].dataset.src = url; layers[0].src = url; layers[0].play().catch(()=>{});
-        const tag = document.createElement('div'); tag.className = 'video-count';
-        videoScreen.appendChild(tag);
-        led3.classList.add('on');
-      } else {
-        preloadNext();
-      }
-      const more = k < parts - 1;
-      updateFilmTag(more);
-      $('cap-3').textContent = more ? `moving as: ${r.state} · the film is still growing`
-                                    : `moving as: ${r.state} · tap to finish`;
+      saveToArchive({ kind:'video', person:k, part: player.film.length, url });
+      const more = i < parts - 1;
+      player.tag(more);
       if(!more) break;
-
-      // the next part starts where this one ends
       const frame = await lastFrameOf(url);
-      if(!frame){ console.warn('[film] could not read the last frame, stopping at ' + film.length + ' part(s)'); break; }
+      if(!frame){ console.warn('[film ' + k + '] could not read the last frame, stopping at ' + player.film.length + ' part(s)'); break; }
       startImage = frame;
     }
-
     if(sid !== session) return;
-    if(!film.length){
+    if(!player.film.length){
       if(glitching) stopGlitch();
-      static2.start();
-      videoScreen.querySelectorAll('img.ghost-portrait, .video-count').forEach(el=>el.remove());
-      showStage(2);   // the portrait is still there to look at
-      flashError('the video isn\'t ready yet, the portrait is still here', lastWhy);
+      half.querySelectorAll('img.ghost-portrait').forEach(el=>el.remove());
+      statics['3'+k].start();
+      console.error('[generate-video ' + k + '] no film', lastWhy);
       return;
     }
-    updateFilmTag(false);
-    $('cap-3').textContent = `moving as: ${r.state} · tap to finish`;
+    player.tag(false);
   }
 
-  // tap stage 03 to reset for the next visitor (once the video is done).
+  // tap stage 03 to reset for the next pair (once the films are done).
   // double-tap forces a reset even while something is still generating.
   videoScreen.addEventListener('click', ()=>{ if(!busy) resetForNextVisitor(); });
   videoScreen.addEventListener('dblclick', resetForNextVisitor);
   function resetForNextVisitor(){
     session++;
     busy = false;
+    photos = {};
     [...activeGlitches].forEach(stop=>stop());
     studioScreen.querySelectorAll('img.reveal, .glitch-bar').forEach(el=>el.remove());
-    videoScreen.querySelectorAll('video.reveal, video.film-layer, img.ghost-portrait, .glitch-bar, .video-count').forEach(el=>el.remove());
-    film = []; layers = null;
+    PEOPLE.forEach(k=> players[k].clear());
+    videoScreen.querySelectorAll('.glitch-bar').forEach(el=>el.remove());
     [led2, led3].forEach(l=>l.classList.remove('on','pulse'));
+    $('cap-1').textContent = 'participant A: tap the camera to take your photo';
     $('cap-2').textContent = ''; $('cap-3').textContent = '';
-    static1.start(); static2.start();
+    allStatic(true);
     maxStage = 1;
     showStage(1);
   }

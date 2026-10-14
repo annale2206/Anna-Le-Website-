@@ -78,7 +78,9 @@ export default async function handler(req, res) {
   // visitor: the visitor's own words · duration: 4, 6 or 8 seconds
   // part: 0 for the first part of the film; later parts start from the last
   // frame of the part before (sent as a JPEG data URL), so the film continues.
-  const { image, prompt, visitor, duration, part } = req.body;
+  // aspect: '16:9' (wide) or '9:16' (tall, used by the two-person machine)
+  const { image, prompt, visitor, duration, part, aspect } = req.body;
+  const aspectRatio = ['16:9', '9:16'].includes(aspect) ? aspect : '16:9';
   const partNum = Math.max(0, Math.min(9, Number(part) || 0));
   const seconds = ALLOWED_DURATIONS.includes(Number(duration)) ? Number(duration) : DURATION;
   const words = cleanVisitorWords(visitor);
@@ -121,7 +123,7 @@ export default async function handler(req, res) {
       prompt: finalPrompt,
       duration: seconds,
       resolution: RESOLUTION,
-      aspect_ratio: '16:9',
+      aspect_ratio: aspectRatio,
       generate_audio: GENERATE_AUDIO,
       negative_prompt: 'distorted face, warped features, extra limbs, text, watermark'
     };

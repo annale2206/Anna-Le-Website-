@@ -31,6 +31,8 @@ const MODEL = 'google/nano-banana-2';
 //   ASPECT_RATIO: '4:3' matches the kiosk screen; '16:9' matches the video
 const RESOLUTION = '2K';
 const ASPECT_RATIO = '4:3';
+// the two-person machine asks for '3:4' (tall) so two portraits sit side by side
+const ALLOWED_ASPECTS = ['4:3', '3:4'];
 
 // Wraps the style prompt so the model edits THIS person rather than
 // inventing a stranger.
@@ -77,7 +79,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Use POST' });
   }
 
-  const { image, prompt, visitor } = req.body; // image: base64 selfie, prompt: style from the brain reading, visitor: their own words
+  const { image, prompt, visitor, aspect } = req.body;
+  const aspectRatio = ALLOWED_ASPECTS.includes(aspect) ? aspect : ASPECT_RATIO; // image: base64 selfie, prompt: style from the brain reading, visitor: their own words
 
   if (!image) {
     return res.status(400).json({ error: 'No image provided' });
@@ -98,7 +101,7 @@ export default async function handler(req, res) {
       prompt: buildPrompt(style, cleanVisitorWords(visitor)),
       image_input: [image],
       resolution: RESOLUTION,
-      aspect_ratio: ASPECT_RATIO,
+      aspect_ratio: aspectRatio,
       output_format: 'jpg'
     };
 
