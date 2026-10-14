@@ -281,6 +281,7 @@
   .half.b{ right:0; border-left:1px solid #1e2a2e; }
   .half-tag{ position:absolute; z-index:5; top:8px; left:8px; font-size:11px; font-weight:700; letter-spacing:.12em; color:#0a0d10; background:var(--pc); padding:1px 8px; border-radius:2px; }
   .half .video-count{ right:8px; }
+  .film-error{ position:absolute; z-index:6; left:8px; right:8px; bottom:8px; font-size:11px; line-height:1.5; color:#e6eef0; background:rgba(10,13,16,.85); border:1px solid #ff3d5a; padding:6px 8px; word-break:break-word; }
 
   /* scan screen, two people */
   .pair-cols{ display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-top:8px; }
@@ -632,6 +633,8 @@
   }
   // set SHOW_ERROR_DETAILS to false before exhibiting, so visitors only see the poetic line
   const SHOW_ERROR_DETAILS = false;
+  // while testing, show WHY a film failed on its half of the screen (set to false for exhibitions)
+  const SHOW_FILM_REASON = true;
   function flashError(msg, detail){
     errorText.textContent = msg;
     if(detail && SHOW_ERROR_DETAILS){
@@ -1759,6 +1762,7 @@
     const half = $(`half-3${k}`), player = players[k];
     statics['3'+k].stop();
     player.clear();
+    half.querySelectorAll('.film-error').forEach(el=>el.remove());
     const ghost = document.createElement('img');
     ghost.className = 'ghost-portrait';
     ghost.src = portraitUrl;
@@ -1772,7 +1776,14 @@
       if(sid !== session) return;
       let url = null;
       try{ url = await makePart(k, startImage, r, i, sid); }
-      catch(err){ lastWhy = err.message; console.error('[generate-video ' + k + '] part ' + (i+1), err.message); }
+      catch(err){
+        lastWhy = err.message; console.error('[generate-video ' + k + '] part ' + (i+1), err.message);
+        // try once more without the visitor's words (the video model sometimes refuses a prompt)
+        if(sid === session){
+          try{ url = await makePart(k, startImage, { ...r, intent:'' }, i, sid); }
+          catch(err2){ lastWhy = err2.message; console.error('[generate-video ' + k + '] retry', err2.message); }
+        }
+      }
       if(sid !== session) return;
       if(!url) break;
       if(glitching){ glitching = false; stopGlitch(); half.querySelectorAll('img.ghost-portrait').forEach(el=>el.remove()); led3.classList.add('on'); }
@@ -1792,6 +1803,11 @@
       half.querySelectorAll('img.ghost-portrait').forEach(el=>el.remove());
       statics['3'+k].start();
       console.error('[generate-video ' + k + '] no film', lastWhy);
+      // say on screen which film failed and why, so it can be fixed
+      const note = document.createElement('div');
+      note.className = 'film-error';
+      note.textContent = `${k.toUpperCase()}: this film could not be made` + (SHOW_FILM_REASON ? ` · ${String(lastWhy).slice(0, 220)}` : '');
+      half.appendChild(note);
       return;
     }
     player.tag(false);
@@ -1808,6 +1824,7 @@
     [...activeGlitches].forEach(stop=>stop());
     studioScreen.querySelectorAll('img.reveal, .glitch-bar').forEach(el=>el.remove());
     PEOPLE.forEach(k=> players[k].clear());
+    videoScreen.querySelectorAll('.film-error').forEach(el=>el.remove());
     videoScreen.querySelectorAll('.glitch-bar').forEach(el=>el.remove());
     [led2, led3].forEach(l=>l.classList.remove('on','pulse'));
     $('cap-1').textContent = 'participant A: tap the camera to take your photo';
