@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>anna_le: persona video machine</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .hero-sub{ font-family:var(--mono); color:var(--sky); font-size:1.15rem; margin:-4px 0 26px; }
+
+  /* lock screen */
+  .lock{ max-width:340px; margin:40px auto; text-align:center; }
+  .lock p{ font-family:var(--mono); font-size:1.2rem; color:var(--green-dim); margin:0 auto 14px; }
+  .lock input{
+    font-family:var(--mono); font-size:2rem; letter-spacing:.5em; text-align:center;
+    width:200px; padding:8px; background:#1a2531; color:var(--green);
+    border:2px solid var(--green-dim); outline:none;
+  }
+  .lock input.err{ border-color:var(--pink); animation:shake .35s; }
+  @keyframes shake{ 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+
+  .machine{ display:grid; grid-template-columns:1fr 1fr; gap:34px; align-items:start; }
+  @media (max-width:860px){ .machine{ grid-template-columns:1fr; } }
+
+  .panel{ background:#1a2531; border:2px solid var(--green-dim); box-shadow:6px 6px 0 rgba(0,0,0,.4); padding:18px; }
+  .panel h2{ font-size:1.05rem; margin:0 0 12px; }
+  .step{ font-family:var(--mono); color:var(--green-dim); font-size:1.05rem; margin-right:6px; }
+
+  /* collection */
+  .collection{ display:grid; grid-template-columns:repeat(auto-fill, minmax(78px,1fr)); gap:10px; }
+  .thumb{
+    position:relative; aspect-ratio:1/1; padding:0; border:2px solid transparent;
+    background:var(--purple-deep); overflow:hidden; cursor:pointer;
+  }
+  .thumb img{ width:100%; height:100%; object-fit:cover; }
+  .thumb:hover{ border-color:var(--sky); }
+  .thumb.on{ border-color:var(--pink); box-shadow:0 0 0 2px var(--pink); }
+  .thumb.add{
+    display:flex; align-items:center; justify-content:center; flex-direction:column;
+    font-family:var(--mono); color:var(--green); font-size:1rem; border:2px dashed var(--green-dim);
+  }
+  .thumb.add b{ font-size:2rem; line-height:1; }
+  .drop-hint{ font-family:var(--mono); color:var(--green-dim); font-size:.95rem; margin-top:8px; }
+  .collection.drag{ outline:2px dashed var(--pink); outline-offset:6px; }
+
+  .preview{ margin-top:16px; display:flex; gap:14px; align-items:flex-start; }
+  .preview img{ width:120px; aspect-ratio:3/4; object-fit:cover; border:2px solid var(--pink); }
+  .preview .meta{ font-family:var(--mono); color:var(--cream); font-size:1.05rem; }
+
+  label.lbl{ display:block; font-family:var(--mono); color:var(--sky); font-size:1.1rem; margin:16px 0 6px; }
+  textarea, select{
+    width:100%; background:var(--bg); color:var(--cream); border:2px solid var(--green-dim);
+    font-family:var(--body); font-size:1rem; padding:10px; outline:none;
+  }
+  textarea{ min-height:84px; resize:vertical; }
+  textarea:focus, select:focus{ border-color:var(--green); }
+  .row{ display:flex; gap:14px; flex-wrap:wrap; }
+  .row > div{ flex:1; min-width:130px; }
+  .actions{ display:flex; gap:12px; flex-wrap:wrap; margin-top:18px; }
+  button.btn{ font:inherit; font-family:var(--mono); font-size:1.15rem; cursor:pointer; }
+  button.btn:disabled{ opacity:.45; transform:none; cursor:not-allowed; }
+  .btn.pink{ background:var(--pink); color:#fff; }
+
+  /* output */
+  .screen{
+    position:relative; width:100%; aspect-ratio:16/9; background:#000;
+    border:2px solid var(--green-dim); display:flex; align-items:center; justify-content:center; overflow:hidden;
+  }
+  .screen.tall{ aspect-ratio:9/16; max-height:70vh; margin:0 auto; width:auto; }
+  .screen video{ width:100%; height:100%; object-fit:contain; display:block; }
+  .screen .idle{ font-family:var(--mono); color:var(--green-dim); font-size:1.2rem; text-align:center; padding:20px; }
+  .status{ font-family:var(--mono); font-size:1.1rem; color:var(--yellow); min-height:1.5em; margin-top:10px; }
+  .status.err{ color:var(--pink); }
+  .bar{ height:6px; background:var(--bg); margin-top:6px; overflow:hidden; display:none; }
+  .bar.on{ display:block; }
+  .bar i{ display:block; height:100%; width:30%; background:linear-gradient(90deg,var(--green),var(--pink)); animation:scan 1.4s linear infinite; }
+  @keyframes scan{ from{ transform:translateX(-100%);} to{ transform:translateX(340%);} }
+
+  .clips{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+  .clip{
+    font-family:var(--mono); font-size:1rem; background:var(--bg); color:var(--cream);
+    border:2px solid var(--green-dim); padding:6px 10px; cursor:pointer; display:flex; gap:8px; align-items:center;
+  }
+  .clip.on{ border-color:var(--pink); color:var(--pink); }
+  .clip a{ color:var(--sky); text-decoration:none; }
+  .total{ font-family:var(--mono); color:var(--green-dim); font-size:1rem; margin-top:8px; }
+</style>
+</head>
+<body data-petals="4">
+
+<header class="nav">
+  <a class="logo" href="index.html">anna<span>_</span>le</a>
+</header>
+
+<main class="page">
+
+  <div class="eyebrow">
+    <h1>persona video machine</h1>
+    <span class="path">~/anna/art-practice/interactive/persona-video</span>
+  </div>
+  <div class="hero-sub">choose a persona, give it a motion, let it move (silent, Veo 3)</div>
+
+  <!-- LOCK: same 4-digit access code as the identity machine -->
+  <section class="lock" id="lock">
+    <p>enter the access code</p>
+    <input id="code" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="access code">
+  </section>
+
+  <section class="machine" id="machine" hidden>
+
+    <!-- LEFT: collection + controls -->
+    <div class="panel">
+      <h2><span class="step">01</span>persona collection</h2>
+      <div class="collection" id="collection"></div>
+      <input type="file" id="file" accept="image/*" hidden>
+      <div class="drop-hint">click + or drop an image here to add your own</div>
+
+      <div class="preview" id="preview" hidden>
+        <img id="preview-img" alt="selected persona">
+        <div class="meta" id="preview-meta"></div>
+      </div>
+
+      <h2 style="margin-top:24px"><span class="step">02</span>motion</h2>
+      <label class="lbl" for="prompt">what does the persona do?</label>
+      <textarea id="prompt" placeholder="slow head turn toward the camera, hair moving in a soft wind, gentle breathing, dreamy pastel light"></textarea>
+
+      <div class="row">
+        <div>
+          <label class="lbl" for="duration">length</label>
+          <select id="duration">
+            <option value="4">4 seconds</option>
+            <option value="6">6 seconds</option>
+            <option value="8" selected>8 seconds</option>
+          </select>
+        </div>
+        <div>
+          <label class="lbl" for="aspect">frame</label>
+          <select id="aspect">
+            <option value="16:9">wide 16:9</option>
+            <option value="9:16">tall 9:16</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="go" disabled>generate video</button>
+      </div>
+    </div>
+
+    <!-- RIGHT: output + extend -->
+    <div class="panel">
+      <h2><span class="step">03</span>film</h2>
+      <div class="screen" id="screen">
+        <div class="idle" id="idle">pick a persona and press generate</div>
+        <video id="player" muted playsinline controls hidden></video>
+      </div>
+      <div class="bar" id="bar"><i></i></div>
+      <div class="status" id="status"></div>
+
+      <div class="clips" id="clips"></div>
+      <div class="total" id="total"></div>
+
+      <div id="extend-box" hidden>
+        <label class="lbl" for="extend-prompt">extend: what happens next? (leave empty to keep the same motion)</label>
+        <textarea id="extend-prompt" placeholder="she turns away and walks into the fog"></textarea>
+        <div class="actions">
+          <button class="btn pink" id="extend">+ extend</button>
+          <button class="btn btn-outline" id="playall">play whole film</button>
+          <button class="btn btn-outline" id="restart">start over</button>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+</main>
+
+<footer class="site-footer">© anna_le, built from static, thread, and code</footer>
+
+<script src="main.js" defer></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+
+  // ---- the persona collection (files in the site root) ----
+  // add new images here as you make them
+  const PERSONAS = ['persona.webp'].concat(
+    Array.from({ length: 14 }, (_, i) => 'persona' + (i + 1) + '.webp')
+  );
+
+  const MAX_PARTS = 10;          // the server allows parts 0–9
+  let token = '';
+  let selected = null;           // { src, name }
+  let clips = [];                // [{ url, seconds, prompt }]
+  let current = -1;
+  let busy = false;
+  let lastPrompt = '';
+
+  // ---------------- access code ----------------
+  try { token = sessionStorage.getItem('pvm-token') || ''; } catch (e) {}
+  if (token) openMachine();
+
+  $('code').addEventListener('input', async e => {
+    const code = e.target.value.replace(/\D/g, '').slice(0, 4);
+    e.target.value = code;
+    if (code.length < 4) return;
+    try {
+      const res = await fetch('/api/unlock', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code })
+      });
+      const d = res.ok ? await res.json() : {};
+      if (d.token) {
+        token = d.token;
+        try { sessionStorage.setItem('pvm-token', token); } catch (e) {}
+        openMachine();
+        return;
+      }
+    } catch (err) {}
+    e.target.classList.add('err');
+    setTimeout(() => { e.target.classList.remove('err'); e.target.value = ''; }, 450);
+  });
+  $('code').focus();
+
+  function openMachine() {
+    $('lock').hidden = true;
+    $('machine').hidden = false;
+    buildCollection();
+  }
+  const auth = extra => ({ ...(extra || {}), 'x-im-token': token });
+
+  // ---------------- collection ----------------
+  function buildCollection() {
+    const grid = $('collection');
+    grid.innerHTML = '';
+    const add = document.createElement('button');
+    add.className = 'thumb add'; add.type = 'button';
+    add.innerHTML = '<b>+</b>add';
+    add.onclick = () => $('file').click();
+    grid.appendChild(add);
+    PERSONAS.forEach(src => addThumb(src, src.replace(/\.\w+$/, '')));
+  }
+
+  function addThumb(src, name, prepend) {
+    const b = document.createElement('button');
+    b.className = 'thumb'; b.type = 'button'; b.title = name;
+    b.innerHTML = '<img alt="" loading="lazy">';
+    b.querySelector('img').src = src;
+    b.onclick = () => select(b, src, name);
+    const grid = $('collection');
+    if (prepend) grid.insertBefore(b, grid.children[1]); else grid.appendChild(b);
+    return b;
+  }
+
+  function select(btn, src, name) {
+    document.querySelectorAll('.thumb.on').forEach(t => t.classList.remove('on'));
+    btn.classList.add('on');
+    selected = { src, name };
+    $('preview').hidden = false;
+    $('preview-img').src = src;
+    $('preview-meta').textContent = name;
+    $('go').disabled = busy;
+  }
+
+  // uploading your own image
+  function addFile(f) {
+    if (!f || !f.type.startsWith('image/')) return;
+    const r = new FileReader();
+    r.onload = () => {
+      const name = f.name.replace(/\.\w+$/, '').slice(0, 40) || 'my image';
+      const b = addThumb(r.result, name, true);
+      select(b, r.result, name);
+    };
+    r.readAsDataURL(f);
+  }
+  $('file').addEventListener('change', e => { addFile(e.target.files[0]); e.target.value = ''; });
+  const grid = $('collection');
+  grid.addEventListener('dragover', e => { e.preventDefault(); grid.classList.add('drag'); });
+  grid.addEventListener('dragleave', () => grid.classList.remove('drag'));
+  grid.addEventListener('drop', e => {
+    e.preventDefault(); grid.classList.remove('drag');
+    addFile(e.dataTransfer.files[0]);
+  });
+
+  // the API wants a JPEG/PNG (webp is not accepted), under ~3MB → redraw as JPEG
+  function toJpeg(src, maxSide = 1280) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const s = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.naturalWidth * s);
+        c.height = Math.round(img.naturalHeight * s);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        resolve(c.toDataURL('image/jpeg', 0.9));
+      };
+      img.onerror = () => reject(new Error('could not read that image'));
+      img.src = src;
+    });
+  }
+
+  // ---------------- generation ----------------
+  function setStatus(msg, isErr) {
+    $('status').textContent = msg || '';
+    $('status').classList.toggle('err', !!isErr);
+  }
+  function setBusy(on) {
+    busy = on;
+    $('bar').classList.toggle('on', on);
+    $('go').disabled = on || !selected;
+    $('extend').disabled = on || clips.length >= MAX_PARTS;
+    $('playall').disabled = on;
+    $('restart').disabled = on;
+  }
+
+  async function startJob(image, prompt, part) {
+    const res = await fetch('/api/generate-video', {
+      method: 'POST', headers: auth({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({
+        image, prompt, part,
+        duration: Number($('duration').value),
+        aspect: $('aspect').value
+      })
+    });
+    if (res.status === 401) { try { sessionStorage.removeItem('pvm-token'); } catch (e) {} throw new Error('access pass expired, reload and enter the code again'); }
+    if (!res.ok) throw new Error(res.status + ' ' + (await res.text()).slice(0, 200));
+    const d = await res.json();
+    if (!d.id) throw new Error(d.error || 'no job id returned');
+    return d.id;
+  }
+
+  async function waitFor(id) {
+    const t0 = Date.now();
+    while (Date.now() - t0 < 10 * 60 * 1000) {
+      await new Promise(r => setTimeout(r, 3000));
+      setStatus('veo is dreaming... ' + Math.round((Date.now() - t0) / 1000) + 's');
+      let res;
+      try { res = await fetch('/api/prediction?id=' + encodeURIComponent(id), { cache: 'no-store', headers: auth() }); }
+      catch (e) { continue; }
+      if (!res.ok) throw new Error(res.status + ' while checking the job');
+      const p = await res.json();
+      if (p.status === 'succeeded' && p.output) return p.output;
+      if (p.status === 'failed' || p.status === 'canceled') throw new Error('veo ' + p.status + (p.error ? ': ' + String(p.error).slice(0, 200) : ''));
+    }
+    throw new Error('gave up after 10 minutes');
+  }
+
+  async function makeClip(image, prompt) {
+    setBusy(true);
+    setStatus('sending to veo 3...');
+    try {
+      const id = await startJob(image, prompt, clips.length);
+      const url = await waitFor(id);
+      clips.push({ url, prompt, seconds: Number($('duration').value) });
+      renderClips();
+      play(clips.length - 1);
+      setStatus('done. extend it, or play the whole film.');
+      $('extend-box').hidden = false;
+    } catch (err) {
+      setStatus(err.message, true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  $('go').addEventListener('click', async () => {
+    if (!selected || busy) return;
+    if (clips.length && !confirm('start a new film? the current clips will be cleared.')) return;
+    clips = []; renderClips();
+    lastPrompt = $('prompt').value.trim();
+    $('screen').classList.toggle('tall', $('aspect').value === '9:16');
+    try {
+      const jpeg = await toJpeg(selected.src);
+      await makeClip(jpeg, lastPrompt);
+    } catch (err) { setStatus(err.message, true); }
+  });
+
+  // ---------------- extend ----------------
+  // grab the last frame of the newest clip and use it as the next clip's first frame
+  function lastFrameOf(url) {
+    return new Promise(resolve => {
+      const v = document.createElement('video');
+      v.crossOrigin = 'anonymous'; v.muted = true; v.preload = 'auto'; v.src = url;
+      const timer = setTimeout(() => resolve(null), 20000);
+      v.addEventListener('error', () => { clearTimeout(timer); resolve(null); });
+      v.addEventListener('loadedmetadata', () => { v.currentTime = Math.max(0, v.duration - 0.05); });
+      v.addEventListener('seeked', () => {
+        clearTimeout(timer);
+        try {
+          const c = document.createElement('canvas');
+          c.width = v.videoWidth; c.height = v.videoHeight;
+          c.getContext('2d').drawImage(v, 0, 0);
+          resolve(c.toDataURL('image/jpeg', 0.9));
+        } catch (e) { resolve(null); }
+      }, { once: true });
+    });
+  }
+
+  $('extend').addEventListener('click', async () => {
+    if (busy || !clips.length) return;
+    if (clips.length >= MAX_PARTS) { setStatus('the film is at its ' + MAX_PARTS + '-part limit'); return; }
+    setStatus('reading the last frame...');
+    const frame = await lastFrameOf(clips[clips.length - 1].url);
+    if (!frame) { setStatus('could not read the last frame of the video', true); return; }
+    const next = $('extend-prompt').value.trim();
+    if (next) lastPrompt = next;
+    await makeClip(frame, lastPrompt);
+    $('extend-prompt').value = '';
+  });
+
+  // ---------------- playback ----------------
+  const player = $('player');
+  let playingAll = false;
+
+  function play(i) {
+    current = i;
+    $('idle').hidden = true;
+    player.hidden = false;
+    player.src = clips[i].url;
+    player.play().catch(() => {});
+    renderClips();
+  }
+  player.addEventListener('ended', () => {
+    if (playingAll && current < clips.length - 1) play(current + 1);
+    else playingAll = false;
+  });
+  $('playall').addEventListener('click', () => { if (clips.length) { playingAll = true; play(0); } });
+  $('restart').addEventListener('click', () => {
+    if (busy || !confirm('clear this film and start over?')) return;
+    clips = []; current = -1; renderClips();
+    player.removeAttribute('src'); player.hidden = true; $('idle').hidden = false;
+    $('extend-box').hidden = true; setStatus('');
+  });
+
+  function renderClips() {
+    const box = $('clips');
+    box.innerHTML = '';
+    clips.forEach((c, i) => {
+      const el = document.createElement('div');
+      el.className = 'clip' + (i === current ? ' on' : '');
+      el.title = c.prompt || 'default motion';
+      el.innerHTML = '<span>part ' + (i + 1) + '</span><a download target="_blank" rel="noopener">↓</a>';
+      el.querySelector('a').href = c.url;
+      el.querySelector('a').onclick = e => e.stopPropagation();
+      el.onclick = () => { playingAll = false; play(i); };
+      box.appendChild(el);
+    });
+    const secs = clips.reduce((s, c) => s + c.seconds, 0);
+    $('total').textContent = clips.length ? clips.length + ' part(s) · ' + secs + 's total · no sound' : '';
+    $('extend').disabled = busy || clips.length >= MAX_PARTS;
+  }
+})();
+</script>
+</body>
+</html>
