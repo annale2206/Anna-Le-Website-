@@ -6,279 +6,239 @@
 <title>anna_le: crochet persona</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  .hero-sub{ font-family:var(--mono); color:var(--sky); font-size:1.15rem; margin:-4px 0 22px; }
+  html, body{ height:100%; }
+  [hidden]{ display:none !important; }
+  body{ overflow:hidden; }
+  header.nav{ padding:12px 24px; }
 
-  /* ================= notebook ================= */
-  .book{ position:relative; margin:10px 0 40px; perspective:1800px; }
-  .nb-tabs{ display:flex; gap:6px; flex-wrap:wrap; padding-left:46px; }
-  .nb-tab{
-    font-family:var(--mono); font-size:1.1rem; color:#9fb3ab; background:#111922;
-    border:1.5px solid #2c3a46; border-bottom:0; border-radius:10px 10px 0 0;
-    padding:8px 18px 7px; cursor:pointer; position:relative; top:1.5px;
+  /* ================= the machine ================= */
+  .lm{
+    height:calc(100vh - 56px); padding:0 70px 16px 16px;
+    display:flex; justify-content:center; align-items:stretch;
   }
-  .nb-tab:hover{ color:var(--cream); }
-  .nb-tab.on{ color:var(--green); background:#0f1720; z-index:2; }
-  .nb-tab .no{ color:var(--pink); margin-right:6px; }
-  .nb-tab.locked::after{ content:' ⚿'; color:var(--yellow); }
-
-  .page-wrap{
-    position:relative; border:1.5px solid #2c3a46; border-radius:4px 12px 12px 12px;
-    background:#0f1720;
-    background-image:
-      linear-gradient(90deg, transparent 72px, rgba(255,61,154,.35) 72px 73.5px, transparent 73.5px),
-      repeating-linear-gradient(#0f1720 0 31px, #1a2531 31px 32px);
-    padding:28px 28px 46px 98px; min-height:560px;
-    box-shadow:8px 8px 0 rgba(0,0,0,.35);
-  }
-  /* spiral binding */
-  .page-wrap::before{
-    content:''; position:absolute; left:14px; top:18px; bottom:18px; width:34px;
-    background:radial-gradient(circle at 17px 50%, #0a0f15 6px, #8a7aa8 6.5px 8.5px, transparent 9px) 0 0/34px 34px repeat-y;
-  }
-  .sheet{ display:none; transform-origin:left center; }
-  .sheet.on{ display:block; animation:turn .45s ease; }
-  @keyframes turn{ from{ transform:rotateY(-24deg); opacity:0; } to{ transform:none; opacity:1; } }
-  .page-no{ position:absolute; right:22px; bottom:12px; font-family:var(--mono); color:var(--green-dim); font-size:1rem; }
-  .sheet h2{ font-size:1.15rem; margin:0 0 4px; }
-  .hand{ font-family:var(--mono); color:#9fb3ab; font-size:1.15rem; margin:0 0 20px; max-width:62ch; line-height:32px; }
-
-  @media (max-width:700px){
-    .nb-tabs{ padding-left:0; }
-    .nb-tab{ padding:7px 11px 6px; font-size:1rem; }
-    .page-wrap{ padding:22px 14px 44px 52px; background-image:
-      linear-gradient(90deg, transparent 40px, rgba(255,61,154,.35) 40px 41.5px, transparent 41.5px),
-      repeating-linear-gradient(#0f1720 0 31px, #1a2531 31px 32px); }
-    .page-wrap::before{ left:4px; width:28px; }
+  .cabinet{
+    position:relative; width:min(1100px, 100%);
+    display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:auto auto minmax(0,1fr) auto; gap:12px;
+    padding:14px 18px 16px;
+    background:linear-gradient(160deg, #ff7cc0 0%, #ff3d9a 35%, #8a5cf6 100%);
+    border:5px solid #dfe6f2; border-radius:34px 34px 20px 20px;
+    box-shadow: inset 0 0 0 3px rgba(255,255,255,.35), 10px 10px 0 rgba(0,0,0,.45);
   }
 
-  /* ================= page i: collection ================= */
-  .collection{ display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:28px 22px; }
-  .polaroid{
-    position:relative; background:#eef4ee; padding:8px 8px 30px; border:0; cursor:pointer;
-    box-shadow:4px 5px 0 rgba(0,0,0,.45); transform:rotate(var(--r,0deg));
-    transition:transform .18s ease; text-align:center;
+  /* marquee with chasing bulbs */
+  .marquee{
+    position:relative; text-align:center; padding:8px 10px;
+    background:#2a1750; border-radius:18px; border:3px solid #ffd23f;
   }
-  .polaroid:nth-child(4n+1){ --r:-2.5deg; } .polaroid:nth-child(4n+2){ --r:1.5deg; }
-  .polaroid:nth-child(4n+3){ --r:-1deg; }   .polaroid:nth-child(4n+4){ --r:2.5deg; }
-  .polaroid:hover{ transform:rotate(0) translateY(-5px) scale(1.03); }
-  .polaroid::before{   /* washi tape */
-    content:''; position:absolute; top:-10px; left:50%; width:58px; height:18px; margin-left:-29px;
-    background:rgba(255,61,154,.55); transform:rotate(-4deg);
+  .marquee::before, .marquee::after{
+    content:''; position:absolute; left:10px; right:10px; height:8px;
+    background:radial-gradient(circle, #ffd23f 3px, transparent 3.6px) 0 50%/18px 8px repeat-x;
+    animation:chase .5s steps(2) infinite;
   }
-  .polaroid:nth-child(3n)::before{ background:rgba(127,212,255,.55); }
-  .polaroid:nth-child(3n+1)::before{ background:rgba(157,255,158,.5); }
-  .polaroid img{ width:100%; aspect-ratio:3/4; object-fit:contain; background:#fff; }
-  .polaroid span{ position:absolute; left:0; right:0; bottom:5px; font-family:var(--mono); color:#2a1750; font-size:1.05rem; }
+  .marquee::before{ top:3px; } .marquee::after{ bottom:3px; animation-direction:reverse; }
+  @keyframes chase{ to{ background-position:18px 50%; } }
+  .marquee h1{
+    margin:0; font-family:var(--display); font-size:clamp(1.1rem, 2.6vw, 1.8rem); letter-spacing:.06em;
+    color:#fff; text-shadow:0 0 8px #ff3d9a, 3px 3px 0 #ff3d9a;
+  }
 
-  /* ================= page ii: one persona (spread) ================= */
-  .spread{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:34px; align-items:start; }
-  @media (max-width:860px){ .spread{ grid-template-columns:1fr; } }
-  .spread .big{ background:#eef4ee; padding:10px 10px 40px; box-shadow:5px 6px 0 rgba(0,0,0,.45); transform:rotate(-1.5deg); position:relative; }
-  .spread .big img{ width:100%; aspect-ratio:3/4; object-fit:contain; background:#fff; }
-  .spread .big span{ position:absolute; left:0; right:0; bottom:8px; text-align:center; font-family:var(--mono); color:#2a1750; font-size:1.25rem; }
-  .notes h3{ font-size:1.3rem; color:var(--pink); margin:0 0 6px; }
-  .notes .n{ font-family:var(--mono); color:var(--cream); font-size:1.2rem; line-height:32px; margin:0 0 18px; }
-  .pager{ display:flex; justify-content:space-between; gap:10px; margin-top:26px; flex-wrap:wrap; }
-
-  /* ================= buttons / inputs ================= */
-  button.btn{ font-family:var(--mono); font-size:1.15rem; cursor:pointer; }
-  button.btn:disabled{ opacity:.45; transform:none; cursor:not-allowed; }
-  .btn.pink{ background:var(--pink); color:#fff; }
-  .link{ background:none; border:0; color:var(--sky); font-family:var(--mono); font-size:1.1rem; cursor:pointer; padding:0; }
-  .link:hover{ color:var(--green); }
-
-  label.lbl{ display:block; font-family:var(--mono); color:var(--sky); font-size:1.15rem; margin:14px 0 4px; }
-  textarea, select{
-    width:100%; background:rgba(13,20,27,.85); color:var(--cream); border:1.5px solid #2c3a46;
-    font-family:var(--body); font-size:1rem; padding:10px; outline:none;
+  /* glass window with the persona capsules */
+  .window{
+    position:relative; min-width:0; background:rgba(230,245,255,.18);
+    border:3px solid rgba(255,255,255,.75); border-radius:18px;
+    box-shadow: inset 0 0 30px rgba(255,255,255,.25);
+    padding:10px 10px 8px;
   }
-  textarea{ min-height:96px; resize:vertical; line-height:1.5; }
-  textarea:focus, select:focus{ border-color:var(--green); }
-  .row{ display:flex; gap:14px; flex-wrap:wrap; }
-  .row > div{ flex:1; min-width:130px; }
-  .actions{ display:flex; gap:12px 18px; flex-wrap:wrap; margin-top:20px; align-items:center; }
+  .window::after{   /* glass shine */
+    content:''; position:absolute; inset:6px auto 6px 14px; width:40px; border-radius:20px;
+    background:linear-gradient(90deg, rgba(255,255,255,.35), transparent); pointer-events:none;
+  }
+  .reel{ display:flex; gap:10px; overflow-x:auto; padding:4px 2px 8px; scroll-behavior:smooth; }
+  .reel::-webkit-scrollbar{ height:6px; }
+  .reel::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.6); border-radius:3px; }
+  .cap{
+    flex:0 0 auto; position:relative; width:66px; height:96px; padding:0; cursor:pointer;
+    border-radius:33px; border:3px solid #fff; background:#fff; overflow:hidden;
+    box-shadow:0 3px 0 rgba(0,0,0,.25); transition:transform .12s ease;
+  }
+  .cap img{ width:100%; height:100%; object-fit:contain; }
+  .cap::after{   /* plastic capsule shine */
+    content:''; position:absolute; inset:0; border-radius:30px;
+    background:linear-gradient(120deg, rgba(255,255,255,.65) 0 18%, transparent 30%),
+               linear-gradient(transparent 48%, rgba(255,61,154,.18) 48% 52%, transparent 52%);
+    pointer-events:none;
+  }
+  .cap:hover{ transform:translateY(-3px); }
+  .cap.on{ border-color:#ffd23f; box-shadow:0 0 0 3px #ffd23f, 0 0 18px #ffd23f; transform:translateY(-3px); }
+  .cap.flash{ border-color:#9dff9e; box-shadow:0 0 0 3px #9dff9e; }
+  .cap.add{ display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.25); border-style:dashed; color:#fff; font-family:var(--display); font-size:1.6rem; }
+  .cap.add::after{ display:none; }
 
-  .chosen{ display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
-  .chosen img{ width:96px; aspect-ratio:3/4; object-fit:cover; border:6px solid #eef4ee; border-bottom-width:18px; transform:rotate(-3deg); box-shadow:3px 4px 0 rgba(0,0,0,.4); }
-  .chosen .meta{ font-family:var(--mono); font-size:1.2rem; color:var(--cream); }
-  .chosen .empty{ font-family:var(--mono); color:var(--green-dim); font-size:1.15rem; }
+  /* two displays: chosen persona → video */
+  .stage{ display:grid; grid-template-columns:minmax(0,1fr) 54px minmax(0,1.6fr); gap:10px; min-height:0; }
+  .display{
+    position:relative; min-height:0; border-radius:16px; overflow:hidden;
+    border:4px solid #dfe6f2; box-shadow:inset 0 0 0 3px #2a1750;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .display.chosen{ background:#fff; }
+  .display.chosen img{ width:100%; height:100%; object-fit:contain; }
+  .display.screen{ background:#05070a; }
+  .display.screen video{ width:100%; height:100%; object-fit:contain; display:block; }
+  .display .idle{ font-family:var(--mono); color:#7a8a99; font-size:1.25rem; text-align:center; padding:12px; }
+  .display.screen .idle{ color:#5fae6a; }
+  .display.screen.busy::before{   /* scanning while generating */
+    content:''; position:absolute; left:0; right:0; height:40%; top:-40%;
+    background:linear-gradient(transparent, rgba(157,255,158,.18), transparent); animation:scanv 1.6s linear infinite;
+  }
+  @keyframes scanv{ to{ top:100%; } }
+  .arrow{ display:flex; align-items:center; justify-content:center; font-family:var(--display); color:#ffd23f; font-size:1.8rem; text-shadow:2px 2px 0 #2a1750; }
 
-  /* ================= access code (only for generating) ================= */
-  .gate{
-    position:fixed; inset:0; z-index:60; background:rgba(8,12,17,.78);
-    display:flex; align-items:center; justify-content:center; padding:16px;
+  /* control panel */
+  .panel{
+    background:#2a1750; border-radius:16px; border:3px solid #dfe6f2; padding:10px 12px;
+    display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:12px; align-items:center;
   }
-  .gate[hidden]{ display:none; }
-  .gate-card{
-    background:#0f1720; border:1.5px solid #2c3a46; padding:24px; width:min(320px,100%); text-align:center;
-    background-image:repeating-linear-gradient(#0f1720 0 31px, #1a2531 31px 32px);
-    box-shadow:8px 8px 0 rgba(0,0,0,.4);
+  .panel textarea{
+    width:100%; height:58px; resize:none; background:#0d141b; color:var(--cream);
+    border:2px solid #5fae6a; border-radius:10px; padding:8px 10px; font-family:var(--body); font-size:.95rem; outline:none;
   }
-  .gate-card p{ font-family:var(--mono); color:var(--cream); font-size:1.2rem; margin:0 auto 12px; }
-  .gate-card input{
-    font-family:var(--mono); font-size:2rem; letter-spacing:.5em; text-align:center;
-    width:190px; padding:6px; background:#0d141b; color:var(--green); border:2px solid var(--green-dim); outline:none;
+  .panel textarea:focus{ border-color:#9dff9e; }
+  .knobs{ display:flex; flex-direction:column; gap:6px; }
+  .knobs select{
+    background:#0d141b; color:var(--cream); border:2px solid #7fd4ff; border-radius:8px;
+    font-family:var(--mono); font-size:1rem; padding:3px 6px; outline:none;
   }
-  .gate-card input.err{ border-color:var(--pink); animation:shake .35s; }
-  @keyframes shake{ 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
-  .gate-card .link{ margin-top:14px; }
+  .big{
+    width:86px; height:86px; border-radius:50%; cursor:pointer; position:relative;
+    border:5px solid #dfe6f2; background:radial-gradient(circle at 35% 30%, #ff9fd0, #ff3d9a 55%, #b5106a);
+    box-shadow:0 6px 0 #7a0b48, 0 10px 14px rgba(0,0,0,.35);
+    font-family:var(--display); color:#fff; font-size:.85rem; line-height:1.1; text-shadow:1px 1px 0 #7a0b48;
+    transition:transform .08s ease, box-shadow .08s ease;
+  }
+  .big:active:not(:disabled){ transform:translateY(5px); box-shadow:0 1px 0 #7a0b48; }
+  .big:disabled{ filter:grayscale(.6); opacity:.6; cursor:not-allowed; }
+  .big.ext{ background:radial-gradient(circle at 35% 30%, #c9ffca, #43e0c9 55%, #138a78); box-shadow:0 6px 0 #0b5a4e, 0 10px 14px rgba(0,0,0,.35); text-shadow:1px 1px 0 #0b5a4e; }
 
-  /* ================= page iv: film ================= */
-  .screen{
-    position:relative; width:100%; max-width:760px; aspect-ratio:16/9; background:#000;
-    border:2px solid var(--green-dim); display:flex; align-items:center; justify-content:center; overflow:hidden;
-  }
-  .screen.tall{ aspect-ratio:9/16; max-width:380px; }
-  .screen video{ width:100%; height:100%; object-fit:contain; display:block; }
-  .screen .idle{ font-family:var(--mono); color:var(--green-dim); font-size:1.2rem; text-align:center; padding:20px; }
-  .status{ font-family:var(--mono); font-size:1.15rem; color:var(--yellow); min-height:32px; line-height:32px; }
-  .status.err{ color:var(--pink); }
-  .bar{ height:6px; background:#0d141b; max-width:760px; overflow:hidden; display:none; }
-  .bar.on{ display:block; }
-  .bar i{ display:block; height:100%; width:30%; background:linear-gradient(90deg,var(--green),var(--pink)); animation:scan 1.4s linear infinite; }
-  @keyframes scan{ from{ transform:translateX(-100%);} to{ transform:translateX(340%);} }
-  .clips{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
-  .clip{
+  .tray{ grid-column:1 / -1; display:flex; gap:8px; align-items:center; flex-wrap:wrap; min-height:28px; }
+  .status{ font-family:var(--mono); font-size:1.1rem; color:#ffd23f; margin-right:auto; }
+  .status.err{ color:#ff9fd0; }
+  .clip, .tbtn{
     font-family:var(--mono); font-size:1rem; background:#0d141b; color:var(--cream);
-    border:1.5px solid var(--green-dim); padding:5px 10px; cursor:pointer; display:flex; gap:8px; align-items:center;
+    border:1.5px solid #5fae6a; border-radius:8px; padding:2px 9px; cursor:pointer; display:inline-flex; gap:6px; align-items:center;
   }
-  .clip.on{ border-color:var(--pink); color:var(--pink); }
-  .clip a{ color:var(--sky); text-decoration:none; }
-  .total{ font-family:var(--mono); color:var(--green-dim); font-size:1.05rem; margin-top:6px; }
+  .clip.on{ border-color:#ff3d9a; color:#ff9fd0; }
+  .clip a{ color:#7fd4ff; text-decoration:none; }
+  .tbtn:hover{ border-color:#9dff9e; }
+  .tbtn:disabled{ opacity:.4; cursor:not-allowed; }
+
+  /* side lever = lucky pick */
+  .lever{
+    position:absolute; right:-62px; top:22%; width:56px; height:190px; cursor:pointer;
+    background:none; border:0; padding:0;
+  }
+  .lever .base{ position:absolute; left:0; bottom:0; width:26px; height:70px; background:#dfe6f2; border-radius:0 12px 12px 0; box-shadow:4px 4px 0 rgba(0,0,0,.35); }
+  .lever .arm{
+    position:absolute; left:16px; bottom:40px; width:10px; height:140px; background:linear-gradient(90deg,#9aa6b8,#eef2f8,#9aa6b8);
+    border-radius:5px; transform-origin:50% 100%; transition:transform .25s ease;
+  }
+  .lever .ball{
+    position:absolute; left:-15px; top:-34px; width:40px; height:40px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #fff3a6, #ffd23f 55%, #c99a00); box-shadow:0 3px 0 #8a6a00;
+  }
+  .lever.pull .arm{ transform:scaleY(-.55); }
+  .lever-label{ position:absolute; right:-70px; top:calc(22% + 196px); width:76px; text-align:center; font-family:var(--mono); color:#ffd23f; font-size:1rem; }
+
+  .spin-btn{ display:none; }
+
+  /* ---------- small screens: let it scroll ---------- */
+  @media (max-width:760px), (max-height:560px){
+    body{ overflow:auto; }
+    .lm{ height:auto; padding:0 12px 24px; }
+    .cabinet{ grid-template-rows:auto; }
+    .stage{ grid-template-columns:1fr; }
+    .arrow{ transform:rotate(90deg); height:30px; }
+    .display.chosen{ height:260px; }
+    .display.screen{ aspect-ratio:16/9; }
+    .panel{ grid-template-columns:1fr auto; }
+    .panel textarea{ grid-column:1 / -1; }
+    .lever, .lever-label{ display:none; }
+    .spin-btn{ display:inline-flex; }
+  }
+
+  /* access code */
+  .gate{ position:fixed; inset:0; z-index:60; background:rgba(8,12,17,.78); display:flex; align-items:center; justify-content:center; padding:16px; }
+  .gate[hidden]{ display:none; }
+  .gate-card{ background:#2a1750; border:4px solid #ffd23f; border-radius:20px; padding:22px; width:min(300px,100%); text-align:center; box-shadow:8px 8px 0 rgba(0,0,0,.4); }
+  .gate-card p{ font-family:var(--display); color:#fff; font-size:1rem; margin:0 auto 12px; }
+  .gate-card input{ font-family:var(--mono); font-size:2rem; letter-spacing:.5em; text-align:center; width:180px; padding:6px; background:#0d141b; color:#9dff9e; border:2px solid #5fae6a; border-radius:10px; outline:none; }
+  .gate-card input.err{ border-color:#ff3d9a; animation:shake .35s; }
+  @keyframes shake{ 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  .gate-card .tbtn{ margin-top:12px; }
 </style>
 </head>
-<body data-petals="4">
+<body>
 
 <header class="nav">
   <a class="logo" href="index.html">anna<span>_</span>le</a>
 </header>
 
-<main class="page">
+<main class="lm">
+  <div class="cabinet">
 
-  <div class="eyebrow">
-    <h1>crochet persona</h1>
-    <span class="path">~/anna/projects/crochet-persona</span>
+    <div class="marquee"><h1>crochet persona</h1></div>
+
+    <div class="window">
+      <div class="reel" id="reel"></div>
+    </div>
+
+    <div class="stage">
+      <div class="display chosen" id="chosen"><div class="idle">pick a persona</div></div>
+      <div class="arrow">→</div>
+      <div class="display screen" id="screen">
+        <div class="idle" id="idle">your video</div>
+        <video id="player" muted playsinline controls hidden></video>
+      </div>
+    </div>
+
+    <div class="panel">
+      <textarea id="prompt" placeholder="type a prompt: how does the persona move?"></textarea>
+      <div class="knobs">
+        <select id="duration" aria-label="length">
+          <option value="4">4 s</option>
+          <option value="6">6 s</option>
+          <option value="8" selected>8 s</option>
+        </select>
+        <select id="aspect" aria-label="frame">
+          <option value="16:9">wide</option>
+          <option value="9:16">tall</option>
+        </select>
+      </div>
+      <button class="big" id="go" disabled>GENE<br>RATE</button>
+
+      <div class="tray">
+        <span class="status" id="status"></span>
+        <button class="tbtn spin-btn" id="spin2">lucky pick</button>
+        <span id="clips"></span>
+        <button class="tbtn" id="playall" hidden>play all</button>
+        <button class="tbtn" id="restart" hidden>clear</button>
+      </div>
+    </div>
+
+    <button class="lever" id="lever" aria-label="lucky pick"><span class="base"></span><span class="arm"><span class="ball"></span></span></button>
+    <div class="lever-label">lucky pick</div>
+    <input type="file" id="file" accept="image/*" hidden>
   </div>
-  <div class="hero-sub">a notebook of personas that can wake up and move</div>
-
-  <section class="book" aria-label="crochet persona notebook">
-    <div class="nb-tabs" role="tablist">
-      <button class="nb-tab on" role="tab" data-page="collection"><span class="no">i.</span>collection</button>
-      <button class="nb-tab" role="tab" data-page="persona"><span class="no">ii.</span>persona</button>
-      <button class="nb-tab locked" role="tab" data-page="studio" id="tab-studio"><span class="no">iii.</span>studio</button>
-      <button class="nb-tab" role="tab" data-page="film"><span class="no">iv.</span>film</button>
-    </div>
-
-    <div class="page-wrap">
-
-      <!-- PAGE i: the collection, open to everyone -->
-      <div class="sheet on" id="page-collection">
-        <h2>the collection</h2>
-        <p class="hand">every persona in the series. open one to read its page.</p>
-        <div class="collection" id="collection"></div>
-        <div class="page-no">— i —</div>
-      </div>
-
-      <!-- PAGE ii: one persona, open to everyone -->
-      <div class="sheet" id="page-persona">
-        <div class="spread">
-          <div class="big"><img id="p-img" alt=""><span id="p-cap"></span></div>
-          <div class="notes">
-            <h3 id="p-name">choose a persona</h3>
-            <p class="n" id="p-note">go back to the collection and open one.</p>
-            <div class="actions">
-              <button class="btn pink" id="p-generate">generate a persona →</button>
-            </div>
-            <div class="pager">
-              <button class="link" id="p-prev">← previous</button>
-              <button class="link" id="p-back">back to collection</button>
-              <button class="link" id="p-next">next →</button>
-            </div>
-          </div>
-        </div>
-        <div class="page-no">— ii —</div>
-      </div>
-
-      <!-- PAGE iii: studio, generating needs the code -->
-      <div class="sheet" id="page-studio">
-        <h2>studio</h2>
-        <p class="hand">pick a persona (or bring your own image), write how it moves, then generate. generating needs the access code.</p>
-
-        <div class="chosen" id="chosen"></div>
-        <div class="actions" style="margin-top:10px">
-          <button class="link" id="s-pick">choose from the collection</button>
-          <button class="link" id="s-upload">+ use my own image</button>
-          <input type="file" id="file" accept="image/*" hidden>
-        </div>
-
-        <label class="lbl" for="prompt">how does the persona move?</label>
-        <textarea id="prompt" placeholder="slow head turn toward the camera, yarn loosening in a soft wind, gentle breathing, dreamy pastel light"></textarea>
-
-        <div class="row">
-          <div>
-            <label class="lbl" for="duration">length</label>
-            <select id="duration">
-              <option value="4">4 seconds</option>
-              <option value="6">6 seconds</option>
-              <option value="8" selected>8 seconds</option>
-            </select>
-          </div>
-          <div>
-            <label class="lbl" for="aspect">frame</label>
-            <select id="aspect">
-              <option value="16:9">wide 16:9</option>
-              <option value="9:16">tall 9:16</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="actions">
-          <button class="btn pink" id="go" disabled>generate a persona</button>
-          <span class="status" id="s-status"></span>
-        </div>
-        <div class="page-no">— iii —</div>
-      </div>
-
-      <!-- PAGE iv: film + extend -->
-      <div class="sheet" id="page-film">
-        <h2>film</h2>
-        <p class="hand">silent video, made with Veo 3. extend it to keep the scene going.</p>
-        <div class="screen" id="screen">
-          <div class="idle" id="idle">no film yet. go to the studio and generate a persona.</div>
-          <video id="player" muted playsinline controls hidden></video>
-        </div>
-        <div class="bar" id="bar"><i></i></div>
-        <div class="status" id="status"></div>
-        <div class="clips" id="clips"></div>
-        <div class="total" id="total"></div>
-
-        <div id="extend-box" hidden>
-          <label class="lbl" for="extend-prompt">what happens next? (leave empty to keep the same motion)</label>
-          <textarea id="extend-prompt" placeholder="she turns away and walks into the fog"></textarea>
-          <div class="actions">
-            <button class="btn pink" id="extend">+ extend</button>
-            <button class="btn btn-outline" id="playall">play whole film</button>
-            <button class="btn btn-outline" id="restart">start over</button>
-          </div>
-        </div>
-        <div class="page-no">— iv —</div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- access code, only asked when someone generates -->
-  <div class="gate" id="gate" hidden>
-    <div class="gate-card" role="dialog" aria-modal="true" aria-label="access code">
-      <p>enter the access code to generate</p>
-      <input id="code" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="access code">
-      <div><button class="link" id="gate-cancel">cancel</button></div>
-    </div>
-  </div>
-
 </main>
 
-<footer class="site-footer">© anna_le, built from static, thread, and code</footer>
+<!-- access code, only when generating -->
+<div class="gate" id="gate" hidden>
+  <div class="gate-card" role="dialog" aria-modal="true" aria-label="access code">
+    <p>enter code</p>
+    <input id="code" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="access code">
+    <div><button class="tbtn" id="gate-cancel">cancel</button></div>
+  </div>
+</div>
 
 <script src="main.js" defer></script>
 <script>
@@ -286,122 +246,95 @@
   const $ = id => document.getElementById(id);
 
   /* ================================================================
-     THE COLLECTION
-     One line per persona: image file, name, and a short note.
-     To use a new set of images, replace this list.
+     THE COLLECTION: one line per persona. Replace to change the set.
      ================================================================ */
-  const PERSONAS = [
-    { src:'crochet-persona/persona-01.webp', name:'persona 01', note:'' },
-    { src:'crochet-persona/persona-02.webp', name:'persona 02', note:'' },
-    { src:'crochet-persona/persona-03.webp', name:'persona 03', note:'' },
-    { src:'crochet-persona/persona-04.webp', name:'persona 04', note:'' },
-    { src:'crochet-persona/persona-05.webp', name:'persona 05', note:'' },
-    { src:'crochet-persona/persona-06.webp', name:'persona 06', note:'' },
-    { src:'crochet-persona/persona-07.webp', name:'persona 07', note:'' },
-    { src:'crochet-persona/persona-08.webp', name:'persona 08', note:'' },
-    { src:'crochet-persona/persona-09.webp', name:'persona 09', note:'' },
-    { src:'crochet-persona/persona-10.webp', name:'persona 10', note:'' },
-    { src:'crochet-persona/persona-11.webp', name:'persona 11', note:'' },
-    { src:'crochet-persona/persona-12.webp', name:'persona 12', note:'' },
-    { src:'crochet-persona/persona-13.webp', name:'persona 13', note:'' },
-    { src:'crochet-persona/persona-14.webp', name:'persona 14', note:'' },
-  ];
-  const DEFAULT_NOTE = 'a persona from the series. press generate to let it move.';
+  const PERSONAS = Array.from({ length: 14 }, (_, i) => {
+    const n = String(i + 1).padStart(2, '0');
+    return { src: 'crochet-persona/persona-' + n + '.webp', name: 'persona ' + n };
+  });
 
-  const MAX_PARTS = 10;          // the server allows parts 0–9
+  const MAX_PARTS = 10;
   let token = '';
-  let viewing = -1;              // persona shown on page ii
-  let selected = null;           // { src, name } used in the studio
-  let clips = [];                // [{ url, seconds, prompt }]
+  let selected = null;      // { src, name }
+  let clips = [];           // [{ url, seconds, prompt }]
   let current = -1;
-  let busy = false;
+  let busy = false, spinning = false;
   let lastPrompt = '';
 
   try { token = sessionStorage.getItem('pvm-token') || ''; } catch (e) {}
-  if (token) $('tab-studio').classList.remove('locked');
 
-  /* ---------------- notebook pages ---------------- */
-  function show(name) {
-    document.querySelectorAll('.nb-tab').forEach(t => t.classList.toggle('on', t.dataset.page === name));
-    document.querySelectorAll('.sheet').forEach(p => p.classList.toggle('on', p.id === 'page-' + name));
-    const top = document.querySelector('.book').getBoundingClientRect().top;
-    if (top < 0) document.querySelector('.book').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-  document.querySelectorAll('.nb-tab').forEach(t => t.addEventListener('click', () => show(t.dataset.page)));
+  /* ---------------- reel of capsules ---------------- */
+  const reel = $('reel');
+  const add = document.createElement('button');
+  add.className = 'cap add'; add.type = 'button'; add.title = 'upload image'; add.textContent = '+';
+  add.onclick = () => $('file').click();
+  reel.appendChild(add);
 
-  /* ---------------- page i: collection ---------------- */
-  PERSONAS.forEach((p, i) => {
+  const caps = PERSONAS.map((p, i) => {
     const b = document.createElement('button');
-    b.className = 'polaroid'; b.type = 'button';
-    b.innerHTML = '<img alt="" loading="lazy"><span></span>';
-    b.querySelector('img').src = p.src;
-    b.querySelector('img').alt = p.name;
-    b.querySelector('span').textContent = p.name;
-    b.onclick = () => openPersona(i);
-    $('collection').appendChild(b);
+    b.className = 'cap'; b.type = 'button'; b.title = p.name;
+    b.innerHTML = '<img alt="" loading="lazy">';
+    b.querySelector('img').src = p.src; b.querySelector('img').alt = p.name;
+    b.onclick = () => { if (!spinning) choose(p.src, p.name, b); };
+    reel.appendChild(b);
+    return b;
   });
 
-  /* ---------------- page ii: one persona ---------------- */
-  function openPersona(i) {
-    viewing = (i + PERSONAS.length) % PERSONAS.length;
-    const p = PERSONAS[viewing];
-    $('p-img').src = p.src; $('p-img').alt = p.name;
-    $('p-cap').textContent = p.name;
-    $('p-name').textContent = p.name;
-    $('p-note').textContent = p.note || DEFAULT_NOTE;
-    show('persona');
-  }
-  $('p-prev').onclick = () => openPersona(viewing < 0 ? 0 : viewing - 1);
-  $('p-next').onclick = () => openPersona(viewing + 1);
-  $('p-back').onclick = () => show('collection');
-  $('p-generate').onclick = () => {
-    if (viewing < 0) return show('collection');
-    choose(PERSONAS[viewing].src, PERSONAS[viewing].name);
-    show('studio');
-  };
-
-  /* ---------------- page iii: studio ---------------- */
-  function choose(src, name) {
+  function choose(src, name, capEl) {
     selected = { src, name };
-    renderChosen();
-  }
-  function renderChosen() {
+    caps.forEach(c => c.classList.toggle('on', c === capEl));
     const box = $('chosen');
     box.innerHTML = '';
-    if (!selected) {
-      box.innerHTML = '<div class="empty">no persona chosen yet</div>';
-    } else {
-      const img = document.createElement('img'); img.src = selected.src; img.alt = selected.name;
-      const m = document.createElement('div'); m.className = 'meta'; m.textContent = selected.name;
-      box.append(img, m);
-    }
+    const img = document.createElement('img'); img.src = src; img.alt = name;
+    box.appendChild(img);
     $('go').disabled = busy || !selected;
   }
-  renderChosen();
 
-  $('s-pick').onclick = () => show('collection');
-  $('s-upload').onclick = () => $('file').click();
   $('file').addEventListener('change', e => {
     const f = e.target.files[0]; e.target.value = '';
     if (!f || !f.type.startsWith('image/')) return;
     const r = new FileReader();
-    r.onload = () => choose(r.result, f.name.replace(/\.\w+$/, '').slice(0, 40) || 'my image');
+    r.onload = () => choose(r.result, 'my image', null);
     r.readAsDataURL(f);
   });
+
+  /* ---------------- lucky pick (lever) ---------------- */
+  function luckyPick() {
+    if (spinning || busy) return;
+    spinning = true;
+    $('lever').classList.add('pull');
+    setTimeout(() => $('lever').classList.remove('pull'), 300);
+    const target = Math.floor(Math.random() * caps.length);
+    const steps = caps.length * 2 + target;
+    let i = 0;
+    const tick = () => {
+      caps.forEach(c => c.classList.remove('flash', 'on'));
+      const c = caps[i % caps.length];
+      c.classList.add('flash');
+      c.scrollIntoView({ block: 'nearest', inline: 'center' });
+      if (i >= steps) {
+        c.classList.remove('flash');
+        spinning = false;
+        choose(PERSONAS[target].src, PERSONAS[target].name, c);
+        return;
+      }
+      i++;
+      setTimeout(tick, 40 + Math.pow(Math.max(0, i - steps + 10), 2) * 6);
+    };
+    tick();
+  }
+  $('lever').onclick = luckyPick;
+  $('spin2').onclick = luckyPick;
 
   /* ---------------- access code (only when generating) ---------------- */
   let gateResolve = null;
   function needToken() {
     if (token) return Promise.resolve(true);
-    $('gate').hidden = false;
-    $('code').value = '';
+    $('gate').hidden = false; $('code').value = '';
     setTimeout(() => $('code').focus(), 50);
     return new Promise(r => { gateResolve = r; });
   }
-  function closeGate(ok) {
-    $('gate').hidden = true;
-    if (gateResolve) { gateResolve(ok); gateResolve = null; }
-  }
+  function closeGate(ok) { $('gate').hidden = true; if (gateResolve) { gateResolve(ok); gateResolve = null; } }
   $('gate-cancel').onclick = () => closeGate(false);
   $('gate').addEventListener('click', e => { if (e.target.id === 'gate') closeGate(false); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('gate').hidden) closeGate(false); });
@@ -410,39 +343,26 @@
     e.target.value = code;
     if (code.length < 4) return;
     try {
-      const res = await fetch('/api/unlock', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code })
-      });
+      const res = await fetch('/api/unlock', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
       const d = res.ok ? await res.json() : {};
-      if (d.token) {
-        token = d.token;
-        try { sessionStorage.setItem('pvm-token', token); } catch (err) {}
-        $('tab-studio').classList.remove('locked');
-        closeGate(true);
-        return;
-      }
+      if (d.token) { token = d.token; try { sessionStorage.setItem('pvm-token', token); } catch (err) {} closeGate(true); return; }
     } catch (err) {}
     e.target.classList.add('err');
     setTimeout(() => { e.target.classList.remove('err'); e.target.value = ''; }, 450);
   });
-  function forgetToken() {
-    token = '';
-    try { sessionStorage.removeItem('pvm-token'); } catch (e) {}
-    $('tab-studio').classList.add('locked');
-  }
+  function forgetToken() { token = ''; try { sessionStorage.removeItem('pvm-token'); } catch (e) {} }
   const auth = extra => ({ ...(extra || {}), 'x-im-token': token });
 
-  // the API wants JPEG/PNG (webp is not accepted) and a small file → redraw as JPEG
+  // API wants JPEG/PNG (not webp) and a small file → redraw as JPEG
   function toJpeg(src, maxSide = 1280) {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
         const s = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
         const c = document.createElement('canvas');
-        c.width = Math.round(img.naturalWidth * s);
-        c.height = Math.round(img.naturalHeight * s);
-        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
+        const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+        g.drawImage(img, 0, 0, c.width, c.height);
         resolve(c.toDataURL('image/jpeg', 0.9));
       };
       img.onerror = () => reject(new Error('could not read that image'));
@@ -450,19 +370,22 @@
     });
   }
 
-  /* ---------------- generation ---------------- */
-  function setStatus(msg, isErr) {
-    $('status').textContent = msg || '';
-    $('status').classList.toggle('err', !!isErr);
-  }
+  /* ---------------- generate ---------------- */
+  function setStatus(msg, isErr) { $('status').textContent = msg || ''; $('status').classList.toggle('err', !!isErr); }
   function setBusy(on) {
     busy = on;
-    $('bar').classList.toggle('on', on);
-    $('go').disabled = on || !selected;
-    $('extend').disabled = on || clips.length >= MAX_PARTS;
-    $('playall').disabled = on;
-    $('restart').disabled = on;
-    $('s-status').textContent = on ? 'generating... see iv. film' : '';
+    $('screen').classList.toggle('busy', on);
+    updateButton();
+    $('playall').disabled = on; $('restart').disabled = on;
+  }
+  // the big button generates first, then becomes "extend"
+  function updateButton() {
+    const b = $('go');
+    const ext = clips.length > 0;
+    b.classList.toggle('ext', ext);
+    b.innerHTML = ext ? 'EXT<br>END' : 'GENE<br>RATE';
+    b.disabled = busy || (!ext && !selected) || clips.length >= MAX_PARTS;
+    $('prompt').placeholder = ext ? 'what happens next? (empty = same motion)' : 'type a prompt: how does the persona move?';
   }
 
   async function startJob(image, prompt, part) {
@@ -470,65 +393,42 @@
       method: 'POST', headers: auth({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ image, prompt, part, duration: Number($('duration').value), aspect: $('aspect').value })
     });
-    if (res.status === 401) { forgetToken(); throw new Error('the access pass expired, press generate again and re-enter the code'); }
-    if (!res.ok) throw new Error(res.status + ' ' + (await res.text()).slice(0, 200));
+    if (res.status === 401) { forgetToken(); throw new Error('code expired, try again'); }
+    if (!res.ok) throw new Error(res.status + ' ' + (await res.text()).slice(0, 160));
     const d = await res.json();
-    if (!d.id) throw new Error(d.error || 'no job id returned');
+    if (!d.id) throw new Error(d.error || 'no job id');
     return d.id;
   }
-
   async function waitFor(id) {
     const t0 = Date.now();
     while (Date.now() - t0 < 10 * 60 * 1000) {
       await new Promise(r => setTimeout(r, 3000));
-      setStatus('the persona is waking up... ' + Math.round((Date.now() - t0) / 1000) + 's');
+      setStatus('generating... ' + Math.round((Date.now() - t0) / 1000) + 's');
       let res;
       try { res = await fetch('/api/prediction?id=' + encodeURIComponent(id), { cache: 'no-store', headers: auth() }); }
       catch (e) { continue; }
-      if (res.status === 401) { forgetToken(); throw new Error('the access pass expired, re-enter the code'); }
-      if (!res.ok) throw new Error(res.status + ' while checking the job');
+      if (res.status === 401) { forgetToken(); throw new Error('code expired, try again'); }
+      if (!res.ok) throw new Error(res.status + ' while checking');
       const p = await res.json();
       if (p.status === 'succeeded' && p.output) return p.output;
-      if (p.status === 'failed' || p.status === 'canceled') throw new Error('veo ' + p.status + (p.error ? ': ' + String(p.error).slice(0, 200) : ''));
+      if (p.status === 'failed' || p.status === 'canceled') throw new Error(p.status + (p.error ? ': ' + String(p.error).slice(0, 160) : ''));
     }
-    throw new Error('gave up after 10 minutes');
+    throw new Error('timed out');
   }
-
   async function makeClip(image, prompt) {
-    setBusy(true);
-    setStatus('sending to veo 3...');
+    setBusy(true); setStatus('generating...');
     try {
       const id = await startJob(image, prompt, clips.length);
       const url = await waitFor(id);
       clips.push({ url, prompt, seconds: Number($('duration').value) });
-      renderClips();
       play(clips.length - 1);
-      setStatus('done. extend it, or play the whole film.');
-      $('extend-box').hidden = false;
-    } catch (err) {
-      setStatus(err.message, true);
-    } finally {
-      setBusy(false);
-    }
+      setStatus('done');
+      $('prompt').value = '';
+    } catch (err) { setStatus(err.message, true); }
+    finally { setBusy(false); renderClips(); }
   }
 
-  $('go').addEventListener('click', async () => {
-    if (!selected || busy) return;
-    if (!(await needToken())) return;
-    if (clips.length && !confirm('start a new film? the current clips will be cleared.')) return;
-    clips = []; current = -1; renderClips();
-    $('extend-box').hidden = true;
-    lastPrompt = $('prompt').value.trim();
-    $('screen').classList.toggle('tall', $('aspect').value === '9:16');
-    show('film');
-    try {
-      const jpeg = await toJpeg(selected.src);
-      await makeClip(jpeg, lastPrompt);
-    } catch (err) { setStatus(err.message, true); }
-  });
-
-  /* ---------------- extend ---------------- */
-  // grab the last frame of the newest clip and use it as the next clip's first frame
+  // grab the last frame of the newest clip to start the next one from
   function lastFrameOf(url) {
     return new Promise(resolve => {
       const v = document.createElement('video');
@@ -539,70 +439,67 @@
       v.addEventListener('seeked', () => {
         clearTimeout(timer);
         try {
-          const c = document.createElement('canvas');
-          c.width = v.videoWidth; c.height = v.videoHeight;
-          c.getContext('2d').drawImage(v, 0, 0);
-          resolve(c.toDataURL('image/jpeg', 0.9));
+          const c = document.createElement('canvas'); c.width = v.videoWidth; c.height = v.videoHeight;
+          c.getContext('2d').drawImage(v, 0, 0); resolve(c.toDataURL('image/jpeg', 0.9));
         } catch (e) { resolve(null); }
       }, { once: true });
     });
   }
 
-  $('extend').addEventListener('click', async () => {
-    if (busy || !clips.length) return;
-    if (clips.length >= MAX_PARTS) { setStatus('the film is at its ' + MAX_PARTS + '-part limit'); return; }
+  $('go').addEventListener('click', async () => {
+    if (busy) return;
     if (!(await needToken())) return;
-    setStatus('reading the last frame...');
-    const frame = await lastFrameOf(clips[clips.length - 1].url);
-    if (!frame) { setStatus('could not read the last frame of the video', true); return; }
-    const next = $('extend-prompt').value.trim();
-    if (next) lastPrompt = next;
-    await makeClip(frame, lastPrompt);
-    $('extend-prompt').value = '';
+    if (!clips.length) {
+      if (!selected) return;
+      lastPrompt = $('prompt').value.trim();
+      try { await makeClip(await toJpeg(selected.src), lastPrompt); }
+      catch (err) { setStatus(err.message, true); }
+    } else {
+      setStatus('reading last frame...');
+      const frame = await lastFrameOf(clips[clips.length - 1].url);
+      if (!frame) { setStatus('could not read the last frame', true); return; }
+      const next = $('prompt').value.trim();
+      if (next) lastPrompt = next;
+      await makeClip(frame, lastPrompt);
+    }
   });
 
   /* ---------------- playback ---------------- */
   const player = $('player');
   let playingAll = false;
-
   function play(i) {
-    current = i;
-    $('idle').hidden = true;
-    player.hidden = false;
-    player.src = clips[i].url;
-    player.play().catch(() => {});
+    current = i; $('idle').hidden = true; player.hidden = false;
+    player.src = clips[i].url; player.play().catch(() => {});
     renderClips();
   }
   player.addEventListener('ended', () => {
-    if (playingAll && current < clips.length - 1) play(current + 1);
-    else playingAll = false;
+    if (playingAll && current < clips.length - 1) play(current + 1); else playingAll = false;
   });
-  $('playall').addEventListener('click', () => { if (clips.length) { playingAll = true; play(0); } });
-  $('restart').addEventListener('click', () => {
-    if (busy || !confirm('clear this film and start over?')) return;
-    clips = []; current = -1; renderClips();
+  $('playall').onclick = () => { if (clips.length) { playingAll = true; play(0); } };
+  $('restart').onclick = () => {
+    if (busy || !confirm('clear this video?')) return;
+    clips = []; current = -1;
     player.removeAttribute('src'); player.hidden = true; $('idle').hidden = false;
-    $('extend-box').hidden = true; setStatus('');
-    show('studio');
-  });
+    setStatus(''); renderClips(); updateButton();
+  };
 
   function renderClips() {
-    const box = $('clips');
-    box.innerHTML = '';
+    const box = $('clips'); box.innerHTML = '';
     clips.forEach((c, i) => {
-      const el = document.createElement('div');
+      const el = document.createElement('span');
       el.className = 'clip' + (i === current ? ' on' : '');
-      el.title = c.prompt || 'default motion';
-      el.innerHTML = '<span>part ' + (i + 1) + '</span><a download target="_blank" rel="noopener" title="download">↓</a>';
+      el.title = c.prompt || '';
+      el.innerHTML = '<span>' + (i + 1) + '</span><a download target="_blank" rel="noopener" title="download">↓</a>';
       el.querySelector('a').href = c.url;
       el.querySelector('a').onclick = e => e.stopPropagation();
       el.onclick = () => { playingAll = false; play(i); };
       box.appendChild(el);
     });
-    const secs = clips.reduce((s, c) => s + c.seconds, 0);
-    $('total').textContent = clips.length ? clips.length + ' part(s) · ' + secs + 's total · no sound' : '';
-    $('extend').disabled = busy || clips.length >= MAX_PARTS;
+    $('playall').hidden = clips.length < 2;
+    $('restart').hidden = clips.length === 0;
+    updateButton();
   }
+  updateButton();
 })();
 </script>
 </body>

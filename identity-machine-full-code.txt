@@ -1,0 +1,1502 @@
+IDENTITY MACHINE — full source code
+Anna Le · annale22.com/identity-machine.html
+=====================================================================
+
+HOW IT WORKS
+1. Visitor enters the access code, the webcam turns on (stage 01).
+2. Tapping the camera takes a photo and starts a 15-second "neural scan".
+   Brainwaves come from a Muse 2 headset over Web Bluetooth (?muse=1 in
+   the URL) or from a built-in simulator (default).
+3. The page splits the EEG into bands (delta, theta, alpha, beta, gamma)
+   with an FFT, compares them to a baseline, counts blinks, and turns
+   the strongest bands into two text prompts (portrait + motion).
+4. Stage 02: the photo + portrait prompt go to /api/generate-persona,
+   which starts Google Nano Banana 2 on Replicate.
+5. Stage 03: the portrait + motion prompt go to /api/generate-video,
+   which starts Google Veo 3.1 Fast on Replicate.
+6. Both jobs run in the background; the page checks /api/prediction
+   every few seconds until each result is ready.
+
+FILES IN THIS DOCUMENT
+  A. identity-machine.html     — the whole front end (page, EEG, prompts)
+  B. api/generate-persona.js   — starts the portrait job (Vercel function)
+  C. api/generate-video.js     — starts the video job (Vercel function)
+  D. api/prediction.js         — checks whether a job is finished
+
+NOT INCLUDED
+  - muse.bundle.js: the open-source muse-js 3.3.0 library (+ rxjs),
+    bundled into one file. Rebuild with:
+      npm i muse-js@3.3.0 rxjs@6 esbuild
+      echo "export { MuseClient } from 'muse-js';" > entry.js
+      npx esbuild entry.js --bundle --format=esm --minify --outfile=muse.bundle.js
+  - api/stats.js and api/log-session.js (visitor counters, unrelated to EEG)
+  - The Replicate API key: stored as REPLICATE_API_TOKEN in Vercel's
+    environment variables, never in the code.
+
+
+
+=====================================================================
+A. identity-machine.html
+=====================================================================
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>identity machine — research lab</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=VT323&family=Space+Mono:wght@400;700&display=swap');
+
+  *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body{
+    width:100%; height:100%; overflow:hidden;
+    background:#0a0d10;
+    font-family:'Space Mono', monospace;
+    color:#c8d4d8;
+    user-select:none;
+  }
+
+  body::before{
+    content:'';
+    position:fixed; inset:0;
+    background-image:
+      linear-gradient(rgba(67,224,201,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(67,224,201,.05) 1px, transparent 1px);
+    background-size:40px 40px;
+    pointer-events:none;
+    z-index:0;
+  }
+
+  .screen{
+    position:fixed; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    opacity:0; pointer-events:none;
+    transition:opacity .5s ease;
+    z-index:1;
+  }
+  .screen.active{ opacity:1; pointer-events:auto; }
+
+  /* ---------- dashboard ---------- */
+  #dashboard{
+    position:fixed; top:0; left:0; right:0;
+    display:flex; justify-content:center; align-items:center; gap:60px;
+    padding:18px 20px;
+    background:#0d1114;
+    border-bottom:1px solid #1e2a2e;
+    z-index:20;
+    opacity:0; pointer-events:none;
+    transition:opacity .5s ease;
+  }
+  #dashboard.active{ opacity:1; pointer-events:auto; }
+  .stat{ text-align:center; }
+  .stat-label{ font-size:11px; letter-spacing:.15em; color:#5a6f75; text-transform:uppercase; }
+  .stat-value{ font-size:28px; color:#43e0c9; font-weight:700; letter-spacing:.05em; }
+
+  /* signal source badge (simulated / muse) */
+  #source-badge{
+    display:flex; align-items:center; gap:8px;
+    padding:6px 12px; border:1px solid #2a3a3f; border-radius:3px;
+    background:none; color:#8a9aa0;
+    font-family:'Space Mono', monospace; font-size:11px;
+    letter-spacing:.12em; text-transform:uppercase; cursor:pointer;
+  }
+  #source-badge .led-dot{ flex:none; }
+
+  /* ---------- gate ---------- */
+  #gate{ flex-direction:column; gap:36px; }
+  .gate-label{ font-size:13px; letter-spacing:.3em; color:#5a6f75; text-transform:uppercase; }
+  .dots{ display:flex; gap:18px; }
+  .dot{
+    width:14px; height:14px; border-radius:2px;
+    border:1.5px solid #2a3a3f;
+    transition:background .15s ease, border-color .15s ease;
+  }
+  .dot.filled{ background:#43e0c9; border-color:#43e0c9; }
+  .dot.err{ background:#ff3d5a; border-color:#ff3d5a; }
+  .keypad{ display:grid; grid-template-columns:repeat(3, 64px); gap:14px; }
+  .key{
+    width:64px; height:64px; border-radius:4px;
+    background:#0d1114; border:1px solid #2a3a3f;
+    color:#8a9aa0; font-family:'Space Mono', monospace; font-size:22px;
+    cursor:pointer;
+  }
+  .key:active{ background:#141c20; border-color:#43e0c9; color:#43e0c9; }
+  .key.blank{ border:none; background:none; cursor:default; }
+  .key.blank:active{ background:none; border:none; }
+  @keyframes shake{
+    0%,100%{ transform:translateX(0); }
+    20%{ transform:translateX(-10px); }
+    40%{ transform:translateX(10px); }
+    60%{ transform:translateX(-6px); }
+    80%{ transform:translateX(6px); }
+  }
+  .dots.shake{ animation:shake .4s ease; }
+
+  /* ---------- lab modules ---------- */
+  /* one big stage at a time: 01 capture → 02 portrait → 03 video */
+  #floor{ flex-direction:column; gap:14px; padding:84px 16px 16px; }
+  .steps{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  .step{
+    display:flex; align-items:center; gap:8px;
+    padding:6px 12px; border:1px solid #1e2a2e; border-radius:2px; background:none;
+    color:#3f4d52; font-family:'Space Mono', monospace; font-size:12px;
+    letter-spacing:.15em; text-transform:uppercase; cursor:default;
+    transition:color .3s ease, border-color .3s ease;
+  }
+  .step .stage-num{ background:#1e2a2e; color:#5a6f75; padding:1px 7px; border-radius:2px; font-weight:700; }
+  .step.reached{ color:#8a9aa0; cursor:pointer; }
+  .step.current{ color:#43e0c9; border-color:#43e0c9; }
+  .step.current .stage-num{ background:#43e0c9; color:#0a0d10; }
+  .module{ display:none; flex-direction:column; align-items:center; }
+  .module.current{ display:flex; animation:stage-in .6s ease; }
+  @keyframes stage-in{ from{ opacity:0; transform:scale(.985); } to{ opacity:1; transform:none; } }
+  .module .module-label{ display:none; }
+  .rig-screen img.ghost-portrait{ opacity:.35; filter:grayscale(.3) blur(1px); }
+  .module-label{
+    font-size:13px; letter-spacing:.15em; color:#43e0c9;
+    text-transform:uppercase; margin-bottom:10px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .module-label .stage-num{
+    background:#43e0c9; color:#0a0d10;
+    font-weight:700; padding:1px 7px; border-radius:2px; font-size:12px;
+  }
+  .rig{
+    position:relative;
+    width:min(90vw, calc((100vh - 230px) * 4 / 3)); aspect-ratio:4/3;
+    background:#0d1114; border:1px solid #1e2a2e;
+  }
+  .corner{ position:absolute; width:18px; height:18px; border-color:#43e0c9; z-index:6; pointer-events:none; }
+  .corner.tl{ top:-1px; left:-1px; border-top:2px solid; border-left:2px solid; }
+  .corner.tr{ top:-1px; right:-1px; border-top:2px solid; border-right:2px solid; }
+  .corner.bl{ bottom:-1px; left:-1px; border-bottom:2px solid; border-left:2px solid; }
+  .corner.br{ bottom:-1px; right:-1px; border-bottom:2px solid; border-right:2px solid; }
+
+  .rig-screen{ position:relative; width:100%; height:100%; overflow:hidden; background:#000; cursor:default; }
+  .rig-screen.tappable{ cursor:pointer; }
+  .rig video, .rig-screen img, .rig-screen canvas, .rig-screen video{
+    position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+  }
+  #video{ transform:scaleX(-1); }
+  .status-led{
+    display:flex; align-items:center; gap:8px;
+    margin-top:10px; font-size:12px; letter-spacing:.1em; color:#5a6f75;
+    text-transform:uppercase;
+  }
+  .led-dot{
+    width:7px; height:7px; border-radius:50%;
+    background:#2a3a3f;
+    transition:background .3s ease, box-shadow .3s ease;
+  }
+  .led-dot.on{ background:#43e0c9; box-shadow:0 0 6px #43e0c9; }
+  .led-dot.warn{ background:#f5b942; box-shadow:0 0 6px #f5b942; }
+  .led-dot.bad{ background:#ff3d5a; box-shadow:0 0 6px #ff3d5a; }
+  .led-dot.pulse{ animation:led-pulse 1s ease-in-out infinite; }
+  @keyframes led-pulse{ 0%,100%{ opacity:.35; } 50%{ opacity:1; } }
+
+  .reading-caption{
+    margin-top:6px; min-height:16px; max-width:min(90vw, 900px);
+    font-size:12px; letter-spacing:.08em; color:#8a9aa0; text-align:center;
+  }
+
+  .static-canvas{ position:absolute; inset:0; width:100%; height:100%; }
+
+  .ring{
+    position:absolute; z-index:2; top:50%; left:50%;
+    width:15%; aspect-ratio:1; transform:translate(-50%,-50%);
+    border-radius:50%; border:2px solid rgba(67,224,201,.6);
+    animation:pulse 2.4s ease-in-out infinite; pointer-events:none;
+  }
+  @keyframes pulse{
+    0%,100%{ transform:translate(-50%,-50%) scale(1); opacity:.5; }
+    50%{ transform:translate(-50%,-50%) scale(1.15); opacity:1; }
+  }
+
+  .rig-screen img.reveal, .rig-screen video.reveal{ opacity:0; animation:reveal 1.1s ease forwards; }
+  @keyframes reveal{
+    from{ opacity:0; filter:brightness(2) contrast(1.4); transform:scale(1.04); }
+    to{ opacity:1; filter:brightness(1) contrast(1); transform:scale(1); }
+  }
+  .glitch-bar{ position:absolute; z-index:3; }
+
+  /* ---------- neural scan screen ---------- */
+  .panel-screen{ flex-direction:column; gap:18px; padding:90px 20px 20px; background:rgba(10,13,16,.96); z-index:5; }
+  .panel-title{ font-size:14px; letter-spacing:.2em; color:#43e0c9; text-transform:uppercase; text-align:center; }
+  .panel-sub{ font-size:12px; letter-spacing:.12em; color:#5a6f75; text-transform:uppercase; text-align:center; }
+  .scan-panel{
+    position:relative;
+    width:min(760px, 92vw);
+    background:#0d1114; border:1px solid #1e2a2e;
+    padding:16px;
+  }
+  #wave-canvas{ display:block; width:100%; height:200px; }
+  .sensors{ display:flex; justify-content:center; gap:22px; margin:10px 0 4px; }
+  .sensor{ display:flex; align-items:center; gap:6px; font-size:11px; letter-spacing:.1em; color:#8a9aa0; }
+  .bands{ display:grid; grid-template-columns:70px 1fr 48px; gap:6px 12px; align-items:center; margin-top:12px; }
+  .band-name{ font-size:11px; letter-spacing:.12em; color:#8a9aa0; text-transform:uppercase; }
+  .band-track{ position:relative; height:10px; background:#141c20; }
+  .band-fill{ position:absolute; left:0; top:0; bottom:0; width:0; background:#43e0c9; transition:width .15s linear; }
+  .band-ref{ position:absolute; top:-3px; bottom:-3px; width:2px; background:#ff3d5a; opacity:.8; }
+  .band-val{ font-size:11px; color:#5a6f75; text-align:right; }
+  .progress{ width:min(760px, 92vw); height:4px; background:#141c20; }
+  .progress-fill{ height:100%; width:0; background:#43e0c9; }
+  .scan-hint{ font-size:11px; color:#3f4d52; letter-spacing:.08em; text-align:center; min-height:14px; }
+
+  .connect-overlay{
+    position:absolute; inset:0; display:none;
+    flex-direction:column; align-items:center; justify-content:center; gap:14px;
+    background:rgba(13,17,20,.95);
+  }
+  .connect-overlay.show{ display:flex; }
+  .connect-msg{ font-size:13px; color:#8a9aa0; text-align:center; max-width:440px; line-height:1.6; }
+
+  .btn{
+    padding:14px 40px;
+    background:#43e0c9; border:none; color:#0a0d10;
+    font-family:'Space Mono', monospace; font-size:14px; font-weight:700;
+    letter-spacing:.1em; text-transform:uppercase; cursor:pointer;
+  }
+  .btn:active{ background:#35b8a4; }
+  .btn-link{
+    background:none; border:none; color:#5a6f75;
+    font-family:'Space Mono', monospace; font-size:12px;
+    letter-spacing:.1em; text-decoration:underline; cursor:pointer;
+  }
+
+  /* ---------- reading result screen ---------- */
+  .reading-state{
+    font-family:'VT323', monospace; font-size:64px; line-height:1;
+    color:#43e0c9; letter-spacing:.06em; text-transform:uppercase; text-align:center;
+  }
+  .reading-meta{ font-size:12px; letter-spacing:.12em; color:#8a9aa0; text-transform:uppercase; text-align:center; }
+  .prompt-box{
+    width:min(640px, 92vw);
+    border:1px solid #1e2a2e; background:#0d1114;
+    padding:12px 16px;
+  }
+  .prompt-box-label{ font-size:10px; letter-spacing:.2em; color:#5a6f75; text-transform:uppercase; margin-bottom:6px; }
+  .prompt-box-text{ font-size:13px; line-height:1.6; color:#c8d4d8; }
+
+  #error-msg{
+    position:fixed; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    text-align:center; color:#ff3d5a; font-size:20px; letter-spacing:.03em;
+    background:rgba(10,13,16,.94);
+    opacity:0; pointer-events:none; transition:opacity .3s ease;
+    z-index:50; padding:40px;
+  }
+  #error-msg.show{ opacity:1; pointer-events:auto; }
+  #error-msg span{ max-width:520px; line-height:1.6; }
+
+  @media (max-width:900px){
+    #floor{ padding-top:130px; }
+    #dashboard{ flex-wrap:wrap; gap:18px; }
+    .panel-screen{ padding-top:150px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="dashboard">
+  <div class="stat">
+    <div class="stat-label">Participants</div>
+    <div class="stat-value" id="stat-participants">000</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Portraits Archived</div>
+    <div class="stat-value" id="stat-portraits">000</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Videos Generated</div>
+    <div class="stat-value" id="stat-videos">000</div>
+  </div>
+  <button id="source-badge"><span class="led-dot" id="source-led"></span><span id="source-text">signal</span></button>
+</div>
+
+<!-- gate -->
+<div class="screen active" id="gate">
+  <div class="gate-label">access code required</div>
+  <div class="dots" id="dots">
+    <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+  </div>
+  <div class="keypad" id="keypad">
+    <button class="key" data-k="1">1</button>
+    <button class="key" data-k="2">2</button>
+    <button class="key" data-k="3">3</button>
+    <button class="key" data-k="4">4</button>
+    <button class="key" data-k="5">5</button>
+    <button class="key" data-k="6">6</button>
+    <button class="key" data-k="7">7</button>
+    <button class="key" data-k="8">8</button>
+    <button class="key" data-k="9">9</button>
+    <div class="key blank"></div>
+    <button class="key" data-k="0">0</button>
+    <button class="key" data-k="back">⌫</button>
+  </div>
+</div>
+
+<!-- lab floor -->
+<div class="screen" id="floor">
+  <div class="steps">
+    <button class="step" id="step-1" data-step="1"><span class="stage-num">01</span> subject capture</button>
+    <button class="step" id="step-2" data-step="2"><span class="stage-num">02</span> identity synthesis</button>
+    <button class="step" id="step-3" data-step="3"><span class="stage-num">03</span> motion generation</button>
+  </div>
+  <div class="module current" id="m1">
+    <div class="module-label"><span class="stage-num">01</span> subject capture</div>
+    <div class="rig">
+      <div class="corner tl"></div><div class="corner tr"></div>
+      <div class="corner bl"></div><div class="corner br"></div>
+      <div class="rig-screen tappable" id="capture-screen">
+        <video id="video" autoplay playsinline muted></video>
+        <div class="ring"></div>
+      </div>
+    </div>
+    <div class="status-led"><div class="led-dot" id="led-1"></div> camera feed</div>
+    <div class="reading-caption" id="cap-1">tap the camera to begin</div>
+  </div>
+
+  <div class="module" id="m2">
+    <div class="module-label"><span class="stage-num">02</span> identity synthesis</div>
+    <div class="rig">
+      <div class="corner tl"></div><div class="corner tr"></div>
+      <div class="corner bl"></div><div class="corner br"></div>
+      <div class="rig-screen" id="studio-screen">
+        <canvas class="static-canvas" id="static-canvas-1"></canvas>
+      </div>
+    </div>
+    <div class="status-led"><div class="led-dot" id="led-2"></div> <span id="status-2">synthetic portrait</span></div>
+    <div class="reading-caption" id="cap-2"></div>
+  </div>
+
+  <div class="module" id="m3">
+    <div class="module-label"><span class="stage-num">03</span> motion generation</div>
+    <div class="rig">
+      <div class="corner tl"></div><div class="corner tr"></div>
+      <div class="corner bl"></div><div class="corner br"></div>
+      <div class="rig-screen tappable" id="video-screen">
+        <canvas class="static-canvas" id="static-canvas-2"></canvas>
+      </div>
+    </div>
+    <div class="status-led"><div class="led-dot" id="led-3"></div> <span id="status-3">animated output</span></div>
+    <div class="reading-caption" id="cap-3"></div>
+  </div>
+</div>
+
+<!-- neural scan (replaces the typed prompt screens) -->
+<div class="screen panel-screen" id="scan">
+  <div class="panel-title">neural scan</div>
+  <div class="panel-sub" id="scan-instruction">relax · eyes open · stay still</div>
+  <div class="scan-panel">
+    <canvas id="wave-canvas"></canvas>
+    <div class="sensors" id="sensors"></div>
+    <div class="bands" id="bands"></div>
+    <div class="connect-overlay" id="connect-overlay">
+      <div class="connect-msg" id="connect-msg">headset not connected. turn on the Muse, then press connect.</div>
+      <button class="btn" id="connect-btn">connect muse</button>
+      <button class="btn-link" id="use-sim-btn">use simulated signal instead</button>
+    </div>
+  </div>
+  <div class="progress"><div class="progress-fill" id="scan-progress"></div></div>
+  <div class="scan-hint" id="scan-hint"></div>
+</div>
+
+<!-- reading result -->
+<div class="screen panel-screen" id="reading">
+  <div class="panel-sub">signal interpreted as</div>
+  <div class="reading-state" id="reading-state">—</div>
+  <div class="reading-meta" id="reading-meta"></div>
+  <div class="prompt-box">
+    <div class="prompt-box-label">portrait prompt</div>
+    <div class="prompt-box-text" id="reading-portrait"></div>
+  </div>
+  <div class="prompt-box">
+    <div class="prompt-box-label">motion prompt</div>
+    <div class="prompt-box-text" id="reading-motion"></div>
+  </div>
+  <div class="panel-sub" id="reading-countdown"></div>
+</div>
+
+<div id="error-msg"><span id="error-text"></span></div>
+<canvas id="hidden-canvas" style="display:none;"></canvas>
+
+<script type="module">
+  /* =====================================================================
+     SETTINGS — edit these
+     ===================================================================== */
+  const CODE = '2206';
+  const params = new URLSearchParams(location.search);
+  // ?muse=1  → use the real Muse 2 headset. Default is simulated signal.
+  let USE_MUSE = params.get('muse') === '1';
+  // ?scan=20 → scan length in seconds
+  const SCAN_SECONDS = Math.max(5, Number(params.get('scan')) || 15);
+  const READING_SECONDS = 5;
+  const PORTRAIT_HOLD_SECONDS = 6;    // how long the finished portrait stays up before switching to the video screen          // how long the "signal interpreted as" screen stays up
+  const BLINK_THRESHOLD_UV = 120;     // peak-to-peak on AF7/AF8 that counts as a blink
+  const MUSE_LIB = './muse.bundle.js'; // local bundle (keep next to this html)
+  const MUSE_LIB_CDN = 'https://cdn.jsdelivr.net/npm/muse-js@3.3.0/+esm'; // fallback
+
+  // Typical relative band power. The kiosk blends this with the average of
+  // past visitors, so each person is read *relative to everyone before them*.
+  const REF = { delta:.30, theta:.22, alpha:.25, beta:.17, gamma:.06 };
+  if(params.get('resetbaseline') === '1'){ try{ localStorage.removeItem('im-baseline'); }catch(e){} }
+
+  /* =====================================================================
+     BRAIN STATE → PROMPT VOCABULARY — edit freely
+     ===================================================================== */
+  const VOCAB = {
+    delta:{
+      state:'submerged',
+      portrait:'submerged in deep indigo water, bioluminescent glow, heavy-lidded stillness, dark velvet shadows',
+      accent:'faint bioluminescent particles',
+      motion:'very slow breathing motion, drifting as if underwater, eyes slowly closing',
+      motionAccent:'tiny particles floating upward'
+    },
+    theta:{
+      state:'dreaming',
+      portrait:'surreal dreamscape portrait, iridescent fog, soft double exposure, floating petals, pastel haze',
+      accent:'a soft dreamlike double exposure',
+      motion:'dreamlike floating motion, fog slowly swirling, petals drifting around the face',
+      motionAccent:'a slow dissolve shimmer'
+    },
+    alpha:{
+      state:'calm',
+      portrait:'serene portrait in soft pastel daylight, gentle diffused glow, calm expression, airy pale background',
+      accent:'gentle pastel light',
+      motion:'gentle slow zoom in, soft breeze through the hair, a calm slow blink',
+      motionAccent:'light softly breathing'
+    },
+    beta:{
+      state:'focused',
+      portrait:'sharp high-contrast portrait, electric cyan rim light, precise geometric shadows, direct intense gaze',
+      accent:'crisp cyan rim light',
+      motion:'subject turns toward the camera with intent, light flickers, quick focus pull',
+      motionAccent:'a sharp light flicker'
+    },
+    gamma:{
+      state:'hyperaware',
+      portrait:'hyperreal portrait, prismatic holographic light, chromatic aberration, crystalline reflections on skin',
+      accent:'prismatic holographic reflections',
+      motion:'rapid prismatic shimmer, light refracting across the face, energetic pulses',
+      motionAccent:'holographic flares sweeping across'
+    }
+  };
+  // Added to every portrait so it stays a real-looking photograph
+  const REALISM = 'hyperrealistic photograph, natural skin texture with visible pores, true-to-life features, no makeup added, no beauty filter, no retouching, shot on a full-frame camera';
+  const BANDS = ['delta','theta','alpha','beta','gamma'];
+  const BAND_HZ = { delta:[1,4], theta:[4,8], alpha:[8,13], beta:[13,30], gamma:[30,45] };
+
+  /* =====================================================================
+     DOM
+     ===================================================================== */
+  const $ = id => document.getElementById(id);
+  const dotsEl = $('dots');
+  const dots = Array.from(dotsEl.children);
+  const gateScreen = $('gate'), floorScreen = $('floor'), scanScreen = $('scan'), readingScreen = $('reading');
+  const dashboard = $('dashboard');
+  const video = $('video');
+  const captureScreen = $('capture-screen'), studioScreen = $('studio-screen'), videoScreen = $('video-screen');
+  const hiddenCanvas = $('hidden-canvas');
+  const errorMsg = $('error-msg'), errorText = $('error-text');
+  const led1 = $('led-1'), led2 = $('led-2'), led3 = $('led-3');
+
+  function showScreen(el){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    el.classList.add('active');
+  }
+  // set SHOW_ERROR_DETAILS to false before exhibiting, so visitors only see the poetic line
+  const SHOW_ERROR_DETAILS = true;
+  function flashError(msg, detail){
+    errorText.textContent = msg;
+    if(detail && SHOW_ERROR_DETAILS){
+      const d = document.createElement('div');
+      d.style.cssText = 'margin-top:16px;font-size:12px;color:#8a9aa0;letter-spacing:0;word-break:break-word;';
+      d.textContent = detail;
+      errorText.appendChild(d);
+    }
+    errorMsg.classList.add('show');
+  }
+  errorMsg.addEventListener('click', ()=> errorMsg.classList.remove('show'));
+
+  /* =====================================================================
+     GATE
+     ===================================================================== */
+  let entered = '';
+  function updateDots(){ dots.forEach((d,i)=> d.classList.toggle('filled', i < entered.length)); }
+  $('keypad').addEventListener('click', e=>{
+    const btn = e.target.closest('.key');
+    if(!btn || btn.classList.contains('blank')) return;
+    const k = btn.dataset.k;
+    if(k === 'back'){ entered = entered.slice(0,-1); updateDots(); return; }
+    if(entered.length >= 4) return;
+    entered += k; updateDots();
+    if(entered.length === 4){
+      if(entered === CODE){ setTimeout(enterMachine, 200); }
+      else{
+        dotsEl.classList.add('shake');
+        dots.forEach(d=>d.classList.add('err'));
+        setTimeout(()=>{
+          dotsEl.classList.remove('shake');
+          dots.forEach(d=>d.classList.remove('err'));
+          entered = ''; updateDots();
+        }, 420);
+      }
+    }
+  });
+
+  /* =====================================================================
+     EEG BUFFERS + ANALYSIS (shared by simulated and Muse sources)
+     ===================================================================== */
+  const FS = 256, NCH = 4, BUF = 512;
+  const CH_NAMES = ['TP9','AF7','AF8','TP10'];
+  const eeg = {
+    buf: Array.from({length:NCH}, ()=>new Float32Array(BUF)),
+    idx: new Array(NCH).fill(0),
+    count: new Array(NCH).fill(0),
+    lastSampleAt: 0
+  };
+  function pushSamples(ch, samples){
+    if(ch < 0 || ch >= NCH) return;
+    for(const s of samples){
+      if(!Number.isFinite(s)) continue;
+      eeg.buf[ch][eeg.idx[ch]] = s;
+      eeg.idx[ch] = (eeg.idx[ch] + 1) % BUF;
+      eeg.count[ch]++;
+    }
+    eeg.lastSampleAt = performance.now();
+  }
+  function lastN(ch, n){
+    const out = new Float32Array(n);
+    const start = eeg.idx[ch] - n;
+    for(let i=0;i<n;i++) out[i] = eeg.buf[ch][(start + i + BUF*2) % BUF];
+    return out;
+  }
+  function signalLive(){ return performance.now() - eeg.lastSampleAt < 1000 && eeg.count[0] >= 256; }
+
+  // in-place radix-2 FFT
+  function fft(re, im){
+    const n = re.length;
+    for(let i=1, j=0; i<n; i++){
+      let bit = n >> 1;
+      for(; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit;
+      if(i < j){ [re[i],re[j]] = [re[j],re[i]]; [im[i],im[j]] = [im[j],im[i]]; }
+    }
+    for(let len=2; len<=n; len<<=1){
+      const ang = -2*Math.PI/len, wr = Math.cos(ang), wi = Math.sin(ang), half = len>>1;
+      for(let i=0; i<n; i+=len){
+        let cr = 1, ci = 0;
+        for(let k=0; k<half; k++){
+          const a = i+k, b = a+half;
+          const br = re[b]*cr - im[b]*ci, bi = re[b]*ci + im[b]*cr;
+          re[b] = re[a]-br; im[b] = im[a]-bi;
+          re[a] += br;      im[a] += bi;
+          const t = cr*wr - ci*wi; ci = cr*wi + ci*wr; cr = t;
+        }
+      }
+    }
+  }
+  const HANN = Float32Array.from({length:256}, (_,i)=> 0.5 - 0.5*Math.cos(2*Math.PI*i/255));
+
+  // returns { rel:{delta..gamma}, quality:['good'|'noisy'|'flat'] x4 }
+  function analyze(){
+    const quality = [], rels = [];
+    for(let ch=0; ch<NCH; ch++){
+      if(eeg.count[ch] < 256){ quality.push('flat'); continue; }
+      const x = lastN(ch, 256);
+      let mean = 0; for(const v of x) mean += v; mean /= 256;
+      let varSum = 0;
+      const re = new Float32Array(256), im = new Float32Array(256);
+      for(let i=0;i<256;i++){ const v = x[i]-mean; varSum += v*v; re[i] = v*HANN[i]; }
+      const sd = Math.sqrt(varSum/256);
+      quality.push(sd < 1.5 ? 'flat' : sd > 100 ? 'noisy' : 'good');
+      fft(re, im);
+      const p = {}; let total = 0;
+      for(const b of BANDS){
+        const [lo,hi] = BAND_HZ[b]; let s = 0;
+        for(let k=lo; k<hi; k++) s += re[k]*re[k] + im[k]*im[k]; // 1 Hz per bin
+        p[b] = s; total += s;
+      }
+      if(total > 0){
+        const r = {}; for(const b of BANDS) r[b] = p[b]/total;
+        rels.push({ r, good: quality[ch] === 'good' });
+      }
+    }
+    const use = rels.some(o=>o.good) ? rels.filter(o=>o.good) : rels;
+    const rel = {}; for(const b of BANDS) rel[b] = use.length ? use.reduce((s,o)=>s+o.r[b],0)/use.length : 0;
+    return { rel, quality };
+  }
+
+  // blink = big swing on the forehead sensors (AF7 + AF8)
+  let lastBlinkAt = 0;
+  function detectBlink(){
+    if(eeg.count[1] < 64) return false;
+    const a = lastN(1, 40), b = lastN(2, 40);
+    let mn = Infinity, mx = -Infinity;
+    for(let i=0;i<40;i++){ const v = (a[i]+b[i])/2; if(v<mn) mn=v; if(v>mx) mx=v; }
+    const now = performance.now();
+    if(mx - mn > BLINK_THRESHOLD_UV && now - lastBlinkAt > 400){ lastBlinkAt = now; return true; }
+    return false;
+  }
+
+  /* =====================================================================
+     SIGNAL SOURCE 1: SIMULATED EEG
+     Each scan picks a random "mood" so different visitors get different
+     readings. During a scan press D / T / A / B / G to push it toward a band.
+     ===================================================================== */
+  const sim = {
+    running:false, t:0, generated:0, startedAt:0,
+    amp:{}, target:{}, comps:[], force:null, nextBlinkT:2,
+    start(){
+      if(this.running) return;
+      this.running = true;
+      // 3 sine components per band, per channel, with random freq/phase
+      this.comps = [];
+      for(let ch=0; ch<NCH; ch++){
+        for(const b of BANDS){
+          const [lo,hi] = BAND_HZ[b];
+          for(let k=0;k<3;k++) this.comps.push({ ch, b, f: lo + Math.random()*(hi-lo), ph: Math.random()*Math.PI*2, drift: (Math.random()-.5)*.4 });
+        }
+      }
+      this.newMood();
+      for(const b of BANDS) this.amp[b] = this.target[b];
+      this.startedAt = performance.now();
+      this.generated = 0;
+      this.timer = setInterval(()=> this.tick(), 40);
+    },
+    stop(){ this.running = false; clearInterval(this.timer); },
+    newMood(){
+      const pw = { ...REF };
+      const dom = this.force || BANDS[Math.floor(Math.random()*BANDS.length)];
+      let sec; do{ sec = BANDS[Math.floor(Math.random()*BANDS.length)]; } while(sec === dom);
+      pw[dom] *= 2.2 + Math.random()*1.2;
+      pw[sec] *= 1.3 + Math.random()*.4;
+      // amplitude in µV so total std ≈ 20 µV
+      for(const b of BANDS) this.target[b] = Math.sqrt(pw[b]*800/3);
+    },
+    tick(){
+      const due = Math.floor((performance.now() - this.startedAt) * FS / 1000);
+      let n = Math.min(due - this.generated, BUF);
+      if(n <= 0) return;
+      this.generated = due;
+      // ease toward target amplitudes
+      for(const b of BANDS) this.amp[b] += (this.target[b] - this.amp[b]) * 0.04;
+      const out = Array.from({length:NCH}, ()=>new Float32Array(n));
+      for(let i=0;i<n;i++){
+        const t = this.t; this.t += 1/FS;
+        const wobble = 1 + 0.25*Math.sin(t*0.9);
+        for(const c of this.comps){
+          out[c.ch][i] += this.amp[c.b] * wobble * Math.sin(2*Math.PI*(c.f + c.drift*Math.sin(t*.3))*t + c.ph);
+        }
+        for(let ch=0; ch<NCH; ch++) out[ch][i] += (Math.random()-.5)*4;
+        // occasional blink on the forehead channels
+        if(t >= this.nextBlinkT){
+          const dt = t - this.nextBlinkT;
+          if(dt < 0.18){ const s = Math.sin(Math.PI*dt/0.18) * 180; out[1][i] += s; out[2][i] += s; }
+          else this.nextBlinkT = t + 1.5 + Math.random()*5;
+        }
+      }
+      for(let ch=0; ch<NCH; ch++) pushSamples(ch, out[ch]);
+    }
+  };
+  window.addEventListener('keydown', e=>{
+    if(USE_MUSE || !scanScreen.classList.contains('active')) return;
+    const map = { d:'delta', t:'theta', a:'alpha', b:'beta', g:'gamma' };
+    const band = map[e.key.toLowerCase()];
+    if(band){ sim.force = band; sim.newMood(); $('scan-hint').textContent = `simulating: ${band}`; }
+  });
+
+  /* =====================================================================
+     SIGNAL SOURCE 2: MUSE 2 over Web Bluetooth (muse-js)
+     ===================================================================== */
+  const muse = { client:null, connected:false, connecting:false, libPromise:null };
+  function loadMuseLib(){
+    if(!muse.libPromise){
+      muse.libPromise = import(MUSE_LIB).catch(()=> import(MUSE_LIB_CDN));
+    }
+    return muse.libPromise;
+  }
+  if(USE_MUSE) loadMuseLib(); // preload so the connect click stays a direct user gesture
+
+  async function connectMuse(){
+    if(muse.connected || muse.connecting) return;
+    if(!navigator.bluetooth){
+      flashError('this browser has no Bluetooth access — open the page in Chrome or Edge');
+      return;
+    }
+    muse.connecting = true; updateSourceUI();
+    $('connect-msg').textContent = 'pick the Muse in the browser popup…';
+    try{
+      const { MuseClient } = await loadMuseLib();
+      const client = new MuseClient();
+      await client.connect();
+      await client.start();
+      client.eegReadings.subscribe(r => pushSamples(r.electrode, r.samples)); // 0 TP9, 1 AF7, 2 AF8, 3 TP10 (4 = aux, ignored)
+      client.connectionStatus.subscribe(ok => {
+        muse.connected = ok; updateSourceUI();
+        if(!ok && scanScreen.classList.contains('active')) showConnectOverlay('headset disconnected. turn it back on and reconnect.');
+      });
+      muse.client = client;
+      muse.connected = true;
+    } catch(err){
+      console.error(err);
+      $('connect-msg').textContent = 'could not connect (' + (err && err.message ? err.message : 'cancelled') + '). make sure the Muse is on and not paired to the phone app, then try again.';
+    }
+    muse.connecting = false; updateSourceUI();
+  }
+
+  function updateSourceUI(){
+    const led = $('source-led'), txt = $('source-text');
+    led.className = 'led-dot';
+    if(!USE_MUSE){ txt.textContent = 'signal: simulated'; led.classList.add('warn'); return; }
+    if(muse.connected){ txt.textContent = 'muse 2: connected'; led.classList.add('on'); }
+    else if(muse.connecting){ txt.textContent = 'muse 2: connecting…'; led.classList.add('warn','pulse'); }
+    else { txt.textContent = 'muse 2: tap to connect'; led.classList.add('bad'); }
+  }
+  $('source-badge').addEventListener('click', ()=>{ if(USE_MUSE) connectMuse(); });
+  updateSourceUI();
+
+  /* =====================================================================
+     NEURAL SCAN SCREEN
+     ===================================================================== */
+  // build sensor dots + band bars once
+  $('sensors').innerHTML = CH_NAMES.map((n,i)=>`<div class="sensor"><span class="led-dot" id="sensor-${i}"></span>${n}</div>`).join('');
+  $('bands').innerHTML = BANDS.map(b=>`
+    <div class="band-name">${b}</div>
+    <div class="band-track"><div class="band-fill" id="fill-${b}"></div><div class="band-ref" id="ref-${b}"></div></div>
+    <div class="band-val" id="val-${b}">—</div>`).join('');
+
+  const waveCanvas = $('wave-canvas');
+  const scan = { active:false, phase:'idle', startAt:0, frames:[], blinks:0, resolve:null, raf:0 };
+
+  function showConnectOverlay(msg){
+    $('connect-msg').textContent = msg || 'headset not connected. turn on the Muse, then press connect.';
+    $('connect-overlay').classList.add('show');
+    scan.phase = 'waiting';
+  }
+  $('connect-btn').addEventListener('click', connectMuse);
+  $('use-sim-btn').addEventListener('click', ()=>{
+    USE_MUSE = false; updateSourceUI(); sim.start();
+    $('connect-overlay').classList.remove('show');
+  });
+
+  function drawWaves(){
+    const w = waveCanvas.clientWidth, h = waveCanvas.clientHeight;
+    const dpr = window.devicePixelRatio || 1;
+    if(waveCanvas.width !== Math.round(w*dpr)){ waveCanvas.width = Math.round(w*dpr); waveCanvas.height = Math.round(h*dpr); }
+    const ctx = waveCanvas.getContext('2d');
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,w,h);
+    const lane = h / NCH;
+    for(let ch=0; ch<NCH; ch++){
+      const mid = lane*ch + lane/2;
+      ctx.strokeStyle = '#1e2a2e'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0,mid); ctx.lineTo(w,mid); ctx.stroke();
+      ctx.fillStyle = '#3f4d52'; ctx.font = '10px Space Mono, monospace';
+      ctx.fillText(CH_NAMES[ch], 4, lane*ch + 12);
+      if(eeg.count[ch] < 8) continue;
+      const x = lastN(ch, BUF);
+      let mean = 0; for(const v of x) mean += v; mean /= BUF;
+      const scale = (lane/2) / 100; // ±100 µV fills the lane
+      ctx.strokeStyle = ch === 1 || ch === 2 ? '#43e0c9' : '#2fa894';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      for(let i=0;i<BUF;i++){
+        const px = i / (BUF-1) * w;
+        const py = mid - Math.max(-lane/2, Math.min(lane/2, (x[i]-mean)*scale));
+        i ? ctx.lineTo(px,py) : ctx.moveTo(px,py);
+      }
+      ctx.stroke();
+    }
+  }
+
+  function updateBars(rel, ref){
+    for(const b of BANDS){
+      $(`fill-${b}`).style.width = Math.min(100, rel[b]/0.6*100) + '%';
+      $(`ref-${b}`).style.left = Math.min(100, ref[b]/0.6*100) + '%';
+      $(`val-${b}`).textContent = (rel[b]*100).toFixed(0) + '%';
+    }
+  }
+
+  // runs the scan; resolves with the averaged reading
+  function runScan(){
+    return new Promise(resolve=>{
+      scan.active = true; scan.frames = []; scan.blinks = 0; scan.resolve = resolve;
+      $('scan-progress').style.width = '0%';
+      $('scan-hint').textContent = USE_MUSE ? '' : 'simulated signal · press D T A B G to steer it';
+      $('scan-instruction').textContent = 'relax · eyes open · stay still';
+      $('connect-overlay').classList.remove('show');
+      showScreen(scanScreen);
+
+      if(USE_MUSE && !muse.connected) showConnectOverlay();
+      else { if(!USE_MUSE){ sim.force = null; sim.newMood(); } scan.phase = 'settling'; scan.startAt = performance.now(); }
+
+      const ref = currentBaseline();
+      const loop = ()=>{
+        if(!scan.active) return;
+        drawWaves();
+        const { rel, quality } = analyze();
+        quality.forEach((q,i)=>{
+          const d = $(`sensor-${i}`);
+          d.className = 'led-dot ' + (q === 'good' ? 'on' : q === 'noisy' ? 'warn' : 'bad');
+        });
+        updateBars(rel, ref);
+
+        // once the headset is connected, leave the overlay
+        if(scan.phase === 'waiting' && ((USE_MUSE && muse.connected && signalLive()) || (!USE_MUSE && signalLive()))){
+          $('connect-overlay').classList.remove('show');
+          scan.phase = 'settling'; scan.startAt = performance.now();
+        }
+        const now = performance.now();
+        // 1.5 s settling so the buffer is full of fresh data before recording
+        if(scan.phase === 'settling' && now - scan.startAt > 1500){ scan.phase = 'recording'; scan.startAt = now; }
+        if(scan.phase === 'recording'){
+          if(!signalLive()){
+            $('scan-instruction').textContent = 'waiting for signal…';
+          } else {
+            $('scan-instruction').textContent = quality.filter(q=>q==='good').length < 2
+              ? 'adjust the headband — sensors need skin contact'
+              : 'relax · eyes open · stay still';
+            scan.frames.push(rel);
+            if(detectBlink()) scan.blinks++;
+          }
+          const p = (now - scan.startAt) / (SCAN_SECONDS*1000);
+          $('scan-progress').style.width = Math.min(100, p*100) + '%';
+          if(p >= 1){
+            scan.active = false;
+            resolve(summarize(scan.frames, scan.blinks));
+            return;
+          }
+        }
+        scan.raf = requestAnimationFrame(loop);
+      };
+      loop();
+    });
+  }
+
+  /* =====================================================================
+     READING → PROMPTS
+     ===================================================================== */
+  function currentBaseline(){
+    let hist = [];
+    try{ hist = JSON.parse(localStorage.getItem('im-baseline') || '[]'); }catch(e){}
+    if(hist.length < 3) return { ...REF };
+    const avg = {}; for(const b of BANDS) avg[b] = hist.reduce((s,h)=>s+h[b],0)/hist.length;
+    const out = {}; for(const b of BANDS) out[b] = 0.5*REF[b] + 0.5*avg[b];
+    return out;
+  }
+  function addToBaseline(rel){
+    try{
+      const hist = JSON.parse(localStorage.getItem('im-baseline') || '[]');
+      hist.push(rel); while(hist.length > 30) hist.shift();
+      localStorage.setItem('im-baseline', JSON.stringify(hist));
+    }catch(e){}
+  }
+
+  function summarize(frames, blinks){
+    const avg = {}; for(const b of BANDS) avg[b] = 0;
+    if(!frames.length){ for(const b of BANDS) avg[b] = REF[b]; }
+    else for(const f of frames) for(const b of BANDS) avg[b] += f[b]/frames.length;
+    // stability: how much alpha+theta wandered during the scan
+    let cv = 0;
+    if(frames.length > 10){
+      const s = frames.map(f=>f.alpha + f.theta);
+      const m = s.reduce((a,v)=>a+v,0)/s.length;
+      const sd = Math.sqrt(s.reduce((a,v)=>a+(v-m)**2,0)/s.length);
+      cv = m ? sd/m : 0;
+    }
+    return { avg, blinks, variability: cv, seconds: SCAN_SECONDS };
+  }
+
+  function interpret(reading){
+    const ref = currentBaseline();
+    const scores = BANDS.map(b=>({ b, s: reading.avg[b]/ref[b] })).sort((x,y)=>y.s-x.s);
+    const dom = scores[0], sec = scores[1];
+    const strength = dom.s >= 1.6 ? 'intensely' : dom.s >= 1.2 ? '' : 'subtly';
+    const blinkPerMin = reading.blinks / (reading.seconds/60);
+    const glitchy = blinkPerMin > 25;
+    const shifting = reading.variability > 0.25;
+
+    let portrait = `${VOCAB[dom.b].portrait}, accented by ${VOCAB[sec.b].accent}`;
+    if(strength === 'subtly') portrait = 'muted, understated ' + portrait;
+    if(strength === 'intensely') portrait = 'saturated, heightened ' + portrait;
+    if(glitchy) portrait += ', fragmented by digital glitch artifacts and scanlines';
+    if(shifting) portrait += ', layered translucent double exposure of shifting selves';
+    portrait += `. ${REALISM}`;
+
+    let motion = `${VOCAB[dom.b].motion}, ${VOCAB[sec.b].motionAccent}`;
+    if(glitchy) motion += ', occasional glitch flicker';
+
+    const state = [strength, VOCAB[dom.b].state].filter(Boolean).join(' ');
+    return { state, dominant: dom.b, secondary: sec.b, portrait, motion,
+             meta: `${dom.b} ↑ ${dom.s.toFixed(2)}× · ${sec.b} ${sec.s.toFixed(2)}× · ${reading.blinks} blinks` };
+  }
+
+  function showReading(r){
+    return new Promise(resolve=>{
+      $('reading-state').textContent = r.state;
+      $('reading-meta').textContent = r.meta;
+      $('reading-portrait').textContent = r.portrait;
+      $('reading-motion').textContent = r.motion;
+      showScreen(readingScreen);
+      let left = READING_SECONDS;
+      const tick = ()=>{ $('reading-countdown').textContent = `synthesizing in ${left}… (tap to skip)`; };
+      tick();
+      const iv = setInterval(()=>{ left--; if(left <= 0) done(); else tick(); }, 1000);
+      const done = ()=>{ clearInterval(iv); readingScreen.removeEventListener('click', done); resolve(); };
+      readingScreen.addEventListener('click', done);
+    });
+  }
+
+  /* =====================================================================
+     STATIC NOISE (one loop per canvas, never stacks)
+     ===================================================================== */
+  function makeStatic(canvas){
+    const st = { on:false, running:false };
+    st.start = ()=>{
+      st.on = true;
+      if(st.running) return;
+      st.running = true;
+      const ctx = canvas.getContext('2d');
+      let img = null;
+      const frame = ()=>{
+        if(!st.on){ st.running = false; return; }
+        const w = canvas.clientWidth|0, h = canvas.clientHeight|0;
+        if(w && h){
+          if(canvas.width !== w || canvas.height !== h){ canvas.width = w; canvas.height = h; img = null; }
+          if(!img) img = ctx.createImageData(w,h);
+          const d = img.data;
+          for(let i=0;i<d.length;i+=4){ const v = Math.random()*255; d[i]=v; d[i+1]=v; d[i+2]=v; d[i+3]=35; }
+          ctx.putImageData(img,0,0);
+        }
+        requestAnimationFrame(frame);
+      };
+      frame();
+    };
+    st.stop = ()=>{ st.on = false; };
+    return st;
+  }
+  const static1 = makeStatic($('static-canvas-1'));
+  const static2 = makeStatic($('static-canvas-2'));
+
+  /* =====================================================================
+     DASHBOARD
+     ===================================================================== */
+  async function refreshStats(){
+    try{
+      const res = await fetch('/api/stats');
+      if(!res.ok) return;
+      const data = await res.json();
+      $('stat-participants').textContent = String(data.participants ?? 0).padStart(3,'0');
+      $('stat-portraits').textContent = String(data.portraits ?? 0).padStart(3,'0');
+      $('stat-videos').textContent = String(data.videos ?? 0).padStart(3,'0');
+    } catch(err){}
+  }
+  function logSession(stage, url){
+    fetch('/api/log-session', {
+      method:'POST', headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ stage, url })
+    }).then(refreshStats).catch(()=>{});
+  }
+
+  /* =====================================================================
+     MAIN FLOW
+     ===================================================================== */
+  let session = 0;      // bumps on reset, so late results from an old visitor are ignored
+  let busy = false;
+
+  async function enterMachine(){
+    showScreen(floorScreen);
+    showStage(1);
+    dashboard.classList.add('active');
+    static1.start(); static2.start();
+    if(!USE_MUSE) sim.start();
+    logSession('participant');
+    refreshStats();
+
+    if(!window.isSecureContext){ flashError('this page needs to run on https:// (or localhost) — camera won\'t work opened directly from a file.'); return; }
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ flashError('this browser has no camera API available'); return; }
+    try{
+      const stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user' } });
+      video.srcObject = stream;
+      led1.classList.add('on');
+    } catch(err){
+      flashError('camera permission was blocked — check your browser\'s site settings');
+    }
+  }
+
+  captureScreen.addEventListener('click', async ()=>{
+    if(busy) return;
+    const w = video.videoWidth, h = video.videoHeight;
+    if(!w || !h) return;
+    busy = true;
+    const sid = session;
+
+    // capture mirrored, so the portrait matches what the visitor saw
+    hiddenCanvas.width = w; hiddenCanvas.height = h;
+    const ctx = hiddenCanvas.getContext('2d');
+    ctx.save(); ctx.translate(w,0); ctx.scale(-1,1);
+    ctx.drawImage(video, 0, 0, w, h);
+    ctx.restore();
+    const dataURL = hiddenCanvas.toDataURL('image/jpeg', 0.92);
+
+    const reading = await runScan();
+    const r = interpret(reading);
+    addToBaseline(reading.avg);
+    await showReading(r);
+    if(sid !== session){ busy = false; return; }
+
+    showScreen(floorScreen);
+    showStage(2);
+    $('cap-2').textContent = `read as: ${r.state}`;
+    $('cap-3').textContent = '';
+    const portraitUrl = await generateStudioPortrait(dataURL, r, sid);
+    if(!portraitUrl){
+      if(sid === session){ maxStage = 1; showStage(1); busy = false; }
+      return;
+    }
+    if(sid !== session) return;
+    // start the video right away, but let the visitor look at the portrait first
+    const videoDone = generateVideo(portraitUrl, r, sid);
+    await new Promise(res=>setTimeout(res, PORTRAIT_HOLD_SECONDS*1000));
+    if(sid === session) showStage(3);
+    await videoDone;
+    if(sid === session) busy = false;
+  });
+
+  // ---- one-stage-at-a-time view ----
+  let maxStage = 1;
+  function showStage(n){
+    maxStage = Math.max(maxStage, n);
+    [1,2,3].forEach(i=>{
+      $('m'+i).classList.toggle('current', i === n);
+      $('step-'+i).classList.toggle('current', i === n);
+      $('step-'+i).classList.toggle('reached', i <= maxStage);
+    });
+  }
+  document.querySelectorAll('.step').forEach(b=> b.addEventListener('click', ()=>{
+    const n = Number(b.dataset.step);
+    if(n <= maxStage) showStage(n);   // look back at earlier stages
+  }));
+
+  // elapsed-time counter on a status label, e.g. "synthesizing · 0:23"
+  function startTimer(el, label){
+    const base = el.dataset.base || el.textContent;
+    el.dataset.base = base;
+    const t0 = Date.now();
+    const upd = ()=>{ const t = Math.floor((Date.now()-t0)/1000); el.textContent = `${label} · ${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`; };
+    upd();
+    const iv = setInterval(upd, 1000);
+    return ()=>{ clearInterval(iv); el.textContent = base; };
+  }
+
+  const activeGlitches = new Set();
+  function runGlitch(container, led, statusEl, label){
+    led.classList.add('pulse');
+    const stopTimer = statusEl ? startTimer(statusEl, label) : ()=>{};
+    const iv = setInterval(()=>{
+      const bar = document.createElement('div');
+      bar.className = 'glitch-bar';
+      bar.style.width = (10 + Math.random()*80)+'%';
+      bar.style.height = (1 + Math.random()*3)+'px';
+      bar.style.left = '0';
+      bar.style.top = (Math.random()*100)+'%';
+      bar.style.transform = `translateX(${Math.random()*100-50}%)`;
+      bar.style.background = Math.random() > 0.5 ? '#43e0c9' : '#ff3d5a';
+      bar.style.opacity = (0.3 + Math.random()*0.6).toString();
+      container.appendChild(bar);
+      if(container.querySelectorAll('.glitch-bar').length > 30) container.querySelector('.glitch-bar').remove();
+    }, 60);
+    const stop = ()=>{
+      clearInterval(iv);
+      stopTimer();
+      activeGlitches.delete(stop);
+      led.classList.remove('pulse');
+      container.querySelectorAll('.glitch-bar').forEach(b=>b.remove());
+    };
+    activeGlitches.add(stop);
+    return stop;
+  }
+
+  // turns a failed fetch into a readable reason (shown under the error message + in the console)
+  async function describeFailure(res, err){
+    if(!res) return 'network error: ' + (err && err.message ? err.message : 'could not reach the server');
+    let body = '';
+    try{ body = (await res.text()).slice(0, 300); }catch(e){}
+    if([404,405,501].includes(res.status) || /^\s*<!doctype html/i.test(body)) return res.status + ' — the /api route was not found. Are you running the page with Live Server or opening the file? API routes only run on Vercel or with `vercel dev`.';
+    if(res.status === 413) return '413 — the photo was too large for the server.';
+    return res.status + ' ' + res.statusText + (body ? ' — ' + body : '');
+  }
+
+  // the server starts a Replicate job and returns { id }; we check on it until it's done
+  async function waitForPrediction(id, sid, maxMinutes){
+    const deadline = Date.now() + maxMinutes*60*1000;
+    while(Date.now() < deadline){
+      await new Promise(r=>setTimeout(r, 2500));
+      if(sid !== session) return { cancelled:true };
+      let res;
+      try{ res = await fetch('/api/prediction?id=' + encodeURIComponent(id), { cache:'no-store' }); }
+      catch(e){ continue; } // brief network hiccup — keep trying
+      if(!res.ok){ const why = await describeFailure(res); throw new Error(why); }
+      const p = await res.json();
+      if(p.status === 'succeeded'){
+        if(!p.output) throw new Error('replicate finished but returned no output');
+        return { url: p.output };
+      }
+      if(p.status === 'failed' || p.status === 'canceled'){
+        throw new Error('replicate ' + p.status + (p.error ? ': ' + String(p.error).slice(0,300) : ''));
+      }
+    }
+    throw new Error('gave up after ' + maxMinutes + ' minutes — replicate is still working or queued');
+  }
+
+  // ---- stage 02: portrait from the brain reading ----
+  async function generateStudioPortrait(dataURL, r, sid){
+    static1.stop();
+    const stopGlitch = runGlitch(studioScreen, led2, $('status-2'), 'synthesizing');
+    let res = null;
+    try{
+      res = await fetch('/api/generate-persona', {
+        method:'POST', headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ image: dataURL, prompt: r.portrait, eeg: { state:r.state, dominant:r.dominant, secondary:r.secondary } })
+      });
+      if(!res.ok) throw new Error('http');
+      const data = await res.json();
+      let imageUrl = data.image;
+      if(!imageUrl && data.id){
+        const pr = await waitForPrediction(data.id, sid, 5);
+        if(pr.cancelled){ stopGlitch(); return null; }
+        imageUrl = pr.url;
+      }
+      if(!imageUrl) throw new Error('server answered but sent no image: ' + JSON.stringify(data).slice(0,300));
+      data.image = imageUrl;
+      stopGlitch();
+      if(sid !== session) return null;   // visitor reset while we were waiting
+      studioScreen.querySelectorAll('img.reveal').forEach(el=>el.remove());
+      const img = document.createElement('img');
+      img.className = 'reveal';
+      img.src = data.image;
+      studioScreen.insertBefore(img, studioScreen.firstChild);
+      led2.classList.add('on');
+      logSession('portrait', data.image);
+      return data.image;
+    } catch(err){
+      stopGlitch();
+      if(sid !== session) return null;
+      static1.start();
+      const why = err.message === 'http' ? await describeFailure(res) : (res ? err.message : await describeFailure(null, err));
+      console.error('[generate-persona]', why);
+      flashError('the machine is resting — try again shortly', why);
+      return null;
+    }
+  }
+
+  // ---- stage 03: animate it with the motion prompt ----
+  async function generateVideo(portraitUrl, r, sid){
+    static2.stop();
+    // show the portrait faintly behind the static while the video is made
+    videoScreen.querySelectorAll('img.ghost-portrait').forEach(el=>el.remove());
+    const ghost = document.createElement('img');
+    ghost.className = 'ghost-portrait';
+    ghost.src = portraitUrl;
+    videoScreen.insertBefore(ghost, videoScreen.firstChild);
+    const stopGlitch = runGlitch(videoScreen, led3, $('status-3'), 'animating');
+    let res = null;
+    try{
+      res = await fetch('/api/generate-video', {
+        method:'POST', headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ image: portraitUrl, prompt: r.motion, eeg: { state:r.state, dominant:r.dominant, secondary:r.secondary } })
+      });
+      if(!res.ok) throw new Error('http');
+      const data = await res.json();
+      let videoUrl = data.video;
+      if(!videoUrl && data.id){
+        const pr = await waitForPrediction(data.id, sid, 10);
+        if(pr.cancelled){ stopGlitch(); return; }
+        videoUrl = pr.url;
+      }
+      if(!videoUrl) throw new Error('server answered but sent no video: ' + JSON.stringify(data).slice(0,300));
+      data.video = videoUrl;
+      stopGlitch();
+      if(sid !== session) return;
+      videoScreen.querySelectorAll('video.reveal, img.ghost-portrait').forEach(el=>el.remove());
+      const vid = document.createElement('video');
+      vid.className = 'reveal';
+      vid.src = data.video;
+      vid.autoplay = true; vid.loop = true; vid.muted = true; vid.playsInline = true;
+      videoScreen.insertBefore(vid, videoScreen.firstChild);
+      led3.classList.add('on');
+      $('cap-3').textContent = `moving as: ${r.state} · tap to finish`;
+      logSession('video', data.video);
+    } catch(err){
+      stopGlitch();
+      if(sid !== session) return;
+      static2.start();
+      videoScreen.querySelectorAll('img.ghost-portrait').forEach(el=>el.remove());
+      showStage(2);   // the portrait is still there to look at
+      const why = err.message === 'http' ? await describeFailure(res) : (res ? err.message : await describeFailure(null, err));
+      console.error('[generate-video]', why);
+      flashError('the video isn\'t ready yet — the portrait is still here', why);
+    }
+  }
+
+  // tap stage 03 to reset for the next visitor (once the video is done).
+  // double-tap forces a reset even while something is still generating.
+  videoScreen.addEventListener('click', ()=>{ if(!busy) resetForNextVisitor(); });
+  videoScreen.addEventListener('dblclick', resetForNextVisitor);
+  function resetForNextVisitor(){
+    session++;
+    busy = false;
+    [...activeGlitches].forEach(stop=>stop());
+    studioScreen.querySelectorAll('img.reveal, .glitch-bar').forEach(el=>el.remove());
+    videoScreen.querySelectorAll('video.reveal, img.ghost-portrait, .glitch-bar').forEach(el=>el.remove());
+    [led2, led3].forEach(l=>l.classList.remove('on','pulse'));
+    $('cap-2').textContent = ''; $('cap-3').textContent = '';
+    static1.start(); static2.start();
+    maxStage = 1;
+    showStage(1);
+  }
+</script>
+
+</body>
+</html>
+
+
+=====================================================================
+B. api/generate-persona.js
+=====================================================================
+
+// api/generate-persona.js
+//
+// Screen 2 of the identity machine: takes the visitor's captured selfie and
+// restyles it into a synthetic portrait, using the brain-reading prompt from
+// the page.
+//
+// MODEL (Oct 2026): Google Nano Banana 2 on Replicate — higher resolution
+// (up to 4K) and better at keeping the person recognizable than InstantID.
+// Same REPLICATE_API_TOKEN as before, already set in Vercel.
+//
+// To go back to InstantID, restore the previous version of this file from
+// git:   git checkout d411dd2 -- api/generate-persona.js
+//
+// ASYNC: this route only STARTS the job and returns { id } right away.
+// The page then checks /api/prediction?id=... until the image is ready,
+// so Vercel never times out.
+// ─────────────────────────────────────────────────────────────────────────
+
+import Replicate from 'replicate';
+
+export const config = {
+  maxDuration: 30, // only starts the job
+};
+
+const MODEL = 'google/nano-banana-2';
+
+// Settings you can change:
+//   RESOLUTION: '512px' | '1K' | '2K' | '4K'  (higher = sharper but slower)
+//   ASPECT_RATIO: '4:3' matches the kiosk screen; '16:9' matches the video
+const RESOLUTION = '2K';
+const ASPECT_RATIO = '4:3';
+
+// Wraps the style prompt so the model edits THIS person rather than
+// inventing a stranger.
+function buildPrompt(style) {
+  return (
+    'Transform this photo into a hyperrealistic, high-resolution photographic portrait of the same person. ' +
+    'Keep their face, facial features, skin tone and identity exactly as they are — do not beautify, ' +
+    'smooth the skin, add makeup or reshape the face. Natural skin texture with visible pores. ' +
+    'Change only the lighting, setting and atmosphere: ' + style + '. ' +
+    'Head-and-shoulders framing, sharp focus on the eyes, photorealistic, no illustration, no text, no watermark.'
+  );
+}
+
+const DEFAULT_STYLE =
+  'soft natural window light, neutral background, documentary portrait photography';
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Use POST' });
+  }
+
+  const { image, prompt } = req.body; // image: base64 selfie, prompt: style from the brain reading
+
+  if (!image) {
+    return res.status(400).json({ error: 'No image provided' });
+  }
+
+  if (!process.env.REPLICATE_API_TOKEN) {
+    return res.status(500).json({
+      error: 'REPLICATE_API_TOKEN is not set in this project\'s environment variables yet.'
+    });
+  }
+
+  const style = (prompt && prompt.trim()) ? prompt.trim() : DEFAULT_STYLE;
+
+  try {
+    const replicate = new Replicate();
+
+    const input = {
+      prompt: buildPrompt(style),
+      image_input: [image],
+      resolution: RESOLUTION,
+      aspect_ratio: ASPECT_RATIO,
+      output_format: 'jpg'
+    };
+
+    // start the job and return right away — the page polls /api/prediction
+    const prediction = await replicate.predictions.create({ model: MODEL, input });
+    return res.status(200).json({ id: prediction.id, status: prediction.status });
+
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+
+=====================================================================
+C. api/generate-video.js
+=====================================================================
+
+// api/generate-video.js
+//
+// Screen 3 of the identity machine: takes the studio portrait from screen 2
+// and animates it into a short video, using Kling v3 Omni Video on
+// Replicate — via Replicate's official Node.js client library.
+//
+// ─────────────────────────────────────────────────────────────────────────
+// SETUP:
+//
+// 1. Same REPLICATE_API_TOKEN as generate-persona.js, already set in
+//    Vercel's Environment Variables. The Replicate client below picks it
+//    up automatically from that environment variable — no need to paste
+//    it anywhere in this file.
+//
+// 2. package.json (in the project root) already lists "replicate" as a
+//    dependency, so Vercel installs it automatically on deploy.
+//
+// 3. Confirmed input field for the starting image: `start_image` (a URI).
+//    Constraints from the model's schema, worth knowing:
+//      - format: .jpg / .jpeg / .png
+//      - max size: 10MB
+//      - minimum dimension: 300px
+//      - aspect ratio: between 1:2.5 and 2.5:1
+//    The `image` value coming from generate-persona.js will already be a
+//    real hosted URL (Replicate returns one after generating the studio
+//    portrait), so it satisfies the "uri" requirement automatically —
+//    nothing extra to convert here.
+//
+// 4. Confirmed from a real 422 error: this model also requires a
+//    `prompt` field alongside `start_image` — it's not optional. The
+//    prompt below describes subtle, natural motion (breathing, slight
+//    head turn, blinking) rather than anything dramatic, to keep the
+//    animation feeling like a living portrait rather than a music video.
+//    Adjust the wording if you want more or less movement in the result.
+// ─────────────────────────────────────────────────────────────────────────
+
+import Replicate from 'replicate';
+
+// ASYNC UPDATE (Oct 2026): this route no longer waits for the video (Vercel
+// was timing out). It starts the job and returns { id } right away; the page
+// polls /api/prediction?id=... until the video is ready.
+
+// Video generation (Kling) commonly takes even longer than image
+// generation. With Fluid Compute enabled in Vercel's project settings,
+// the platform allows up to 300 seconds — this uses 280 to leave a small
+// safety margin under that ceiling.
+export const config = {
+  maxDuration: 30, // only starts the job now
+};
+
+// MODEL SWITCH (Oct 2026): Kling → Google Veo 3.1 Fast on Replicate.
+// Same REPLICATE_API_TOKEN, no new key needed. To go back to Kling, set
+// MODEL back to 'kwaivgi/kling-v3-omni-video' and use `start_image` instead
+// of `image` in the input below (Kling also used duration 5).
+const MODEL = 'google/veo-3.1-fast';
+
+// Veo options: duration 4, 6 or 8 seconds · resolution '720p' or '1080p'
+// aspect_ratio '16:9' or '9:16'. Veo can also make matching sound — the
+// kiosk page plays videos muted, so it's off here; set to true to try it.
+const DURATION = 6;
+const RESOLUTION = '720p';
+const GENERATE_AUDIO = false;
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Use POST' });
+  }
+
+  const { image, prompt } = req.body; // image: portrait URL, prompt: visitor's own motion description
+
+  const DEFAULT_MOTION_PROMPT = 'subtle natural motion, gentle breathing, ' +
+    'slight head turn, soft blinking, cinematic portrait animation, minimal camera movement';
+
+  const finalPrompt = (prompt && prompt.trim()) ? prompt.trim() : DEFAULT_MOTION_PROMPT;
+
+  if (!image) {
+    return res.status(400).json({ error: 'No image provided' });
+  }
+
+  if (!process.env.REPLICATE_API_TOKEN) {
+    return res.status(500).json({
+      error: 'REPLICATE_API_TOKEN is not set in this project\'s environment variables yet.'
+    });
+  }
+
+  try {
+    const replicate = new Replicate();
+
+    const input = {
+      image: image,                 // the portrait from stage 02 = first frame
+      prompt: finalPrompt,
+      duration: DURATION,
+      resolution: RESOLUTION,
+      aspect_ratio: '16:9',
+      generate_audio: GENERATE_AUDIO,
+      negative_prompt: 'distorted face, warped features, extra limbs, text, watermark'
+    };
+
+    // start the job and return right away — the page polls /api/prediction
+    const prediction = await replicate.predictions.create({ model: MODEL, input });
+    return res.status(200).json({ id: prediction.id, status: prediction.status });
+
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+=====================================================================
+D. api/prediction.js
+=====================================================================
+
+// api/prediction.js
+//
+// Checks on a Replicate job started by generate-persona.js or generate-video.js.
+// The identity machine page calls  GET /api/prediction?id=<id>  every few
+// seconds until status is "succeeded" (or "failed"/"canceled").
+//
+// Returns: { status, output, error }
+//   output is a single URL string (first image for InstantID, the video for Kling)
+
+import Replicate from 'replicate';
+
+export const config = { maxDuration: 15 };
+
+export default async function handler(req, res) {
+  const id = req.query && req.query.id;
+  if (!id || !/^[a-z0-9]+$/i.test(id)) {
+    return res.status(400).json({ error: 'Missing or invalid id' });
+  }
+  if (!process.env.REPLICATE_API_TOKEN) {
+    return res.status(500).json({ error: 'REPLICATE_API_TOKEN is not set in this project\'s environment variables yet.' });
+  }
+  try {
+    const replicate = new Replicate();
+    const p = await replicate.predictions.get(id);
+    const output = Array.isArray(p.output) ? p.output[0] : p.output;
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(200).json({ status: p.status, output: output || null, error: p.error || null });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}

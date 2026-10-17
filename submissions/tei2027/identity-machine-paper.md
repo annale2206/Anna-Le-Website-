@@ -1,0 +1,87 @@
+# Identity Machine and the Encounter with a Possible Self
+
+**Duyên (Anna) Lê**  
+School of Art, Texas Tech University, Lubbock, Texas, USA  
+duyele@ttu.edu
+
+## Abstract
+
+Identity Machine is a participatory artwork that combines a visitor's photograph, optional words about an imagined self, and electroencephalography (EEG)-derived features to generate a portrait and short moving image. The work approaches physiological variation as expressive material, interpreted through artist-authored mappings rather than treated as evidence of a hidden psychological truth. Visitors encounter a recognisable yet transformed figure whose appearance, atmosphere, and movement emerge through their stated intentions, recorded signals, and generative models. We call this encounter neuro-generative self-representation. Presented as an installation proposal with an implemented browser-based prototype, the work addresses TEI 2027's The Body in Space and the Arts & Performances theme Navigating Futures through a tension between a physically situated participant and a computationally imagined body. Its contribution is an artistic framework for negotiating recognition, aspiration, and machine interpretation, together with a practical account of the translation from bodily measurement to cinematic self-representation.
+
+**Keywords:** EEG; generative video; self-representation; participatory art; embodied interaction; identity.
+
+## 1 Introduction and Artistic Motivation
+
+Identity is continually negotiated through appearance, memory, performance, and the environments we inhabit. Generative systems introduce another participant in this negotiation: a machine that can construct convincing images of a person acting in situations they have never occupied. Identity Machine asks what it means to encounter such a figure when its construction is also influenced by a trace recorded from one's own body.
+
+The artwork begins with a question: Who are you becoming? A visitor can provide a short phrase, such as a dancer by the sea, or leave the invitation open. A camera records their appearance, and a wearable EEG headband supplies signals during a brief baseline and subsequent period of imagining. Artist-authored rules translate selected features into lighting, atmosphere, and movement descriptions. Generative models combine these descriptions with the photograph and words to create a portrait followed by a short film.
+
+The image is proposed as a possible self, not a prediction. Recognisable appearance provides a point of identification; invented surroundings and gestures create distance from an ordinary reflection. The participant supplies material but does not determine every visible detail. This partial authorship is the work's central artistic tension. The contribution is a specific arrangement of sensing, self-imagination, and cinematic representation, rather than a claim to be the first artwork combining EEG and AI.
+
+## 2 Related Artistic and Interaction Research
+
+Brain activity has a long history as artistic material. Alvin Lucier's Music for Solo Performer (1965) used amplified brainwave activity within a performance involving percussion. Straebel and Thoben examine the technical and compositional mediation behind its apparent immediacy [1]. Surveys by Wadeson and colleagues [2] and Prpa and Pasquier [3] further distinguish control mechanisms and the relationships among input, mapping, output, presentation, and audience. These accounts situate Identity Machine within an established tradition of authored physiological translation.
+
+Long and Vines's Mind Pool presents ambiguous bodily feedback as an invitation to self-reflection [4]. Somaesthetic Appreciation Design foregrounds bodily inquiry and attention to felt experience [5]. These approaches inform the invitation to pause and attend to oneself; they do not establish that our delayed cinematic output produces somatic awareness.
+
+Virtual embodiment research distinguishes body ownership, agency, and self-location [6]. The Proteus Effect examines how transformed avatars can influence behaviour in immersive environments [7]. Identity Machine instead offers a third-person image without direct motor control or virtual inhabitation. These studies motivate questions about recognition and agency, rather than demonstrate equivalent effects here.
+
+Recent work such as Chen and Corino's Coids connects EEG and AI-generated imagery within an immersive spatial environment [8]. Identity Machine's emphasis is the recognisable participant as the moving subject, with explicit aspirational words and recorded physiological features contributing through different paths. We use neuro-generative self-representation to name this arrangement without implying literal visualisation of mental content.
+
+## 3 Participant Experience
+
+The proposed exhibition presents one facilitated station with a camera, display, and wireless EEG headband. A visitor approaches, receives an explanation of the artistic translation, and chooses whether to participate. They frame a photograph and optionally enter up to 120 characters describing an imagined self. Leaving the field empty allows the authored vocabulary to supply a nature-based setting.
+
+During sensing, the interface first asks the visitor to rest with eyes open, then to hold their words or an imagined self in mind. The default configuration records a ten-second baseline and a fifteen-second reading after a short settling period. Waveforms and signal indicators expose part of the measurement process. The prototype subsequently presents selected band changes and the associated portrait and motion descriptions.
+
+The portrait is revealed before the film. This sequence gives the static representation a moment of attention before movement extends it into an apparent presence. In the default configuration, the film can grow through four eight-second segments, with earlier material playing while later segments are generated. Completion time depends on external services. The experience therefore involves anticipation and delayed return, rather than continuous control of an image through live EEG.
+
+The exhibition invitation is to consider what feels familiar, desired, unexpected, or imposed. These are intended interpretive possibilities, not reported participant findings.
+
+## 4 From Signal to Cinematic Form
+
+The browser implementation supports a Muse EEG connection and a separately labelled simulated mode. Simulation enables testing and demonstrations without a headband; its outputs must not be presented as derived from a visitor's physiology. The EEG path processes four channels at a configured sampling rate of 256 Hz. Mean-centred, Hann-windowed, one-second samples undergo a fast Fourier transform. Power is summarised within delta, theta, alpha, beta, and gamma ranges and normalised across those ranges.
+
+The system ranks ratios between reading and baseline band proportions. Where the personal baseline is unavailable, it uses a fallback reference blended with prior local summaries. This comparison selects an artistic vocabulary; it is not a validated assessment of attention, emotion, or identity. Amplitude-based quality checks favour channels marked good but can fall back to available channels. Blinks and a variability measure also influence selected visual descriptions. This lightweight processing leaves movement and contact artefacts unresolved.
+
+With words supplied, those words guide the proposed role, setting, and action, while signal-derived descriptions guide light, colour, and movement energy. Without words, mappings also select the setting. For example, one rule associates an increased alpha proportion with garden imagery and unhurried motion. This is an authored association, not evidence that a garden expresses the participant's mental state.
+
+The current server configuration requests a portrait from Google Nano Banana 2 and video from Google Veo 3.1 Fast through Replicate. Instructions request preservation of facial features and skin tone, but likeness remains a generation goal rather than a guarantee. Later clips use an extracted final frame from the previous clip to encourage continuity. Neither identity consistency nor an uninterrupted shot is assured. EEG conditions the models indirectly through text; there is no trained EEG-to-video decoder.
+
+## 5 The Body in Space and Navigating Futures
+
+Identity Machine brings two bodily situations into relation. The visitor remains physically present near the camera, headband, and display. Their generated counterpart can move through a landscape or inhabit an imagined role. The request for stillness during sensing contrasts with the movement subsequently assigned to the cinematic figure. This difference makes the translation from present body to possible body perceptible.
+
+Space matters at both ends of that translation. The exhibition arrangement determines distance, visibility, posture, and who witnesses the resulting image. Generated environments place the figure within another scene, making identity a relation between appearance, action, and surroundings. The proposed station accommodates seated participation, with an adjustable display angle and a viewing position that gives the participant priority over spectators. These are exhibition design commitments to be verified during installation preparation.
+
+The work engages Navigating Futures by treating becoming as a negotiation. The visitor articulates a possibility; their recorded signal enters an authored mapping; the model supplies details they may welcome or reject. The installation offers a place to question how computational systems participate in imagining futures for bodies, without granting those systems authority to define the person.
+
+## 6 Interpretation, Ethics, and Limitations
+
+The system's apparent specificity creates a responsibility to disclose its construction. Current vocabulary includes labels such as calm and focused, which can imply psychological measurement. Exhibition framing should identify these as artistic associations and present the translated features and prompts. The default portrait treatment also includes a Korean-style beauty aesthetic. This choice complicates the promise of recognition: an image can preserve facial resemblance while imposing expectations about desirable appearance. The proposed exhibition will disclose the treatment and offer an unretouched configuration.
+
+Photography and external generation require informed participation. The exhibition plan distinguishes consent to processing from permission to retain or publicly display outputs. The repository includes an archive endpoint that writes public objects; its presence does not establish an adequate consent or retention workflow. Public archiving should remain disabled unless that workflow is implemented and verified. Declining participation or choosing a labelled demonstration must remain possible.
+
+No formal participant study is reported. Recognition, emotional response, and reflection remain questions for subsequent inquiry. The short recording, heuristic processing, external service dependency, model variability, and possible loss of likeness limit both technical reliability and interpretive claims. Future documentation can examine how visitors attribute choices to their words, signals, the artist, and the model, while respecting the difference between artistic participation and research consent.
+
+## 7 Conclusion
+
+Identity Machine stages a recognisable moving self assembled from appearance, aspiration, physiological variation, and computational interpretation. Its contribution to TEI is an artistic encounter in which the body supplies material without surrendering the meaning of that material to a machine. By returning a recorded bodily trace as a possible cinematic figure, the work opens a situated question: what do we recognise, accept, or resist when a system helps imagine who we might become?
+
+## References
+
+[1] Volker Straebel and Wilm Thoben. 2014. Alvin Lucier's Music for Solo Performer: Experimental music beyond sonification. *Organised Sound* 19, 1, 17–29. https://doi.org/10.1017/S135577181300037X
+
+[2] Amy Wadeson, Anton Nijholt, and Chang S. Nam. 2015. Artistic Brain-Computer Interfaces: State-of-the-Art of Control Mechanisms. *Brain-Computer Interfaces* 2, 2–3, 70–75. https://doi.org/10.1080/2326263X.2015.1103155
+
+[3] Mirjana Prpa and Philippe Pasquier. 2019. Brain-Computer Interfaces in Contemporary Art: A State of the Art and Taxonomy. In *Brain Art: Brain-Computer Interfaces for Artistic Expression*, Anton Nijholt (Ed.). Springer, Cham, 65–115. https://doi.org/10.1007/978-3-030-14323-7_3
+
+[4] Kiel Long and John Vines. 2013. Mind Pool: Encouraging Self-Reflection through Ambiguous Bio-Feedback. In *CHI '13 Extended Abstracts on Human Factors in Computing Systems*. ACM, New York, NY, 2975–2978. https://doi.org/10.1145/2468356.2479588
+
+[5] Kristina Höök, Martin P. Jonsson, Anna Ståhl, and Johanna Mercurio. 2016. Somaesthetic Appreciation Design. In *Proceedings of the 2016 CHI Conference on Human Factors in Computing Systems*. ACM, New York, NY, 3131–3142. https://doi.org/10.1145/2858036.2858583
+
+[6] Konstantina Kilteni, Raphaela Groten, and Mel Slater. 2012. The Sense of Embodiment in Virtual Reality. *Presence: Teleoperators and Virtual Environments* 21, 4, 373–387. https://doi.org/10.1162/PRES_a_00124
+
+[7] Nick Yee and Jeremy Bailenson. 2007. The Proteus Effect: The Effect of Transformed Self-Representation on Behavior. *Human Communication Research* 33, 3, 271–290. https://doi.org/10.1111/j.1468-2958.2007.00299.x
+
+[8] Yuming Chen and Gianni Corino. 2025. Emotive Immersion: EEG-Driven AI Art in Immersive Visual Spaces. *DigitCult—Scientific Journal on Digital Cultures* 10, 2, 81–94. https://doi.org/10.36158/97912566929416
