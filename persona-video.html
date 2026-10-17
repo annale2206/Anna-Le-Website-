@@ -220,7 +220,7 @@
         <button class="tbtn spin-btn" id="spin2">lucky pick</button>
         <span id="clips"></span>
         <button class="tbtn" id="playall" hidden>play all</button>
-        <button class="tbtn" id="restart" hidden>clear</button>
+        <button class="tbtn" id="restart" hidden>↺ reset</button>
       </div>
     </div>
 
@@ -260,6 +260,7 @@
   let clips = [];           // [{ url, seconds, prompt }]
   let current = -1;
   let busy = false, spinning = false;
+  let startNew = false;   // true when a new persona was picked after a video exists
   let lastPrompt = '';
 
   try { token = sessionStorage.getItem('pvm-token') || ''; } catch (e) {}
@@ -288,7 +289,8 @@
     box.innerHTML = '';
     const img = document.createElement('img'); img.src = src; img.alt = name;
     box.appendChild(img);
-    $('go').disabled = busy || !selected;
+    if (clips.length) { startNew = true; setStatus('new persona: press generate'); }
+    updateButton();
   }
 
   $('file').addEventListener('change', e => {
@@ -382,10 +384,10 @@
   // the big button generates first, then becomes "extend"
   function updateButton() {
     const b = $('go');
-    const ext = clips.length > 0;
+    const ext = clips.length > 0 && !startNew;
     b.classList.toggle('ext', ext);
     b.innerHTML = ext ? 'EXT<br>END' : 'GENE<br>RATE';
-    b.disabled = busy || (!ext && !selected) || clips.length >= MAX_PARTS;
+    b.disabled = busy || (!ext && !selected) || (ext && clips.length >= MAX_PARTS);
     $('prompt').placeholder = ext ? 'what happens next? (empty = same motion)' : 'type a prompt: how does the persona move?';
   }
 
@@ -450,8 +452,9 @@
   $('go').addEventListener('click', async () => {
     if (busy) return;
     if (!(await needToken())) return;
-    if (!clips.length) {
+    if (!clips.length || startNew) {
       if (!selected) return;
+      resetVideo();
       lastPrompt = $('prompt').value.trim();
       try { await makeClip(await toJpeg(selected.src), lastPrompt); }
       catch (err) { setStatus(err.message, true); }
@@ -477,12 +480,12 @@
     if (playingAll && current < clips.length - 1) play(current + 1); else playingAll = false;
   });
   $('playall').onclick = () => { if (clips.length) { playingAll = true; play(0); } };
-  $('restart').onclick = () => {
-    if (busy || !confirm('clear this video?')) return;
-    clips = []; current = -1;
+  function resetVideo() {
+    clips = []; current = -1; startNew = false; playingAll = false;
     player.removeAttribute('src'); player.hidden = true; $('idle').hidden = false;
     setStatus(''); renderClips(); updateButton();
-  };
+  }
+  $('restart').onclick = () => { if (!busy) resetVideo(); };
 
   function renderClips() {
     const box = $('clips'); box.innerHTML = '';
