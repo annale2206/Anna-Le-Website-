@@ -3,87 +3,148 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>anna_le: persona video machine</title>
+<title>anna_le: crochet persona</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  .hero-sub{ font-family:var(--mono); color:var(--sky); font-size:1.15rem; margin:-4px 0 26px; }
+  .hero-sub{ font-family:var(--mono); color:var(--sky); font-size:1.15rem; margin:-4px 0 22px; }
 
-  /* lock screen */
-  .lock{ max-width:340px; margin:40px auto; text-align:center; }
-  .lock p{ font-family:var(--mono); font-size:1.2rem; color:var(--green-dim); margin:0 auto 14px; }
-  .lock input{
-    font-family:var(--mono); font-size:2rem; letter-spacing:.5em; text-align:center;
-    width:200px; padding:8px; background:#1a2531; color:var(--green);
-    border:2px solid var(--green-dim); outline:none;
+  /* ================= notebook ================= */
+  .book{ position:relative; margin:10px 0 40px; perspective:1800px; }
+  .nb-tabs{ display:flex; gap:6px; flex-wrap:wrap; padding-left:46px; }
+  .nb-tab{
+    font-family:var(--mono); font-size:1.1rem; color:#9fb3ab; background:#111922;
+    border:1.5px solid #2c3a46; border-bottom:0; border-radius:10px 10px 0 0;
+    padding:8px 18px 7px; cursor:pointer; position:relative; top:1.5px;
   }
-  .lock input.err{ border-color:var(--pink); animation:shake .35s; }
-  @keyframes shake{ 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  .nb-tab:hover{ color:var(--cream); }
+  .nb-tab.on{ color:var(--green); background:#0f1720; z-index:2; }
+  .nb-tab .no{ color:var(--pink); margin-right:6px; }
+  .nb-tab.locked::after{ content:' ⚿'; color:var(--yellow); }
 
-  .machine{ display:grid; grid-template-columns:1fr 1fr; gap:34px; align-items:start; }
-  @media (max-width:860px){ .machine{ grid-template-columns:1fr; } }
-
-  .panel{ background:#1a2531; border:2px solid var(--green-dim); box-shadow:6px 6px 0 rgba(0,0,0,.4); padding:18px; }
-  .panel h2{ font-size:1.05rem; margin:0 0 12px; }
-  .step{ font-family:var(--mono); color:var(--green-dim); font-size:1.05rem; margin-right:6px; }
-
-  /* collection */
-  .collection{ display:grid; grid-template-columns:repeat(auto-fill, minmax(78px,1fr)); gap:10px; }
-  .thumb{
-    position:relative; aspect-ratio:1/1; padding:0; border:2px solid transparent;
-    background:var(--purple-deep); overflow:hidden; cursor:pointer;
+  .page-wrap{
+    position:relative; border:1.5px solid #2c3a46; border-radius:4px 12px 12px 12px;
+    background:#0f1720;
+    background-image:
+      linear-gradient(90deg, transparent 72px, rgba(255,61,154,.35) 72px 73.5px, transparent 73.5px),
+      repeating-linear-gradient(#0f1720 0 31px, #1a2531 31px 32px);
+    padding:28px 28px 46px 98px; min-height:560px;
+    box-shadow:8px 8px 0 rgba(0,0,0,.35);
   }
-  .thumb img{ width:100%; height:100%; object-fit:cover; }
-  .thumb:hover{ border-color:var(--sky); }
-  .thumb.on{ border-color:var(--pink); box-shadow:0 0 0 2px var(--pink); }
-  .thumb.add{
-    display:flex; align-items:center; justify-content:center; flex-direction:column;
-    font-family:var(--mono); color:var(--green); font-size:1rem; border:2px dashed var(--green-dim);
+  /* spiral binding */
+  .page-wrap::before{
+    content:''; position:absolute; left:14px; top:18px; bottom:18px; width:34px;
+    background:radial-gradient(circle at 17px 50%, #0a0f15 6px, #8a7aa8 6.5px 8.5px, transparent 9px) 0 0/34px 34px repeat-y;
   }
-  .thumb.add b{ font-size:2rem; line-height:1; }
-  .drop-hint{ font-family:var(--mono); color:var(--green-dim); font-size:.95rem; margin-top:8px; }
-  .collection.drag{ outline:2px dashed var(--pink); outline-offset:6px; }
+  .sheet{ display:none; transform-origin:left center; }
+  .sheet.on{ display:block; animation:turn .45s ease; }
+  @keyframes turn{ from{ transform:rotateY(-24deg); opacity:0; } to{ transform:none; opacity:1; } }
+  .page-no{ position:absolute; right:22px; bottom:12px; font-family:var(--mono); color:var(--green-dim); font-size:1rem; }
+  .sheet h2{ font-size:1.15rem; margin:0 0 4px; }
+  .hand{ font-family:var(--mono); color:#9fb3ab; font-size:1.15rem; margin:0 0 20px; max-width:62ch; line-height:32px; }
 
-  .preview{ margin-top:16px; display:flex; gap:14px; align-items:flex-start; }
-  .preview img{ width:120px; aspect-ratio:3/4; object-fit:cover; border:2px solid var(--pink); }
-  .preview .meta{ font-family:var(--mono); color:var(--cream); font-size:1.05rem; }
+  @media (max-width:700px){
+    .nb-tabs{ padding-left:0; }
+    .nb-tab{ padding:7px 11px 6px; font-size:1rem; }
+    .page-wrap{ padding:22px 14px 44px 52px; background-image:
+      linear-gradient(90deg, transparent 40px, rgba(255,61,154,.35) 40px 41.5px, transparent 41.5px),
+      repeating-linear-gradient(#0f1720 0 31px, #1a2531 31px 32px); }
+    .page-wrap::before{ left:4px; width:28px; }
+  }
 
-  label.lbl{ display:block; font-family:var(--mono); color:var(--sky); font-size:1.1rem; margin:16px 0 6px; }
+  /* ================= page i: collection ================= */
+  .collection{ display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:28px 22px; }
+  .polaroid{
+    position:relative; background:#eef4ee; padding:8px 8px 30px; border:0; cursor:pointer;
+    box-shadow:4px 5px 0 rgba(0,0,0,.45); transform:rotate(var(--r,0deg));
+    transition:transform .18s ease; text-align:center;
+  }
+  .polaroid:nth-child(4n+1){ --r:-2.5deg; } .polaroid:nth-child(4n+2){ --r:1.5deg; }
+  .polaroid:nth-child(4n+3){ --r:-1deg; }   .polaroid:nth-child(4n+4){ --r:2.5deg; }
+  .polaroid:hover{ transform:rotate(0) translateY(-5px) scale(1.03); }
+  .polaroid::before{   /* washi tape */
+    content:''; position:absolute; top:-10px; left:50%; width:58px; height:18px; margin-left:-29px;
+    background:rgba(255,61,154,.55); transform:rotate(-4deg);
+  }
+  .polaroid:nth-child(3n)::before{ background:rgba(127,212,255,.55); }
+  .polaroid:nth-child(3n+1)::before{ background:rgba(157,255,158,.5); }
+  .polaroid img{ width:100%; aspect-ratio:3/4; object-fit:contain; background:#fff; }
+  .polaroid span{ position:absolute; left:0; right:0; bottom:5px; font-family:var(--mono); color:#2a1750; font-size:1.05rem; }
+
+  /* ================= page ii: one persona (spread) ================= */
+  .spread{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:34px; align-items:start; }
+  @media (max-width:860px){ .spread{ grid-template-columns:1fr; } }
+  .spread .big{ background:#eef4ee; padding:10px 10px 40px; box-shadow:5px 6px 0 rgba(0,0,0,.45); transform:rotate(-1.5deg); position:relative; }
+  .spread .big img{ width:100%; aspect-ratio:3/4; object-fit:contain; background:#fff; }
+  .spread .big span{ position:absolute; left:0; right:0; bottom:8px; text-align:center; font-family:var(--mono); color:#2a1750; font-size:1.25rem; }
+  .notes h3{ font-size:1.3rem; color:var(--pink); margin:0 0 6px; }
+  .notes .n{ font-family:var(--mono); color:var(--cream); font-size:1.2rem; line-height:32px; margin:0 0 18px; }
+  .pager{ display:flex; justify-content:space-between; gap:10px; margin-top:26px; flex-wrap:wrap; }
+
+  /* ================= buttons / inputs ================= */
+  button.btn{ font-family:var(--mono); font-size:1.15rem; cursor:pointer; }
+  button.btn:disabled{ opacity:.45; transform:none; cursor:not-allowed; }
+  .btn.pink{ background:var(--pink); color:#fff; }
+  .link{ background:none; border:0; color:var(--sky); font-family:var(--mono); font-size:1.1rem; cursor:pointer; padding:0; }
+  .link:hover{ color:var(--green); }
+
+  label.lbl{ display:block; font-family:var(--mono); color:var(--sky); font-size:1.15rem; margin:14px 0 4px; }
   textarea, select{
-    width:100%; background:var(--bg); color:var(--cream); border:2px solid var(--green-dim);
+    width:100%; background:rgba(13,20,27,.85); color:var(--cream); border:1.5px solid #2c3a46;
     font-family:var(--body); font-size:1rem; padding:10px; outline:none;
   }
-  textarea{ min-height:84px; resize:vertical; }
+  textarea{ min-height:96px; resize:vertical; line-height:1.5; }
   textarea:focus, select:focus{ border-color:var(--green); }
   .row{ display:flex; gap:14px; flex-wrap:wrap; }
   .row > div{ flex:1; min-width:130px; }
-  .actions{ display:flex; gap:12px; flex-wrap:wrap; margin-top:18px; }
-  button.btn{ font:inherit; font-family:var(--mono); font-size:1.15rem; cursor:pointer; }
-  button.btn:disabled{ opacity:.45; transform:none; cursor:not-allowed; }
-  .btn.pink{ background:var(--pink); color:#fff; }
+  .actions{ display:flex; gap:12px 18px; flex-wrap:wrap; margin-top:20px; align-items:center; }
 
-  /* output */
+  .chosen{ display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+  .chosen img{ width:96px; aspect-ratio:3/4; object-fit:cover; border:6px solid #eef4ee; border-bottom-width:18px; transform:rotate(-3deg); box-shadow:3px 4px 0 rgba(0,0,0,.4); }
+  .chosen .meta{ font-family:var(--mono); font-size:1.2rem; color:var(--cream); }
+  .chosen .empty{ font-family:var(--mono); color:var(--green-dim); font-size:1.15rem; }
+
+  /* ================= access code (only for generating) ================= */
+  .gate{
+    position:fixed; inset:0; z-index:60; background:rgba(8,12,17,.78);
+    display:flex; align-items:center; justify-content:center; padding:16px;
+  }
+  .gate[hidden]{ display:none; }
+  .gate-card{
+    background:#0f1720; border:1.5px solid #2c3a46; padding:24px; width:min(320px,100%); text-align:center;
+    background-image:repeating-linear-gradient(#0f1720 0 31px, #1a2531 31px 32px);
+    box-shadow:8px 8px 0 rgba(0,0,0,.4);
+  }
+  .gate-card p{ font-family:var(--mono); color:var(--cream); font-size:1.2rem; margin:0 auto 12px; }
+  .gate-card input{
+    font-family:var(--mono); font-size:2rem; letter-spacing:.5em; text-align:center;
+    width:190px; padding:6px; background:#0d141b; color:var(--green); border:2px solid var(--green-dim); outline:none;
+  }
+  .gate-card input.err{ border-color:var(--pink); animation:shake .35s; }
+  @keyframes shake{ 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  .gate-card .link{ margin-top:14px; }
+
+  /* ================= page iv: film ================= */
   .screen{
-    position:relative; width:100%; aspect-ratio:16/9; background:#000;
+    position:relative; width:100%; max-width:760px; aspect-ratio:16/9; background:#000;
     border:2px solid var(--green-dim); display:flex; align-items:center; justify-content:center; overflow:hidden;
   }
-  .screen.tall{ aspect-ratio:9/16; max-height:70vh; margin:0 auto; width:auto; }
+  .screen.tall{ aspect-ratio:9/16; max-width:380px; }
   .screen video{ width:100%; height:100%; object-fit:contain; display:block; }
   .screen .idle{ font-family:var(--mono); color:var(--green-dim); font-size:1.2rem; text-align:center; padding:20px; }
-  .status{ font-family:var(--mono); font-size:1.1rem; color:var(--yellow); min-height:1.5em; margin-top:10px; }
+  .status{ font-family:var(--mono); font-size:1.15rem; color:var(--yellow); min-height:32px; line-height:32px; }
   .status.err{ color:var(--pink); }
-  .bar{ height:6px; background:var(--bg); margin-top:6px; overflow:hidden; display:none; }
+  .bar{ height:6px; background:#0d141b; max-width:760px; overflow:hidden; display:none; }
   .bar.on{ display:block; }
   .bar i{ display:block; height:100%; width:30%; background:linear-gradient(90deg,var(--green),var(--pink)); animation:scan 1.4s linear infinite; }
   @keyframes scan{ from{ transform:translateX(-100%);} to{ transform:translateX(340%);} }
-
-  .clips{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+  .clips{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
   .clip{
-    font-family:var(--mono); font-size:1rem; background:var(--bg); color:var(--cream);
-    border:2px solid var(--green-dim); padding:6px 10px; cursor:pointer; display:flex; gap:8px; align-items:center;
+    font-family:var(--mono); font-size:1rem; background:#0d141b; color:var(--cream);
+    border:1.5px solid var(--green-dim); padding:5px 10px; cursor:pointer; display:flex; gap:8px; align-items:center;
   }
   .clip.on{ border-color:var(--pink); color:var(--pink); }
   .clip a{ color:var(--sky); text-decoration:none; }
-  .total{ font-family:var(--mono); color:var(--green-dim); font-size:1rem; margin-top:8px; }
+  .total{ font-family:var(--mono); color:var(--green-dim); font-size:1.05rem; margin-top:6px; }
 </style>
 </head>
 <body data-petals="4">
@@ -95,83 +156,125 @@
 <main class="page">
 
   <div class="eyebrow">
-    <h1>persona video machine</h1>
-    <span class="path">~/anna/art-practice/interactive/persona-video</span>
+    <h1>crochet persona</h1>
+    <span class="path">~/anna/projects/crochet-persona</span>
   </div>
-  <div class="hero-sub">choose a persona, give it a motion, let it move (silent, Veo 3)</div>
+  <div class="hero-sub">a notebook of personas that can wake up and move</div>
 
-  <!-- LOCK: same 4-digit access code as the identity machine -->
-  <section class="lock" id="lock">
-    <p>enter the access code</p>
-    <input id="code" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="access code">
-  </section>
-
-  <section class="machine" id="machine" hidden>
-
-    <!-- LEFT: collection + controls -->
-    <div class="panel">
-      <h2><span class="step">01</span>persona collection</h2>
-      <div class="collection" id="collection"></div>
-      <input type="file" id="file" accept="image/*" hidden>
-      <div class="drop-hint">click + or drop an image here to add your own</div>
-
-      <div class="preview" id="preview" hidden>
-        <img id="preview-img" alt="selected persona">
-        <div class="meta" id="preview-meta"></div>
-      </div>
-
-      <h2 style="margin-top:24px"><span class="step">02</span>motion</h2>
-      <label class="lbl" for="prompt">what does the persona do?</label>
-      <textarea id="prompt" placeholder="slow head turn toward the camera, hair moving in a soft wind, gentle breathing, dreamy pastel light"></textarea>
-
-      <div class="row">
-        <div>
-          <label class="lbl" for="duration">length</label>
-          <select id="duration">
-            <option value="4">4 seconds</option>
-            <option value="6">6 seconds</option>
-            <option value="8" selected>8 seconds</option>
-          </select>
-        </div>
-        <div>
-          <label class="lbl" for="aspect">frame</label>
-          <select id="aspect">
-            <option value="16:9">wide 16:9</option>
-            <option value="9:16">tall 9:16</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="actions">
-        <button class="btn" id="go" disabled>generate video</button>
-      </div>
+  <section class="book" aria-label="crochet persona notebook">
+    <div class="nb-tabs" role="tablist">
+      <button class="nb-tab on" role="tab" data-page="collection"><span class="no">i.</span>collection</button>
+      <button class="nb-tab" role="tab" data-page="persona"><span class="no">ii.</span>persona</button>
+      <button class="nb-tab locked" role="tab" data-page="studio" id="tab-studio"><span class="no">iii.</span>studio</button>
+      <button class="nb-tab" role="tab" data-page="film"><span class="no">iv.</span>film</button>
     </div>
 
-    <!-- RIGHT: output + extend -->
-    <div class="panel">
-      <h2><span class="step">03</span>film</h2>
-      <div class="screen" id="screen">
-        <div class="idle" id="idle">pick a persona and press generate</div>
-        <video id="player" muted playsinline controls hidden></video>
+    <div class="page-wrap">
+
+      <!-- PAGE i: the collection, open to everyone -->
+      <div class="sheet on" id="page-collection">
+        <h2>the collection</h2>
+        <p class="hand">every persona in the series. open one to read its page.</p>
+        <div class="collection" id="collection"></div>
+        <div class="page-no">— i —</div>
       </div>
-      <div class="bar" id="bar"><i></i></div>
-      <div class="status" id="status"></div>
 
-      <div class="clips" id="clips"></div>
-      <div class="total" id="total"></div>
+      <!-- PAGE ii: one persona, open to everyone -->
+      <div class="sheet" id="page-persona">
+        <div class="spread">
+          <div class="big"><img id="p-img" alt=""><span id="p-cap"></span></div>
+          <div class="notes">
+            <h3 id="p-name">choose a persona</h3>
+            <p class="n" id="p-note">go back to the collection and open one.</p>
+            <div class="actions">
+              <button class="btn pink" id="p-generate">generate a persona →</button>
+            </div>
+            <div class="pager">
+              <button class="link" id="p-prev">← previous</button>
+              <button class="link" id="p-back">back to collection</button>
+              <button class="link" id="p-next">next →</button>
+            </div>
+          </div>
+        </div>
+        <div class="page-no">— ii —</div>
+      </div>
 
-      <div id="extend-box" hidden>
-        <label class="lbl" for="extend-prompt">extend: what happens next? (leave empty to keep the same motion)</label>
-        <textarea id="extend-prompt" placeholder="she turns away and walks into the fog"></textarea>
+      <!-- PAGE iii: studio, generating needs the code -->
+      <div class="sheet" id="page-studio">
+        <h2>studio</h2>
+        <p class="hand">pick a persona (or bring your own image), write how it moves, then generate. generating needs the access code.</p>
+
+        <div class="chosen" id="chosen"></div>
+        <div class="actions" style="margin-top:10px">
+          <button class="link" id="s-pick">choose from the collection</button>
+          <button class="link" id="s-upload">+ use my own image</button>
+          <input type="file" id="file" accept="image/*" hidden>
+        </div>
+
+        <label class="lbl" for="prompt">how does the persona move?</label>
+        <textarea id="prompt" placeholder="slow head turn toward the camera, yarn loosening in a soft wind, gentle breathing, dreamy pastel light"></textarea>
+
+        <div class="row">
+          <div>
+            <label class="lbl" for="duration">length</label>
+            <select id="duration">
+              <option value="4">4 seconds</option>
+              <option value="6">6 seconds</option>
+              <option value="8" selected>8 seconds</option>
+            </select>
+          </div>
+          <div>
+            <label class="lbl" for="aspect">frame</label>
+            <select id="aspect">
+              <option value="16:9">wide 16:9</option>
+              <option value="9:16">tall 9:16</option>
+            </select>
+          </div>
+        </div>
+
         <div class="actions">
-          <button class="btn pink" id="extend">+ extend</button>
-          <button class="btn btn-outline" id="playall">play whole film</button>
-          <button class="btn btn-outline" id="restart">start over</button>
+          <button class="btn pink" id="go" disabled>generate a persona</button>
+          <span class="status" id="s-status"></span>
         </div>
+        <div class="page-no">— iii —</div>
       </div>
-    </div>
 
+      <!-- PAGE iv: film + extend -->
+      <div class="sheet" id="page-film">
+        <h2>film</h2>
+        <p class="hand">silent video, made with Veo 3. extend it to keep the scene going.</p>
+        <div class="screen" id="screen">
+          <div class="idle" id="idle">no film yet. go to the studio and generate a persona.</div>
+          <video id="player" muted playsinline controls hidden></video>
+        </div>
+        <div class="bar" id="bar"><i></i></div>
+        <div class="status" id="status"></div>
+        <div class="clips" id="clips"></div>
+        <div class="total" id="total"></div>
+
+        <div id="extend-box" hidden>
+          <label class="lbl" for="extend-prompt">what happens next? (leave empty to keep the same motion)</label>
+          <textarea id="extend-prompt" placeholder="she turns away and walks into the fog"></textarea>
+          <div class="actions">
+            <button class="btn pink" id="extend">+ extend</button>
+            <button class="btn btn-outline" id="playall">play whole film</button>
+            <button class="btn btn-outline" id="restart">start over</button>
+          </div>
+        </div>
+        <div class="page-no">— iv —</div>
+      </div>
+
+    </div>
   </section>
+
+  <!-- access code, only asked when someone generates -->
+  <div class="gate" id="gate" hidden>
+    <div class="gate-card" role="dialog" aria-modal="true" aria-label="access code">
+      <p>enter the access code to generate</p>
+      <input id="code" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="access code">
+      <div><button class="link" id="gate-cancel">cancel</button></div>
+    </div>
+  </div>
 
 </main>
 
@@ -182,24 +285,126 @@
 (() => {
   const $ = id => document.getElementById(id);
 
-  // ---- the persona collection (files in the site root) ----
-  // add new images here as you make them
-  const PERSONAS = ['persona.webp'].concat(
-    Array.from({ length: 14 }, (_, i) => 'persona' + (i + 1) + '.webp')
-  );
+  /* ================================================================
+     THE COLLECTION
+     One line per persona: image file, name, and a short note.
+     To use a new set of images, replace this list.
+     ================================================================ */
+  const PERSONAS = [
+    { src:'crochet-persona/persona-01.webp', name:'persona 01', note:'' },
+    { src:'crochet-persona/persona-02.webp', name:'persona 02', note:'' },
+    { src:'crochet-persona/persona-03.webp', name:'persona 03', note:'' },
+    { src:'crochet-persona/persona-04.webp', name:'persona 04', note:'' },
+    { src:'crochet-persona/persona-05.webp', name:'persona 05', note:'' },
+    { src:'crochet-persona/persona-06.webp', name:'persona 06', note:'' },
+    { src:'crochet-persona/persona-07.webp', name:'persona 07', note:'' },
+    { src:'crochet-persona/persona-08.webp', name:'persona 08', note:'' },
+    { src:'crochet-persona/persona-09.webp', name:'persona 09', note:'' },
+    { src:'crochet-persona/persona-10.webp', name:'persona 10', note:'' },
+    { src:'crochet-persona/persona-11.webp', name:'persona 11', note:'' },
+    { src:'crochet-persona/persona-12.webp', name:'persona 12', note:'' },
+    { src:'crochet-persona/persona-13.webp', name:'persona 13', note:'' },
+    { src:'crochet-persona/persona-14.webp', name:'persona 14', note:'' },
+  ];
+  const DEFAULT_NOTE = 'a persona from the series. press generate to let it move.';
 
   const MAX_PARTS = 10;          // the server allows parts 0–9
   let token = '';
-  let selected = null;           // { src, name }
+  let viewing = -1;              // persona shown on page ii
+  let selected = null;           // { src, name } used in the studio
   let clips = [];                // [{ url, seconds, prompt }]
   let current = -1;
   let busy = false;
   let lastPrompt = '';
 
-  // ---------------- access code ----------------
   try { token = sessionStorage.getItem('pvm-token') || ''; } catch (e) {}
-  if (token) openMachine();
+  if (token) $('tab-studio').classList.remove('locked');
 
+  /* ---------------- notebook pages ---------------- */
+  function show(name) {
+    document.querySelectorAll('.nb-tab').forEach(t => t.classList.toggle('on', t.dataset.page === name));
+    document.querySelectorAll('.sheet').forEach(p => p.classList.toggle('on', p.id === 'page-' + name));
+    const top = document.querySelector('.book').getBoundingClientRect().top;
+    if (top < 0) document.querySelector('.book').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  document.querySelectorAll('.nb-tab').forEach(t => t.addEventListener('click', () => show(t.dataset.page)));
+
+  /* ---------------- page i: collection ---------------- */
+  PERSONAS.forEach((p, i) => {
+    const b = document.createElement('button');
+    b.className = 'polaroid'; b.type = 'button';
+    b.innerHTML = '<img alt="" loading="lazy"><span></span>';
+    b.querySelector('img').src = p.src;
+    b.querySelector('img').alt = p.name;
+    b.querySelector('span').textContent = p.name;
+    b.onclick = () => openPersona(i);
+    $('collection').appendChild(b);
+  });
+
+  /* ---------------- page ii: one persona ---------------- */
+  function openPersona(i) {
+    viewing = (i + PERSONAS.length) % PERSONAS.length;
+    const p = PERSONAS[viewing];
+    $('p-img').src = p.src; $('p-img').alt = p.name;
+    $('p-cap').textContent = p.name;
+    $('p-name').textContent = p.name;
+    $('p-note').textContent = p.note || DEFAULT_NOTE;
+    show('persona');
+  }
+  $('p-prev').onclick = () => openPersona(viewing < 0 ? 0 : viewing - 1);
+  $('p-next').onclick = () => openPersona(viewing + 1);
+  $('p-back').onclick = () => show('collection');
+  $('p-generate').onclick = () => {
+    if (viewing < 0) return show('collection');
+    choose(PERSONAS[viewing].src, PERSONAS[viewing].name);
+    show('studio');
+  };
+
+  /* ---------------- page iii: studio ---------------- */
+  function choose(src, name) {
+    selected = { src, name };
+    renderChosen();
+  }
+  function renderChosen() {
+    const box = $('chosen');
+    box.innerHTML = '';
+    if (!selected) {
+      box.innerHTML = '<div class="empty">no persona chosen yet</div>';
+    } else {
+      const img = document.createElement('img'); img.src = selected.src; img.alt = selected.name;
+      const m = document.createElement('div'); m.className = 'meta'; m.textContent = selected.name;
+      box.append(img, m);
+    }
+    $('go').disabled = busy || !selected;
+  }
+  renderChosen();
+
+  $('s-pick').onclick = () => show('collection');
+  $('s-upload').onclick = () => $('file').click();
+  $('file').addEventListener('change', e => {
+    const f = e.target.files[0]; e.target.value = '';
+    if (!f || !f.type.startsWith('image/')) return;
+    const r = new FileReader();
+    r.onload = () => choose(r.result, f.name.replace(/\.\w+$/, '').slice(0, 40) || 'my image');
+    r.readAsDataURL(f);
+  });
+
+  /* ---------------- access code (only when generating) ---------------- */
+  let gateResolve = null;
+  function needToken() {
+    if (token) return Promise.resolve(true);
+    $('gate').hidden = false;
+    $('code').value = '';
+    setTimeout(() => $('code').focus(), 50);
+    return new Promise(r => { gateResolve = r; });
+  }
+  function closeGate(ok) {
+    $('gate').hidden = true;
+    if (gateResolve) { gateResolve(ok); gateResolve = null; }
+  }
+  $('gate-cancel').onclick = () => closeGate(false);
+  $('gate').addEventListener('click', e => { if (e.target.id === 'gate') closeGate(false); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('gate').hidden) closeGate(false); });
   $('code').addEventListener('input', async e => {
     const code = e.target.value.replace(/\D/g, '').slice(0, 4);
     e.target.value = code;
@@ -212,77 +417,23 @@
       const d = res.ok ? await res.json() : {};
       if (d.token) {
         token = d.token;
-        try { sessionStorage.setItem('pvm-token', token); } catch (e) {}
-        openMachine();
+        try { sessionStorage.setItem('pvm-token', token); } catch (err) {}
+        $('tab-studio').classList.remove('locked');
+        closeGate(true);
         return;
       }
     } catch (err) {}
     e.target.classList.add('err');
     setTimeout(() => { e.target.classList.remove('err'); e.target.value = ''; }, 450);
   });
-  $('code').focus();
-
-  function openMachine() {
-    $('lock').hidden = true;
-    $('machine').hidden = false;
-    buildCollection();
+  function forgetToken() {
+    token = '';
+    try { sessionStorage.removeItem('pvm-token'); } catch (e) {}
+    $('tab-studio').classList.add('locked');
   }
   const auth = extra => ({ ...(extra || {}), 'x-im-token': token });
 
-  // ---------------- collection ----------------
-  function buildCollection() {
-    const grid = $('collection');
-    grid.innerHTML = '';
-    const add = document.createElement('button');
-    add.className = 'thumb add'; add.type = 'button';
-    add.innerHTML = '<b>+</b>add';
-    add.onclick = () => $('file').click();
-    grid.appendChild(add);
-    PERSONAS.forEach(src => addThumb(src, src.replace(/\.\w+$/, '')));
-  }
-
-  function addThumb(src, name, prepend) {
-    const b = document.createElement('button');
-    b.className = 'thumb'; b.type = 'button'; b.title = name;
-    b.innerHTML = '<img alt="" loading="lazy">';
-    b.querySelector('img').src = src;
-    b.onclick = () => select(b, src, name);
-    const grid = $('collection');
-    if (prepend) grid.insertBefore(b, grid.children[1]); else grid.appendChild(b);
-    return b;
-  }
-
-  function select(btn, src, name) {
-    document.querySelectorAll('.thumb.on').forEach(t => t.classList.remove('on'));
-    btn.classList.add('on');
-    selected = { src, name };
-    $('preview').hidden = false;
-    $('preview-img').src = src;
-    $('preview-meta').textContent = name;
-    $('go').disabled = busy;
-  }
-
-  // uploading your own image
-  function addFile(f) {
-    if (!f || !f.type.startsWith('image/')) return;
-    const r = new FileReader();
-    r.onload = () => {
-      const name = f.name.replace(/\.\w+$/, '').slice(0, 40) || 'my image';
-      const b = addThumb(r.result, name, true);
-      select(b, r.result, name);
-    };
-    r.readAsDataURL(f);
-  }
-  $('file').addEventListener('change', e => { addFile(e.target.files[0]); e.target.value = ''; });
-  const grid = $('collection');
-  grid.addEventListener('dragover', e => { e.preventDefault(); grid.classList.add('drag'); });
-  grid.addEventListener('dragleave', () => grid.classList.remove('drag'));
-  grid.addEventListener('drop', e => {
-    e.preventDefault(); grid.classList.remove('drag');
-    addFile(e.dataTransfer.files[0]);
-  });
-
-  // the API wants a JPEG/PNG (webp is not accepted), under ~3MB → redraw as JPEG
+  // the API wants JPEG/PNG (webp is not accepted) and a small file → redraw as JPEG
   function toJpeg(src, maxSide = 1280) {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -299,7 +450,7 @@
     });
   }
 
-  // ---------------- generation ----------------
+  /* ---------------- generation ---------------- */
   function setStatus(msg, isErr) {
     $('status').textContent = msg || '';
     $('status').classList.toggle('err', !!isErr);
@@ -311,18 +462,15 @@
     $('extend').disabled = on || clips.length >= MAX_PARTS;
     $('playall').disabled = on;
     $('restart').disabled = on;
+    $('s-status').textContent = on ? 'generating... see iv. film' : '';
   }
 
   async function startJob(image, prompt, part) {
     const res = await fetch('/api/generate-video', {
       method: 'POST', headers: auth({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({
-        image, prompt, part,
-        duration: Number($('duration').value),
-        aspect: $('aspect').value
-      })
+      body: JSON.stringify({ image, prompt, part, duration: Number($('duration').value), aspect: $('aspect').value })
     });
-    if (res.status === 401) { try { sessionStorage.removeItem('pvm-token'); } catch (e) {} throw new Error('access pass expired, reload and enter the code again'); }
+    if (res.status === 401) { forgetToken(); throw new Error('the access pass expired, press generate again and re-enter the code'); }
     if (!res.ok) throw new Error(res.status + ' ' + (await res.text()).slice(0, 200));
     const d = await res.json();
     if (!d.id) throw new Error(d.error || 'no job id returned');
@@ -333,10 +481,11 @@
     const t0 = Date.now();
     while (Date.now() - t0 < 10 * 60 * 1000) {
       await new Promise(r => setTimeout(r, 3000));
-      setStatus('veo is dreaming... ' + Math.round((Date.now() - t0) / 1000) + 's');
+      setStatus('the persona is waking up... ' + Math.round((Date.now() - t0) / 1000) + 's');
       let res;
       try { res = await fetch('/api/prediction?id=' + encodeURIComponent(id), { cache: 'no-store', headers: auth() }); }
       catch (e) { continue; }
+      if (res.status === 401) { forgetToken(); throw new Error('the access pass expired, re-enter the code'); }
       if (!res.ok) throw new Error(res.status + ' while checking the job');
       const p = await res.json();
       if (p.status === 'succeeded' && p.output) return p.output;
@@ -365,17 +514,20 @@
 
   $('go').addEventListener('click', async () => {
     if (!selected || busy) return;
+    if (!(await needToken())) return;
     if (clips.length && !confirm('start a new film? the current clips will be cleared.')) return;
-    clips = []; renderClips();
+    clips = []; current = -1; renderClips();
+    $('extend-box').hidden = true;
     lastPrompt = $('prompt').value.trim();
     $('screen').classList.toggle('tall', $('aspect').value === '9:16');
+    show('film');
     try {
       const jpeg = await toJpeg(selected.src);
       await makeClip(jpeg, lastPrompt);
     } catch (err) { setStatus(err.message, true); }
   });
 
-  // ---------------- extend ----------------
+  /* ---------------- extend ---------------- */
   // grab the last frame of the newest clip and use it as the next clip's first frame
   function lastFrameOf(url) {
     return new Promise(resolve => {
@@ -399,6 +551,7 @@
   $('extend').addEventListener('click', async () => {
     if (busy || !clips.length) return;
     if (clips.length >= MAX_PARTS) { setStatus('the film is at its ' + MAX_PARTS + '-part limit'); return; }
+    if (!(await needToken())) return;
     setStatus('reading the last frame...');
     const frame = await lastFrameOf(clips[clips.length - 1].url);
     if (!frame) { setStatus('could not read the last frame of the video', true); return; }
@@ -408,7 +561,7 @@
     $('extend-prompt').value = '';
   });
 
-  // ---------------- playback ----------------
+  /* ---------------- playback ---------------- */
   const player = $('player');
   let playingAll = false;
 
@@ -430,6 +583,7 @@
     clips = []; current = -1; renderClips();
     player.removeAttribute('src'); player.hidden = true; $('idle').hidden = false;
     $('extend-box').hidden = true; setStatus('');
+    show('studio');
   });
 
   function renderClips() {
@@ -439,7 +593,7 @@
       const el = document.createElement('div');
       el.className = 'clip' + (i === current ? ' on' : '');
       el.title = c.prompt || 'default motion';
-      el.innerHTML = '<span>part ' + (i + 1) + '</span><a download target="_blank" rel="noopener">↓</a>';
+      el.innerHTML = '<span>part ' + (i + 1) + '</span><a download target="_blank" rel="noopener" title="download">↓</a>';
       el.querySelector('a').href = c.url;
       el.querySelector('a').onclick = e => e.stopPropagation();
       el.onclick = () => { playingAll = false; play(i); };
