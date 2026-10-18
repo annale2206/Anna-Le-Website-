@@ -183,6 +183,7 @@
   .panel-screen{ flex-direction:column; gap:18px; padding:90px 20px 20px; background:rgba(10,13,16,.96); z-index:5; }
   .panel-title{ font-size:14px; letter-spacing:.2em; color:#43e0c9; text-transform:uppercase; text-align:center; }
   .panel-sub{ font-size:12px; letter-spacing:.12em; color:#5a6f75; text-transform:uppercase; text-align:center; }
+  .intent-listen{ min-height:1.4em; margin-top:10px; color:#43e0c9; opacity:.75; }
   .scan-panel{
     position:relative;
     width:min(760px, 92vw);
@@ -255,6 +256,9 @@
   .scene-list{ margin:0; padding-left:18px; font-size:12px; }
   .scene-list li{ margin:2px 0; }
   .rig-screen video.film-layer{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:1; }
+  /* landscape portraits and films fit whole inside the laptop halves (the projectors show them full) */
+  body.landscape .rig-screen img.reveal, body.landscape .rig-screen img.ghost-portrait,
+  body.landscape .rig-screen video.film-layer{ object-fit:contain; background:#000; }
   .video-count{ position:absolute; z-index:4; right:10px; bottom:8px; font-size:11px; letter-spacing:.12em; color:#c8d4d8; background:rgba(10,13,16,.6); padding:2px 8px; }
 
   #error-msg{
@@ -415,7 +419,7 @@
 <!-- both participants' own words, combined with their EEG readings -->
 <div class="screen panel-screen" id="intent">
   <div class="panel-title">who are you becoming?</div>
-  <div class="panel-sub">each of you types a few words for your portrait, or leave it empty and let your signal decide</div>
+  <div class="panel-sub">take turns writing a few words for your portrait · pause and think as much as you like · your headbands listen between your words</div>
   <div class="intent-pair">
     <div class="intent-box" style="--pc:#43e0c9">
       <div class="pname">participant A</div>
@@ -428,6 +432,7 @@
       <div class="intent-count" id="intent-count-b">0 / 120</div>
     </div>
   </div>
+  <div class="panel-sub intent-listen" id="intent-listen"></div>
   <label class="consent"><input type="checkbox" id="archive-consent"> save our films in the artist's archive</label>
   <div class="intent-actions">
     <button class="btn" id="intent-go">continue</button>
@@ -524,6 +529,12 @@
   // the visitor's own words (optional), mixed with the EEG reading
   const INTENT_MAX = 120;
   const INTENT_IDLE_SECONDS = 90;      // nobody typing → continue without words
+  // EEG while writing: only the pauses between words are used
+  const WRITING_EEG = true;            // false → use only the holding phase
+  const PAUSE_SECONDS = 1;             // no key pressed for this long = a pause
+  const MIN_PAUSE_SECONDS = 2;         // less than this in pauses → writing is left out for that person
+  const WRITING_WEIGHT = 0.5;          // share of the final reading from the writing pauses (0 to 1)
+  const HOLD_SETTLE_SECONDS = 2;       // quiet moment after writing before the holding phase is recorded
   // archive: films are copied to your Vercel Blob folder only when the visitor ticks the box
   const ARCHIVE_DEFAULT = false;       // set to true to have the box ticked to start with
   // the film: one continuous video that keeps growing. Each new part starts
@@ -532,6 +543,10 @@
   // ?parts=1 → one part each (cheaper for testing) · Veo part length: 4, 6 or 8 s
   const FILM_PARTS = Math.min(4, Math.max(1, Number(params.get('parts')) || 2));
   const VIDEO_SECONDS = 8;
+  // true → portraits and films are always landscape 16:9, to fill the projectors
+  // false → tall 3:4 / 9:16 (only turns wide when a projector window is open)
+  const LANDSCAPE = true;
+  if(LANDSCAPE) document.body.classList.add('landscape');
   const FILM_CAMERA = 'one continuous slow camera move, no cuts, no scene change';
   const PORTRAIT_HOLD_SECONDS = 6;    // how long the finished portrait stays up before switching to the video screen          // how long the "signal interpreted as" screen stays up
   const BLINK_THRESHOLD_UV = 120;     // peak-to-peak on AF7/AF8 that counts as a blink
@@ -717,7 +732,9 @@
     for(let i=0;i<n;i++) out[i] = e.buf[ch][(start + i + BUF*2) % BUF];
     return out;
   }
-  function signalLive(e){ return performance.now() - e.lastSampleAt < 1000 && e.count[0] >= 256; }
+  // live = samples arriving and at least one sensor has a full second of data
+  // (works even if one sensor, e.g. TP9, is missing or broken)
+  function signalLive(e){ return performance.now() - e.lastSampleAt < 1000 && Math.max(...e.count) >= 256; }
 
   // in-place radix-2 FFT
   function fft(re, im){
@@ -1000,6 +1017,11 @@
       [1, 1.5, 2, 2.5].forEach((r, i) => this.n.chord[i].frequency.setTargetAtTime(mid * r, t, 0.3));
       this.n.bloom.gain.setTargetAtTime(inSync ? 0.32 : 0, t, inSync ? 0.5 : 0.8);
     },
+    // softer while people are writing
+    quiet(on){
+      if(!this.n) return;
+      this.n.master.gain.setTargetAtTime(on ? SOUND_VOLUME*0.25 : SOUND_VOLUME, this.ctx.currentTime, 0.6);
+    },
     chime(){
       if(!this.ctx || !this.n) return;
       const c = this.ctx, t = c.currentTime;
@@ -1016,6 +1038,50 @@
       const n = this.n, t = this.ctx.currentTime; this.n = null;
       n.master.gain.setTargetAtTime(0, t, 0.6);
       setTimeout(()=>{ try{ [n.a.o, n.b.o, ...n.chord].forEach(o => o.stop()); n.master.disconnect(); }catch(e){} }, 4000);
+    }
+  };
+
+  /* =====================================================================
+     PROJECTORS: projection.html?p=a and ?p=b, opened in other windows of
+     this same browser, follow the machine through a BroadcastChannel.
+     When a projector is open, portraits and films are made wide (16:9).
+     ===================================================================== */
+  const proj = {
+    bc: ('BroadcastChannel' in window) ? new BroadcastChannel('persona-machine') : null,
+    lastHello: 0, lastLive: 0,
+    snap: { a:{ mode:'idle' }, b:{ mode:'idle' } },
+    connected(){ return performance.now() - this.lastHello < 10000; },
+    set(k, s, replace){
+      this.snap[k] = replace ? { ...s } : { ...this.snap[k], ...s };
+      if(this.bc) this.bc.postMessage({ t:'state', k, s:this.snap[k] });
+    },
+    reset(){ PEOPLE.forEach(k=> this.set(k, { mode:'idle' }, true)); },
+    // live brainwaves for the projectors, about 15 times a second
+    live(phase, res, rec, sync){
+      if(!this.bc || !this.connected()) return;
+      const now = performance.now();
+      if(now - this.lastLive < 66) return;
+      this.lastLive = now;
+      const msg = { t:'live', phase, sync: sync.smooth, inSync: sync.inSync };
+      PEOPLE.forEach(k=>{
+        const e = P[k].eeg;
+        let wave = null;
+        if(e.count[1] >= 256 || e.count[2] >= 256){
+          const x1 = lastN(e, 1, 256), x2 = lastN(e, 2, 256);
+          const x = Array.from(x1, (v,i)=> (v + x2[i]) / 2);
+          const m = x.reduce((s,v)=>s+v,0) / x.length;
+          wave = []; for(let i=0; i<x.length; i+=2) wave.push(x[i] - m);
+        }
+        msg[k] = { wave, rel: res[k].rel, ref: rec[k].personal || null };
+      });
+      this.bc.postMessage(msg);
+    }
+  };
+  if(proj.bc) proj.bc.onmessage = ev=>{
+    const m = ev.data || {};
+    if(m.t === 'hello' && proj.snap[m.p]){
+      proj.lastHello = performance.now();
+      proj.bc.postMessage({ t:'state', k:m.p, s:proj.snap[m.p] });
     }
   };
 
@@ -1094,12 +1160,32 @@
   //   1. BASELINE: both rest, eyes open (each person's own "normal")
   //   2. READING: each holds their own words in mind
   // All the while the page listens for the moments their patterns meet.
-  function runScan(intents){
+  // Order of the scan:
+  //   1. baselines (resting, eyes open)
+  //   2. writing: EEG keeps recording while each person types their words.
+  //      Only the PAUSES are kept: moments when it is that person's turn,
+  //      no key has been pressed for PAUSE_SECONDS and no blink in the last second.
+  //      (typing and eye movement make muscle noise far stronger than brainwaves)
+  //   3. holding: everyone holds their words in mind, still, for SCAN_SECONDS
+  //   The final reading combines the writing pauses and the holding phase,
+  //   each compared with that person's own baseline.
+  const writing = { lastKeyAt: -1e9, focusAt: -1e9, turn: null };
+  PEOPLE.forEach(k=>{
+    const box = $(`intent-${k}`);
+    box.addEventListener('keydown', ()=>{ writing.lastKeyAt = performance.now(); });
+    box.addEventListener('focus', ()=>{ writing.turn = k; writing.focusAt = performance.now(); });
+    box.addEventListener('blur', ()=>{ if(writing.turn === k) writing.turn = null; });
+  });
+
+  function runScan(){
     return new Promise(resolve=>{
       scan.active = true; scan.resolve = resolve;
+      const sid = session;
       const rec = {};
-      PEOPLE.forEach(k=> rec[k] = { baseFrames:[], frames:[], baseBlinks:0, blinks:0, personal:null });
+      PEOPLE.forEach(k=> rec[k] = { baseFrames:[], pauseFrames:[], frames:[], baseBlinks:0, blinks:0, personal:null,
+                                    pauseSeconds:0, pauses:0, inPause:false, writingSeconds:0 });
       const sync = { rel:{}, smooth:0.5, holdFrom:null, inSync:false, seconds:0, moments:0, peak:0, sum:0, n:0, series:[] };
+      let intents = { a:'', b:'' };
       $('scan-progress').style.width = '0%';
       $('scan-phase').textContent = '';
       $('sync-state').textContent = '';
@@ -1110,6 +1196,7 @@
       $('connect-overlay').classList.remove('show');
       showScreen(scanScreen);
       sound.start();
+      PEOPLE.forEach(k=> proj.set(k, { mode:'listen' }, true));
 
       PEOPLE.forEach(k=>{ if(P[k].source === 'sim'){ P[k].sim.start(); P[k].sim.force = null; P[k].sim.neutral(); } });
       followB = false;
@@ -1120,8 +1207,27 @@
       const bothLive = () => PEOPLE.every(k => signalLive(P[k].eeg));
       let lastT = performance.now();
 
+      const startWriting = ()=>{
+        scan.phase = 'writing';
+        sound.quiet(true);
+        PEOPLE.forEach(k=>{ if(P[k].source === 'sim' && !P[k].sim.force) P[k].sim.newMood(); });
+        writing.lastKeyAt = -1e9; writing.focusAt = performance.now(); writing.turn = null;
+        $('intent-listen').textContent = '';
+        askIntents().then(words=>{
+          if(sid !== session || !scan.active) return;
+          intents = words;
+          // back to the scan screen: a short settle, then hold the words in mind
+          showScreen(scanScreen);
+          sound.quiet(false);
+          scan.phase = 'holdSettle'; scan.startAt = performance.now();
+          PEOPLE.forEach(k=>{ if(P[k].source === 'sim' && !P[k].sim.force) P[k].sim.newMood(); });
+          if(P.b.source === 'sim' && P.a.source === 'sim' && !P.b.sim.force && Math.random() < 0.4) P.b.sim.copyFrom(P.a.sim);
+        });
+      };
+
       const loop = ()=>{
         if(!scan.active) return;
+        if(sid !== session){ scan.active = false; sound.stop(); return; }
         const now = performance.now(), dt = Math.min(0.2, (now - lastT) / 1000); lastT = now;
         drawWaves();
         if(followB && P.b.source === 'sim') P.b.sim.copyFrom(P.a.sim);
@@ -1131,6 +1237,7 @@
           res[k].quality.forEach((q,i)=>{ $(`sensor-${k}-${i}`).className = 'led-dot ' + (q === 'good' ? 'on' : q === 'noisy' ? 'warn' : 'bad'); });
           updateBars(k, res[k].rel, rec[k].personal || REF);
         });
+        const goodSignal = k => signalLive(P[k].eeg) && res[k].quality.filter(q => q === 'good').length >= 2;
 
         // ---- sync: how alike are the two patterns right now? ----
         // each pattern is smoothed over about 1.5 s first, so single noisy moments don't count
@@ -1152,6 +1259,7 @@
         $('sync-val').textContent = Math.round(sync.smooth * 100) + '%';
         $('scan-panel').classList.toggle('in-sync', sync.inSync);
         sound.update(sync.rel.a, sync.rel.b, sync.smooth, sync.inSync);
+        proj.live(scan.phase, res, rec, sync);
 
         if(scan.phase === 'waiting' && !needsConnecting().length && bothLive()){
           $('connect-overlay').classList.remove('show');
@@ -1159,9 +1267,36 @@
         }
         if(scan.phase === 'settling' && now - scan.startAt > 1500){ scan.phase = 'baseline'; scan.startAt = now; }
 
+        // ---- writing: keep only the pauses between words ----
+        if(scan.phase === 'writing'){
+          const quietFor = now - Math.max(writing.lastKeyAt, writing.focusAt);
+          PEOPLE.forEach(k=>{
+            const r = rec[k];
+            const blink = detectBlink(P[k].eeg);
+            const myTurn = writing.turn === k;
+            if(myTurn) r.writingSeconds += dt;
+            const pausing = myTurn && quietFor >= PAUSE_SECONDS*1000 && !blink &&
+                            now - P[k].eeg.lastBlinkAt >= 1000 && goodSignal(k);
+            if(pausing){
+              if(!r.inPause){ r.inPause = true; r.pauses++; }
+              r.pauseFrames.push(res[k].rel);
+              r.pauseSeconds += dt;
+            } else if(!myTurn || quietFor < PAUSE_SECONDS*1000) r.inPause = false;
+          });
+          $('intent-listen').textContent = WRITING_EEG
+            ? `listening between your words · A ${Math.round(rec.a.pauseSeconds)} s · B ${Math.round(rec.b.pauseSeconds)} s`
+            : '';
+        }
+
+        if(scan.phase === 'holdSettle' && now - scan.startAt > HOLD_SETTLE_SECONDS*1000){ scan.phase = 'reading'; scan.startAt = now; }
+        if(scan.phase === 'holdSettle'){
+          $('scan-phase').textContent = '03 · holding your words';
+          $('scan-instruction').textContent = 'hands still · rest your eyes on the screen · hold your own words in mind';
+        }
+
         if(recording){
           const isBase = scan.phase === 'baseline';
-          $('scan-phase').textContent = isBase ? '01 · your baselines' : '02 · your readings';
+          $('scan-phase').textContent = isBase ? '01 · your baselines' : '03 · holding your words';
           const poor = PEOPLE.filter(k => res[k].quality.filter(q => q === 'good').length < 2);
           if(!bothLive()){
             $('scan-instruction').textContent = 'waiting for both signals…';
@@ -1169,7 +1304,7 @@
             $('scan-instruction').textContent = poor.length
               ? `adjust ${poor.map(k=>k.toUpperCase()).join(' and ')}'s headband, sensors need skin contact`
               : isBase ? 'baselines · eyes open · breathe normally · stay still'
-                       : 'now each of you hold your own words in mind · listen for your two tones meeting';
+                       : 'hold your own words in mind · hands still, soft gaze · listen for your two tones meeting';
             PEOPLE.forEach(k=>{
               const r = rec[k];
               if(isBase){ r.baseFrames.push(res[k].rel); if(detectBlink(P[k].eeg)) r.baseBlinks++; }
@@ -1188,21 +1323,18 @@
 
           if(isBase && elapsed >= BASELINE_SECONDS){
             PEOPLE.forEach(k=> rec[k].personal = averageFrames(rec[k].baseFrames));
-            scan.phase = 'reading'; scan.startAt = now;
-            // simulated minds move away from rest; sometimes toward the same state, like real pairs can
-            PEOPLE.forEach(k=>{ if(P[k].source === 'sim' && !P[k].sim.force) P[k].sim.newMood(); });
-            if(P.b.source === 'sim' && P.a.source === 'sim' && !P.b.sim.force && Math.random() < 0.4) P.b.sim.copyFrom(P.a.sim);
+            startWriting();
           } else if(!isBase && elapsed >= SCAN_SECONDS){
             scan.active = false;
             sound.stop();
             $('scan-panel').classList.remove('in-sync');
             const out = {};
-            PEOPLE.forEach(k=>{ const r = rec[k]; out[k] = summarize(r.baseFrames, r.frames, r.baseBlinks, r.blinks); });
+            PEOPLE.forEach(k=>{ out[k] = summarize(rec[k]); });
             out.sync = {
               seconds: sync.seconds, fraction: Math.min(1, sync.seconds / SCAN_SECONDS),
               moments: sync.moments, peak: sync.peak, mean: sync.n ? sync.sum / sync.n : 0
             };
-            resolve(out);
+            resolve({ pr: out, intents });
             return;
           }
         }
@@ -1236,22 +1368,40 @@
     for(const f of frames) for(const b of BANDS) avg[b] += f[b]/frames.length;
     return avg;
   }
-  function summarize(baseFrames, frames, baseBlinks, blinks){
-    const base = baseFrames.length > 120 ? averageFrames(baseFrames) : null;
-    const avg = averageFrames(frames) || { ...REF };
-    const segments = [];
-    for(let k=0; k<FILM_PARTS; k++){
-      const a = Math.floor(frames.length*k/FILM_PARTS), z = Math.floor(frames.length*(k+1)/FILM_PARTS);
-      segments.push(averageFrames(frames.slice(a, z)) || avg);
-    }
+  // r = one person's recording: baseline, writing pauses, holding
+  function summarize(r){
+    const base = r.baseFrames.length > 120 ? averageFrames(r.baseFrames) : null;
+    const holdAvg = averageFrames(r.frames);
+    const useWriting = WRITING_EEG && r.pauseSeconds >= MIN_PAUSE_SECONDS && r.pauseFrames.length > 0;
+    const pauseAvg = useWriting ? averageFrames(r.pauseFrames) : null;
+    // the final reading: writing pauses and holding, weighted by WRITING_WEIGHT
+    let avg;
+    if(pauseAvg && holdAvg){ avg = {}; for(const b of BANDS) avg[b] = WRITING_WEIGHT*pauseAvg[b] + (1-WRITING_WEIGHT)*holdAvg[b]; }
+    else avg = pauseAvg || holdAvg || { ...REF };
+    // the film follows the order of the visit: the first parts come from the
+    // writing pauses, the last parts from holding the words in mind
+    const chunks = (frames, n) => {
+      const out = [];
+      for(let k=0; k<n; k++){
+        const a = Math.floor(frames.length*k/n), z = Math.floor(frames.length*(k+1)/n);
+        out.push(averageFrames(frames.slice(a, z)) || avg);
+      }
+      return out;
+    };
+    let segments;
+    if(pauseAvg && FILM_PARTS >= 2){
+      const nw = Math.floor(FILM_PARTS/2);
+      segments = [...chunks(r.pauseFrames, nw), ...chunks(r.frames, FILM_PARTS - nw)];
+    } else segments = chunks(r.frames.length ? r.frames : r.pauseFrames, FILM_PARTS);
     let cv = 0;
-    if(frames.length > 10){
-      const s = frames.map(f=>f.alpha + f.theta);
+    if(r.frames.length > 10){
+      const s = r.frames.map(f=>f.alpha + f.theta);
       const m = s.reduce((a,v)=>a+v,0)/s.length;
       const sd = Math.sqrt(s.reduce((a,v)=>a+(v-m)**2,0)/s.length);
       cv = m ? sd/m : 0;
     }
-    return { base, avg, segments, blinks, baseBlinks, variability: cv, seconds: SCAN_SECONDS };
+    return { base, avg, segments, blinks: r.blinks, baseBlinks: r.baseBlinks, variability: cv, seconds: SCAN_SECONDS,
+             writing: { used: !!pauseAvg, pauseSeconds: r.pauseSeconds, pauses: r.pauses, writingSeconds: r.writingSeconds } };
   }
   function rank(values, ref){
     return BANDS.map(b=>({ b, s: values[b]/Math.max(ref[b], 1e-6) })).sort((x,y)=>y.s-x.s);
@@ -1306,7 +1456,8 @@
     const vs = personal ? 'vs own baseline' : 'vs typical';
     return { k, state, dominant: dom.b, secondary: sec.b, portrait, portraitShown, scenes,
              intent: intent || '', personal,
-             meta: `${dom.b} ${pct(dom.s)} · ${sec.b} ${pct(sec.s)} ${vs} · ${reading.blinks} blinks` };
+             writing: reading.writing,
+             meta: `${dom.b} ${pct(dom.s)} · ${sec.b} ${pct(sec.s)} ${vs} · ${reading.blinks} blinks` + (reading.writing && reading.writing.used ? ` · ${Math.round(reading.writing.pauseSeconds)} s of writing pauses` : '') };
   }
 
   function interpretPair(pr, intents){
@@ -1507,13 +1658,16 @@
     const shots = { ...photos };
 
     newArchiveVisitor();
-    const intents = await askIntents();
-    if(sid !== session){ busy = false; return; }
-    const pr = await runScan(intents);
+    const { pr, intents } = await runScan();   // baselines → writing (pauses) → holding
     if(sid !== session){ busy = false; return; }
     const R = interpretPair(pr, intents);
+    const wide = LANDSCAPE || proj.connected();   // wide 16:9 portraits and films for the projectors
+    PEOPLE.forEach(k=>{
+      R[k].wide = wide;
+      proj.set(k, { mode:'reading', state:R[k].state, words:R[k].intent, meta:R[k].meta, level:LEVEL_TEXT[R.shared.level] });
+    });
     addToBaseline(pr.a.avg); addToBaseline(pr.b.avg);
-    const info = k => ({ words:R[k].intent, state:R[k].state, meta:R[k].meta, personal:R[k].personal,
+    const info = k => ({ words:R[k].intent, state:R[k].state, meta:R[k].meta, personal:R[k].personal, writing:R[k].writing,
                          parts:R[k].scenes.map(sc=>({ band:sc.band, change:sc.change })) });
     saveToArchive({ kind:'info', info:{ pair:true, a:info('a'), b:info('b'),
       sync:{ seconds:R.sync.seconds, fraction:R.sync.fraction, moments:R.sync.moments, peak:R.sync.peak, mean:R.sync.mean, level:R.shared.level } } });
@@ -1658,7 +1812,7 @@
   async function requestPortrait(dataURL, prompt, words, r, sid){
     const res = await fetch('/api/generate-persona', {
       method:'POST', headers: authHeaders({ 'Content-Type':'application/json' }),
-      body: JSON.stringify({ image: dataURL, prompt, visitor: words, aspect:'3:4', eeg: { state:r.state, dominant:r.dominant, secondary:r.secondary } })
+      body: JSON.stringify({ image: dataURL, prompt, visitor: words, aspect: r.wide ? '16:9' : '3:4', eeg: { state:r.state, dominant:r.dominant, secondary:r.secondary } })
     });
     if(!res.ok) throw new Error(await describeFailure(res));
     const data = await res.json();
@@ -1674,6 +1828,7 @@
     half.querySelectorAll('.film-error').forEach(el=>el.remove());
     statics['2'+k].stop();
     const stopGlitch = runGlitch(half, led2, null, '');
+    proj.set(k, { mode:'making' });
     let imageUrl = null, why = '';
     if(k === 'b') await sleep(1500);          // small gap so the two requests don't arrive at the same instant
     try{ imageUrl = await patiently(()=> requestPortrait(dataURL, r.portrait, r.intent, r, sid), sid); }
@@ -1690,6 +1845,7 @@
     if(!imageUrl){
       statics['2'+k].start();
       halfNote(half, `${k.toUpperCase()}: this portrait could not be made`, why);
+      proj.set(k, { mode:'failed', note:'this portrait could not be made' });
       return null;
     }
     half.querySelectorAll('img.reveal').forEach(el=>el.remove());
@@ -1698,6 +1854,7 @@
     img.src = imageUrl;
     half.insertBefore(img, half.firstChild);
     led2.classList.add('on');
+    proj.set(k, { mode:'portrait', portrait:imageUrl });
     logSession('portrait', imageUrl);
     return imageUrl;
   }
@@ -1780,7 +1937,7 @@
     const sc = r.scenes[i];
     const res = await fetch('/api/generate-video', {
       method:'POST', headers: authHeaders({ 'Content-Type':'application/json' }),
-      body: JSON.stringify({ image: startImage, prompt: sc.motion, visitor: r.intent, duration: VIDEO_SECONDS, aspect:'9:16',
+      body: JSON.stringify({ image: startImage, prompt: sc.motion, visitor: r.intent, duration: VIDEO_SECONDS, aspect: r.wide ? '16:9' : '9:16',
                              part: i, eeg: { state:r.state, dominant:sc.band, secondary:r.secondary } })
     });
     if(!res.ok) throw new Error(await describeFailure(res));
@@ -1823,6 +1980,7 @@
       if(!url) break;
       if(glitching){ glitching = false; stopGlitch(); half.querySelectorAll('img.ghost-portrait').forEach(el=>el.remove()); led3.classList.add('on'); }
       player.add(url);
+      proj.set(k, { mode:'film', films:[...player.film], extending: i < parts - 1 });
       logSession('video', url);
       saveToArchive({ kind:'video', person:k, part: player.film.length, url });
       const more = i < parts - 1;
@@ -1839,9 +1997,11 @@
       statics['3'+k].start();
       console.error('[generate-video ' + k + '] no film', lastWhy);
       halfNote(half, `${k.toUpperCase()}: this film could not be made`, lastWhy);
+      proj.set(k, { note:'the film could not be made' });
       return;
     }
     player.tag(false);
+    proj.set(k, { extending:false });
   }
 
   // tap stage 03 to reset for the next pair (once the films are done).
@@ -1850,6 +2010,7 @@
   videoScreen.addEventListener('dblclick', resetForNextVisitor);
   function resetForNextVisitor(){
     session++;
+    proj.reset();
     busy = false;
     photos = {};
     [...activeGlitches].forEach(stop=>stop());

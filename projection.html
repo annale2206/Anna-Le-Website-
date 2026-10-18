@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Persona Machine: Projection</title>
+<!--
+  PROJECTOR VIEW for the identity machine (two-person version)
+
+  One window per projector, each filling its whole landscape screen:
+    projection.html?p=a   → participant A (left projector)
+    projection.html?p=b   → participant B (right projector)
+
+  Open both in the SAME Chrome as identity-machine.html (the laptop screen).
+  They follow the machine automatically: live brainwaves during the scan,
+  the reading, then the portrait and the film, edge to edge.
+  Click once (or press F) on each window to go fullscreen.
+  When a projector window is open, the machine makes wide 16:9 portraits and
+  films so they fill the projector with no empty space.
+-->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=VT323&family=Space+Mono:wght@400;700&display=swap');
+  :root{ --pc:#43e0c9; --bg:#050708; --ink:#e8f0ee; --dim:#6d8086; }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html, body{ width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--ink);
+    font-family:'Space Mono', monospace; }
+  body.hide-cursor{ cursor:none; }
+
+  /* layers, all full-bleed */
+  .layer{ position:absolute; inset:0; width:100%; height:100%; }
+  #live{ z-index:1; transition:opacity 1.2s ease; }
+  #portrait{ z-index:2; object-fit:cover; opacity:0; transition:opacity 1.6s ease; }
+  #portrait.show{ opacity:1; animation:drift 40s ease-in-out infinite alternate; }
+  @keyframes drift{ from{ transform:scale(1.0); } to{ transform:scale(1.08); } }
+  .film{ z-index:3; object-fit:cover; opacity:0; transition:opacity .35s linear; }
+
+  /* sync glow around the edge */
+  #glow{ z-index:6; pointer-events:none; opacity:0; transition:opacity .6s ease;
+    box-shadow: inset 0 0 12vw 2vw rgba(255,236,190,.55); }
+  body.in-sync #glow{ opacity:1; }
+
+  /* centered message (scan phases, reading) */
+  #center{ position:absolute; z-index:5; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:86vw; text-align:center; pointer-events:none; transition:opacity .8s ease; }
+  #big{ font-family:'VT323', monospace; font-size:11vw; line-height:.95; color:var(--pc);
+    text-shadow:0 0 3vw color-mix(in srgb, var(--pc) 45%, transparent); text-transform:lowercase; }
+  #line{ margin-top:2vh; font-size:2.1vw; letter-spacing:.14em; text-transform:uppercase; color:var(--ink); opacity:.85; }
+  #sub{ margin-top:1.4vh; font-size:1.2vw; letter-spacing:.18em; text-transform:uppercase; color:var(--dim); }
+
+  /* top bar: who + sync meter */
+  #top{ position:absolute; z-index:7; top:3vh; left:3vw; right:3vw; display:flex; align-items:center; gap:2vw;
+    font-size:1.1vw; letter-spacing:.2em; text-transform:uppercase; transition:opacity .8s ease; }
+  #who{ color:var(--pc); white-space:nowrap; }
+  #sync{ flex:1; display:flex; align-items:center; gap:1.2vw; color:var(--dim); }
+  #sync-track{ flex:1; height:.5vh; background:#1b2427; position:relative; border-radius:1vh; overflow:hidden; }
+  #sync-fill{ position:absolute; left:0; top:0; bottom:0; width:50%; background:linear-gradient(90deg,#43e0c9,#f5b942); transition:width .2s linear; }
+  #sync-val{ min-width:4.5vw; text-align:right; color:var(--ink); }
+
+  /* bottom: band bars during the scan */
+  #bands{ position:absolute; z-index:7; left:3vw; right:3vw; bottom:4vh; display:grid; grid-template-columns:repeat(5,1fr); gap:2vw;
+    transition:opacity .8s ease; }
+  .band .name{ font-size:1vw; letter-spacing:.2em; text-transform:uppercase; color:var(--dim); margin-bottom:.8vh; }
+  .band .track{ height:.8vh; background:#141c1f; border-radius:1vh; overflow:hidden; }
+  .band .fill{ height:100%; width:0; background:var(--pc); transition:width .25s linear; }
+
+  /* caption over the portrait and the film */
+  #caption{ position:absolute; z-index:8; left:0; right:0; bottom:0; padding:12vh 3vw 4vh;
+    background:linear-gradient(to top, rgba(0,0,0,.72), rgba(0,0,0,0));
+    display:flex; align-items:flex-end; justify-content:space-between; gap:3vw; opacity:0; transition:opacity 1.2s ease; pointer-events:none; }
+  #caption.show{ opacity:1; }
+  #cap-state{ font-family:'VT323', monospace; font-size:4.2vw; line-height:1; color:var(--pc); text-transform:lowercase; }
+  #cap-words{ font-size:1.6vw; margin-top:.8vh; color:var(--ink); }
+  #cap-right{ font-size:1vw; letter-spacing:.18em; text-transform:uppercase; color:#b9c6c4; text-align:right; white-space:nowrap; }
+
+  /* first click: go fullscreen */
+  #hint{ position:absolute; z-index:20; left:50%; bottom:3vh; transform:translateX(-50%);
+    font-size:12px; letter-spacing:.15em; text-transform:uppercase; color:var(--dim); transition:opacity .6s; }
+  body.full #hint{ opacity:0; }
+  .hidden{ opacity:0 !important; }
+</style>
+</head>
+<body>
+  <canvas id="live" class="layer"></canvas>
+  <img id="portrait" class="layer" alt="">
+  <video id="film-0" class="layer film" muted playsinline preload="auto"></video>
+  <video id="film-1" class="layer film" muted playsinline preload="auto"></video>
+  <div id="glow" class="layer"></div>
+
+  <div id="top">
+    <div id="who">participant A</div>
+    <div id="sync"><span>sync</span><div id="sync-track"><div id="sync-fill"></div></div><span id="sync-val">·</span></div>
+  </div>
+
+  <div id="center"><div id="big"></div><div id="line"></div><div id="sub"></div></div>
+
+  <div id="bands"></div>
+
+  <div id="caption">
+    <div><div id="cap-state"></div><div id="cap-words"></div></div>
+    <div id="cap-right"></div>
+  </div>
+
+  <div id="hint">click to go fullscreen · press F</div>
+
+<script>
+(()=>{
+  const $ = id => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  const K = params.get('p') === 'b' ? 'b' : 'a';
+  const COLOR = { a:'#43e0c9', b:'#f5b942' }[K];
+  const NAME = K.toUpperCase();
+  const BANDS = ['delta','theta','alpha','beta','gamma'];
+  document.documentElement.style.setProperty('--pc', COLOR);
+  document.title = `Persona Machine: Projector ${NAME}`;
+  $('who').textContent = `participant ${NAME}`;
+  $('bands').innerHTML = BANDS.map(b=>`<div class="band"><div class="name">${b}</div><div class="track"><div class="fill" id="b-${b}"></div></div></div>`).join('');
+
+  // ---------- fullscreen ----------
+  const goFull = ()=>{ if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{}); };
+  document.addEventListener('click', goFull);
+  document.addEventListener('keydown', e=>{ if(e.key.toLowerCase() === 'f') goFull(); });
+  document.addEventListener('fullscreenchange', ()=>{
+    document.body.classList.toggle('full', !!document.fullscreenElement);
+    document.body.classList.toggle('hide-cursor', !!document.fullscreenElement);
+  });
+
+  // ---------- state from the machine ----------
+  let S = { mode:'idle' };
+  let live = { phase:'', wave:null, rel:null, ref:null, sync:0.5, inSync:false, at:0 };
+  const bc = 'BroadcastChannel' in window ? new BroadcastChannel('persona-machine') : null;
+  const hello = ()=> bc && bc.postMessage({ t:'hello', p:K });
+  if(bc){
+    bc.onmessage = ev=>{
+      const m = ev.data || {};
+      if(m.t === 'state' && m.k === K){ S = m.s || { mode:'idle' }; render(); }
+      else if(m.t === 'live'){
+        const d = m[K]; if(!d) return;
+        live = { phase:m.phase, wave:d.wave, rel:d.rel, ref:d.ref, sync:m.sync, inSync:m.inSync, at:performance.now() };
+        if(S.mode === 'listen') renderListen();
+      }
+    };
+    hello(); setInterval(hello, 3000);    // lets the machine know a projector is open
+  }
+
+  // ---------- film: two layers that hand over seamlessly ----------
+  const film = { urls:[], v:[$('film-0'), $('film-1')], front:0, idx:0, key:'' };
+  film.v.forEach(v=> v.addEventListener('ended', ()=>{ if(v === film.v[film.front]) nextPart(); }));
+  function nextPart(){
+    const cur = film.v[film.front];
+    if(film.urls.length < 2){ cur.currentTime = 0; cur.play().catch(()=>{}); return; }
+    film.idx = (film.idx + 1) % film.urls.length;
+    const nxt = film.v[1 - film.front];
+    if(nxt.dataset.src !== film.urls[film.idx]){ nxt.dataset.src = film.urls[film.idx]; nxt.src = film.urls[film.idx]; }
+    nxt.currentTime = 0; nxt.style.opacity = 1; nxt.play().catch(()=>{});
+    cur.style.opacity = 0; film.front = 1 - film.front;
+    preload();
+  }
+  function preload(){
+    if(film.urls.length < 2) return;
+    const back = film.v[1 - film.front], n = (film.idx + 1) % film.urls.length;
+    if(back.dataset.src !== film.urls[n]){ back.dataset.src = film.urls[n]; back.src = film.urls[n]; back.load(); }
+  }
+  function setFilm(urls){
+    urls = urls || [];
+    if(!urls.length){ clearFilm(); return; }
+    if(!film.urls.length){
+      film.urls = urls.slice(); film.front = 0; film.idx = 0;
+      const v = film.v[0]; v.dataset.src = urls[0]; v.src = urls[0]; v.style.opacity = 1; v.play().catch(()=>{});
+      film.v[1].style.opacity = 0;
+    } else film.urls = urls.slice();
+    preload();
+  }
+  function clearFilm(){
+    film.urls = []; film.v.forEach(v=>{ v.pause(); v.removeAttribute('src'); delete v.dataset.src; v.style.opacity = 0; v.load(); });
+  }
+
+  // ---------- what each mode shows ----------
+  const PHASE_TEXT = {
+    waiting:    ['connecting', 'put on your headband', ''],
+    settling:   ['listening', 'stay still', ''],
+    baseline:   ['rest', 'eyes open · breathe normally', 'learning your resting brain'],
+    writing:    ['becoming', 'write who you are becoming', 'listening between your words'],
+    holdSettle: ['hold', 'hands still', ''],
+    reading:    ['hold', 'hold your words in mind', 'listen for the two tones meeting'],
+  };
+  function show(el, on){ el.classList.toggle('hidden', !on); }
+  function center(big, line, sub){ $('big').textContent = big || ''; $('line').textContent = line || ''; $('sub').textContent = sub || ''; }
+
+  function render(){
+    const m = S.mode;
+    const scanning = m === 'listen';
+    show($('top'), scanning);
+    show($('bands'), scanning);
+    $('live').style.opacity = (m === 'portrait' || m === 'film') ? 0 : (scanning ? 1 : 0.45);
+    document.body.classList.toggle('in-sync', false);
+
+    // portrait
+    const img = $('portrait');
+    if((m === 'portrait' || m === 'film') && S.portrait){
+      if(img.dataset.src !== S.portrait){ img.classList.remove('show'); img.dataset.src = S.portrait; img.src = S.portrait; img.onload = ()=> img.classList.add('show'); }
+      else img.classList.add('show');
+    } else { img.classList.remove('show'); delete img.dataset.src; img.removeAttribute('src'); }
+
+    // film
+    if(m === 'film') setFilm(S.films); else clearFilm();
+
+    // caption over portrait + film
+    const cap = m === 'portrait' || m === 'film';
+    $('caption').classList.toggle('show', cap);
+    $('cap-state').textContent = S.state || '';
+    $('cap-words').textContent = S.words ? `“${S.words}”` : '';
+    $('cap-right').textContent = m === 'portrait' ? (S.note || 'your film is being made…')
+      : m === 'film' ? (S.extending ? `film 0:${String((S.films||[]).length*8).padStart(2,'0')} · extending…` : (S.level || '')) : '';
+
+    // centered text
+    show($('center'), !cap);
+    if(m === 'idle') center('who are you becoming?', `participant ${NAME}`, '');
+    else if(m === 'listen') renderListen();
+    else if(m === 'reading') center(S.state || '', S.words ? `“${S.words}”` : '', S.meta || '');
+    else if(m === 'making') center(S.state || 'synthesizing', S.words ? `“${S.words}”` : '', 'synthesizing your portrait…');
+    else if(m === 'failed') center(S.state || '', S.words ? `“${S.words}”` : '', S.note || 'this portrait could not be made');
+    else if(cap) center('', '', '');
+    $('big').style.fontSize = (m === 'idle') ? '7vw' : '';
+  }
+
+  function renderListen(){
+    const t = PHASE_TEXT[live.phase] || PHASE_TEXT.settling;
+    center(t[0], t[1], t[2]);
+    $('sync-fill').style.width = (live.sync * 100).toFixed(1) + '%';
+    $('sync-val').textContent = Math.round(live.sync * 100) + '%';
+    document.body.classList.toggle('in-sync', !!live.inSync);
+    if(live.inSync){ $('big').textContent = 'in sync'; $('sub').textContent = 'two minds meeting'; }
+    if(live.rel){
+      // bar length = change from this person's own resting level (middle = no change)
+      BANDS.forEach(b=>{
+        const r = live.ref && live.ref[b] ? live.rel[b] / live.ref[b] : live.rel[b] * 5;
+        $(`b-${b}`).style.width = Math.max(2, Math.min(100, r * 50)) + '%';
+      });
+    }
+  }
+
+  // ---------- the live wave / ambient lines (always drawing underneath) ----------
+  const cv = $('live'), ctx = cv.getContext('2d');
+  function resize(){ cv.width = innerWidth * devicePixelRatio; cv.height = innerHeight * devicePixelRatio; }
+  addEventListener('resize', resize); resize();
+  function draw(t){
+    const w = cv.width, h = cv.height;
+    ctx.fillStyle = 'rgba(5,7,8,0.35)'; ctx.fillRect(0, 0, w, h);
+    const fresh = live.wave && performance.now() - live.at < 1500 && S.mode === 'listen';
+    const lines = 5;
+    for(let L=0; L<lines; L++){
+      const y0 = h * (0.2 + 0.6 * L / (lines - 1));
+      ctx.beginPath();
+      ctx.lineWidth = (L === 2 ? 3 : 1.2) * devicePixelRatio;
+      ctx.strokeStyle = COLOR; ctx.globalAlpha = L === 2 ? 0.9 : 0.25;
+      const n = 160;
+      for(let i=0; i<=n; i++){
+        const x = w * i / n;
+        let y;
+        if(fresh){
+          const src = live.wave, j = Math.floor(i / n * (src.length - 1));
+          const amp = h * (L === 2 ? 0.22 : 0.08);
+          y = y0 + Math.max(-1, Math.min(1, src[j] / 80)) * amp * (1 - Math.abs(L - 2) * 0.2);
+        } else {
+          y = y0 + Math.sin(i * 0.09 + t / 1400 + L * 1.3) * h * 0.025 + Math.sin(i * 0.31 + t / 900 + L) * h * 0.008;
+        }
+        i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      }
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+  render();
+  setTimeout(()=> $('hint').style.opacity = 0, 10000);   // the hint fades on its own
+})();
+</script>
+</body>
+</html>
