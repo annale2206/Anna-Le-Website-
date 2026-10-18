@@ -74,25 +74,29 @@
   .cap.add{ display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.25); border-style:dashed; color:#fff; font-family:var(--display); font-size:1.4rem; }
   .cap.add::after{ display:none; }
 
-  /* chosen persona (small) → video screen (big) */
-  .stage{ display:grid; grid-template-columns:minmax(0,1fr) 34px minmax(0,3.2fr); gap:8px; min-height:0; }
+  /* chosen persona → three tall video screens (all 9:16, so no black bars) */
+  .stage{ display:flex; justify-content:center; align-items:center; gap:10px; min-height:0; container-type:size; }
   .display{
-    position:relative; min-height:0; border-radius:16px; overflow:hidden;
+    position:relative; flex:0 0 auto; overflow:hidden; border-radius:16px;
     border:4px solid #dfe6f2; box-shadow:inset 0 0 0 3px #2a1750;
     display:flex; align-items:center; justify-content:center;
+    height:min(100cqh, (100cqw - 76px) / 4 * 16 / 9); aspect-ratio:9/16;
   }
   .display.chosen{ background:#fff; }
   .display.chosen img{ width:100%; height:100%; object-fit:contain; }
-  .display.screen{ background:#05070a; }
-  .display.screen video{ width:100%; height:100%; object-fit:contain; display:block; }
-  .display .idle{ font-family:var(--mono); color:#7a8a99; font-size:1.25rem; text-align:center; padding:12px; }
-  .display.screen .idle{ color:#5fae6a; font-size:1.5rem; }
-  .display.screen.busy::before{
-    content:''; position:absolute; left:0; right:0; height:40%; top:-40%;
-    background:linear-gradient(transparent, rgba(157,255,158,.18), transparent); animation:scanv 1.6s linear infinite;
+  .slots{ display:flex; gap:10px; align-items:center; }
+  .slot{ background:#05070a; }
+  .slot video{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+  .slot .tag{ position:absolute; left:8px; top:6px; font-family:var(--mono); color:#ffd23f; font-size:1rem; text-shadow:1px 1px 0 #000; z-index:2; }
+  .slot.playing{ border-color:#ffd23f; }
+  .display .idle{ font-family:var(--mono); color:#7a8a99; font-size:1.2rem; text-align:center; padding:12px; }
+  .slot .idle{ color:#5fae6a; font-family:var(--display); font-size:2rem; opacity:.5; }
+  .slot.busy::before{
+    content:''; position:absolute; left:0; right:0; height:40%; top:-40%; z-index:1;
+    background:linear-gradient(transparent, rgba(157,255,158,.25), transparent); animation:scanv 1.6s linear infinite;
   }
   @keyframes scanv{ to{ top:100%; } }
-  .arrow{ display:flex; align-items:center; justify-content:center; font-family:var(--display); color:#ffd23f; font-size:1.5rem; text-shadow:2px 2px 0 #2a1750; }
+  .arrow{ flex:0 0 26px; display:flex; align-items:center; justify-content:center; font-family:var(--display); color:#ffd23f; font-size:1.5rem; text-shadow:2px 2px 0 #2a1750; }
 
   /* control panel */
   .panel{
@@ -104,7 +108,7 @@
     border:2px solid #5fae6a; border-radius:10px; padding:6px 10px; font-family:var(--body); font-size:.95rem; outline:none;
   }
   .panel textarea:focus{ border-color:#9dff9e; }
-  .knobs{ display:flex; flex-direction:column; gap:4px; }
+  .knobs{ display:flex; flex-direction:column; gap:4px; justify-content:center; }
   .knobs select{
     background:#0d141b; color:var(--cream); border:2px solid #7fd4ff; border-radius:8px;
     font-family:var(--mono); font-size:1rem; padding:1px 6px; outline:none;
@@ -129,7 +133,7 @@
     border:1.5px solid #5fae6a; border-radius:8px; padding:2px 9px; cursor:pointer; display:inline-flex; gap:6px; align-items:center;
   }
   .clip.on{ border-color:#ff3d9a; color:#ff9fd0; }
-  .clip a{ color:#7fd4ff; text-decoration:none; }
+  a.clip{ color:#7fd4ff; text-decoration:none; }
   .tbtn:hover{ border-color:#9dff9e; }
   .tbtn:disabled{ opacity:.4; cursor:not-allowed; }
 
@@ -155,10 +159,11 @@
     body{ overflow:auto; }
     .lm{ height:auto; padding:0 12px 24px; }
     .cabinet{ grid-template-rows:auto; }
-    .stage{ grid-template-columns:1fr; }
-    .arrow{ transform:rotate(90deg); height:26px; }
-    .display.chosen{ height:200px; }
-    .display.screen{ aspect-ratio:16/9; }
+    .stage{ flex-direction:column; container-type:normal; }
+    .arrow{ transform:rotate(90deg); flex-basis:26px; }
+    .display.chosen{ height:240px; }
+    .slots{ width:100%; }
+    .slot{ flex:1 1 0; height:auto; }
     .panel{ grid-template-columns:1fr auto; }
     .panel textarea{ grid-column:1 / -1; }
     .lever-col{ display:none; }
@@ -194,9 +199,10 @@
     <div class="stage">
       <div class="display chosen" id="chosen"><div class="idle">pick a persona</div></div>
       <div class="arrow">→</div>
-      <div class="display screen" id="screen">
-        <div class="idle" id="idle">your video</div>
-        <video id="player" muted playsinline controls hidden></video>
+      <div class="slots" id="slots">
+        <div class="display slot"><div class="idle">1</div><video muted playsinline loop hidden></video><span class="tag"></span></div>
+        <div class="display slot"><div class="idle">2</div><video muted playsinline loop hidden></video><span class="tag"></span></div>
+        <div class="display slot"><div class="idle">3</div><video muted playsinline loop hidden></video><span class="tag"></span></div>
       </div>
     </div>
 
@@ -208,10 +214,6 @@
           <option value="6">6 s</option>
           <option value="8" selected>8 s</option>
         </select>
-        <select id="aspect" aria-label="frame">
-          <option value="16:9">wide</option>
-          <option value="9:16">tall</option>
-        </select>
       </div>
       <button class="big" id="go" disabled>GENE<br>RATE</button>
 
@@ -219,7 +221,7 @@
         <span class="status" id="status"></span>
         <button class="tbtn spin-btn" id="spin2">lucky pick</button>
         <span id="clips"></span>
-        <button class="tbtn" id="playall" hidden>play all</button>
+        <button class="tbtn" id="playall" hidden>▶ in order</button>
         <button class="tbtn" id="restart" hidden>↺ reset</button>
       </div>
     </div>
@@ -377,7 +379,7 @@
   function setStatus(msg, isErr) { $('status').textContent = msg || ''; $('status').classList.toggle('err', !!isErr); }
   function setBusy(on) {
     busy = on;
-    $('screen').classList.toggle('busy', on);
+    renderSlots();
     updateButton();
     $('playall').disabled = on; $('restart').disabled = on;
   }
@@ -394,7 +396,7 @@
   async function startJob(image, prompt, part) {
     const res = await fetch('/api/generate-video', {
       method: 'POST', headers: auth({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ image, prompt, part, duration: Number($('duration').value), aspect: $('aspect').value })
+      body: JSON.stringify({ image, prompt, part, duration: Number($('duration').value), aspect: '9:16' })
     });
     if (res.status === 401) { forgetToken(); throw new Error('code expired, try again'); }
     if (!res.ok) throw new Error(res.status + ' ' + (await res.text()).slice(0, 160));
@@ -424,7 +426,6 @@
       const id = await startJob(image, prompt, clips.length);
       const url = await waitFor(id);
       clips.push({ url, prompt, seconds: Number($('duration').value) });
-      play(clips.length - 1);
       setStatus('done');
       $('prompt').value = '';
     } catch (err) { setStatus(err.message, true); }
@@ -468,39 +469,59 @@
     }
   });
 
-  /* ---------------- playback ---------------- */
-  const player = $('player');
-  let playingAll = false;
-  function play(i) {
-    current = i; $('idle').hidden = true; player.hidden = false;
-    player.src = clips[i].url; player.play().catch(() => {});
-    renderClips();
+  /* ---------------- playback: the 3 screens show the latest 3 parts, looping ---------------- */
+  const slots = Array.from(document.querySelectorAll('.slot'));
+  let inOrder = false;
+  function renderSlots() {
+    const start = Math.max(0, clips.length - 3);
+    slots.forEach((el, k) => {
+      const i = start + k, c = clips[i];
+      const v = el.querySelector('video');
+      el.querySelector('.idle').hidden = !!c;
+      v.hidden = !c;
+      el.querySelector('.tag').textContent = c ? 'part ' + (i + 1) : '';
+      if (c && v.dataset.src !== c.url) { v.dataset.src = c.url; v.src = c.url; v.loop = !inOrder; v.play().catch(() => {}); }
+      if (!c && v.dataset.src) { v.removeAttribute('src'); v.dataset.src = ''; v.load(); }
+      // the screen where the next part will appear scans while generating
+      const next = Math.min(clips.length, 2);
+      el.classList.toggle('busy', busy && k === next);
+    });
   }
-  player.addEventListener('ended', () => {
-    if (playingAll && current < clips.length - 1) play(current + 1); else playingAll = false;
-  });
-  $('playall').onclick = () => { if (clips.length) { playingAll = true; play(0); } };
+  // play the visible parts one after another, then go back to looping
+  $('playall').onclick = () => {
+    const vids = slots.map(el => el.querySelector('video')).filter(v => !v.hidden);
+    if (!vids.length) return;
+    inOrder = true;
+    vids.forEach(v => { v.pause(); v.currentTime = 0; v.loop = false; });
+    const step = n => {
+      slots.forEach(el => el.classList.remove('playing'));
+      if (n >= vids.length) { inOrder = false; vids.forEach(v => { v.loop = true; v.play().catch(() => {}); }); return; }
+      vids[n].closest('.slot').classList.add('playing');
+      vids[n].onended = () => { vids[n].onended = null; step(n + 1); };
+      vids[n].play().catch(() => {});
+    };
+    step(0);
+  };
   function resetVideo() {
-    clips = []; current = -1; startNew = false; playingAll = false;
-    player.removeAttribute('src'); player.hidden = true; $('idle').hidden = false;
+    clips = []; startNew = false; inOrder = false;
+    slots.forEach(el => el.classList.remove('playing'));
     setStatus(''); renderClips(); updateButton();
   }
   $('restart').onclick = () => { if (!busy) resetVideo(); };
 
+  // small numbered buttons = download each part
   function renderClips() {
     const box = $('clips'); box.innerHTML = '';
     clips.forEach((c, i) => {
-      const el = document.createElement('span');
-      el.className = 'clip' + (i === current ? ' on' : '');
-      el.title = c.prompt || '';
-      el.innerHTML = '<span>' + (i + 1) + '</span><a download target="_blank" rel="noopener" title="download">↓</a>';
-      el.querySelector('a').href = c.url;
-      el.querySelector('a').onclick = e => e.stopPropagation();
-      el.onclick = () => { playingAll = false; play(i); };
-      box.appendChild(el);
+      const a = document.createElement('a');
+      a.className = 'clip'; a.href = c.url; a.target = '_blank'; a.rel = 'noopener'; a.download = '';
+      a.title = (c.prompt || '') + ' (download)';
+      a.textContent = (i + 1) + ' ↓';
+      box.appendChild(a);
     });
     $('playall').hidden = clips.length < 2;
     $('restart').hidden = clips.length === 0;
+    renderSlots();
     updateButton();
   }
   updateButton();
