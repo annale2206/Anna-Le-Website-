@@ -1079,9 +1079,9 @@
   };
   if(proj.bc) proj.bc.onmessage = ev=>{
     const m = ev.data || {};
-    if(m.t === 'hello' && proj.snap[m.p]){
+    if(m.t === 'hello'){
       proj.lastHello = performance.now();
-      proj.bc.postMessage({ t:'state', k:m.p, s:proj.snap[m.p] });
+      PEOPLE.forEach(k=> proj.bc.postMessage({ t:'state', k, s:proj.snap[k] }));
     }
   };
 
@@ -1664,7 +1664,7 @@
     const wide = LANDSCAPE || proj.connected();   // wide 16:9 portraits and films for the projectors
     PEOPLE.forEach(k=>{
       R[k].wide = wide;
-      proj.set(k, { mode:'reading', state:R[k].state, words:R[k].intent, meta:R[k].meta, level:LEVEL_TEXT[R.shared.level] });
+      proj.set(k, { mode:'reading', state:R[k].state, words:R[k].intent, meta:R[k].meta, level:LEVEL_TEXT[R.shared.level], levelKey:R.shared.level });
     });
     addToBaseline(pr.a.avg); addToBaseline(pr.b.avg);
     const info = k => ({ words:R[k].intent, state:R[k].state, meta:R[k].meta, personal:R[k].personal, writing:R[k].writing,

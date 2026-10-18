@@ -7,72 +7,83 @@
 <!--
   PROJECTOR VIEW for the identity machine (two-person version)
 
-  One window per projector, each filling its whole landscape screen:
-    projection.html?p=a   → participant A (left projector)
-    projection.html?p=b   → participant B (right projector)
+  THREE PROJECTORS (your wall map):
+    projection.html?p=left     → left side + left corner curve   (participant A)
+    projection.html?p=middle   → middle wall                     (A and B meeting)
+    projection.html?p=right    → right corner curve + right side (participant B)
 
-  Open both in the SAME Chrome as identity-machine.html (the laptop screen).
-  They follow the machine automatically: live brainwaves during the scan,
-  the reading, then the portrait and the film, edge to edge.
-  Click once (or press F) on each window to go fullscreen.
-  When a projector window is open, the machine makes wide 16:9 portraits and
-  films so they fill the projector with no empty space.
+  TWO PROJECTORS (one person each, no curve):
+    projection.html?p=a   and   projection.html?p=b
+
+  Open every window in the SAME Chrome as identity-machine.html (the laptop
+  screen), drag each onto its projector, then click once (or press F) on it
+  to go fullscreen. They follow the machine automatically.
+
+  ?curve=0.19 → how much of the left/right projector is the corner curve
+                (0.19 = 19%, measured from your map). The curve gets a soft,
+                blurred continuation of the image, so faces never bend around it.
 -->
 <style>
   @import url('https://fonts.googleapis.com/css2?family=VT323&family=Space+Mono:wght@400;700&display=swap');
-  :root{ --pc:#43e0c9; --bg:#050708; --ink:#e8f0ee; --dim:#6d8086; }
+  :root{ --a:#43e0c9; --b:#f5b942; --pc:#43e0c9; --bg:#050708; --ink:#e8f0ee; --dim:#6d8086;
+         --cl:0%; --cw:100%; }   /* the flat (non-curve) part of this projector */
   *{ box-sizing:border-box; margin:0; padding:0; }
   html, body{ width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--ink);
     font-family:'Space Mono', monospace; }
   body.hide-cursor{ cursor:none; }
-
-  /* layers, all full-bleed */
   .layer{ position:absolute; inset:0; width:100%; height:100%; }
-  #live{ z-index:1; transition:opacity 1.2s ease; }
-  #portrait{ z-index:2; object-fit:cover; opacity:0; transition:opacity 1.6s ease; }
-  #portrait.show{ opacity:1; animation:drift 40s ease-in-out infinite alternate; }
-  @keyframes drift{ from{ transform:scale(1.0); } to{ transform:scale(1.08); } }
-  .film{ z-index:3; object-fit:cover; opacity:0; transition:opacity .35s linear; }
 
-  /* sync glow around the edge */
+  #live{ z-index:1; transition:opacity 1.2s ease; }
+
+  /* one participant's image + film */
+  .pane{ position:absolute; inset:0; z-index:2; opacity:0; transition:opacity 1.6s ease; pointer-events:none; }
+  .pane.show{ opacity:1; }
+  .pane .back{ position:absolute; top:0; height:100%; width:100%; left:0;
+    filter:blur(28px) brightness(.72) saturate(1.25); transform:scale(1.2); }
+  .pane .wrap{ position:absolute; top:0; bottom:0; overflow:hidden; }
+  .pane .wrap img, .pane .wrap video{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .pane .wrap img{ animation:drift 40s ease-in-out infinite alternate; }
+  .pane .wrap video{ opacity:0; transition:opacity .35s linear; }
+  @keyframes drift{ from{ transform:scale(1.0); } to{ transform:scale(1.07); } }
+
   #glow{ z-index:6; pointer-events:none; opacity:0; transition:opacity .6s ease;
     box-shadow: inset 0 0 12vw 2vw rgba(255,236,190,.55); }
   body.in-sync #glow{ opacity:1; }
 
-  /* centered message (scan phases, reading) */
-  #center{ position:absolute; z-index:5; left:50%; top:50%; transform:translate(-50%,-50%);
-    width:86vw; text-align:center; pointer-events:none; transition:opacity .8s ease; }
+  /* centered text, inside the flat part of the wall */
+  #center{ position:absolute; z-index:5; top:50%; left:calc(var(--cl) + var(--cw) / 2); transform:translate(-50%,-50%);
+    width:calc(var(--cw) * .9); text-align:center; pointer-events:none; transition:opacity .8s ease; }
   #big{ font-family:'VT323', monospace; font-size:11vw; line-height:.95; color:var(--pc);
     text-shadow:0 0 3vw color-mix(in srgb, var(--pc) 45%, transparent); text-transform:lowercase; }
+  #big .a{ color:var(--a); } #big .b{ color:var(--b); } #big .x{ color:var(--dim); font-size:.5em; vertical-align:middle; }
   #line{ margin-top:2vh; font-size:2.1vw; letter-spacing:.14em; text-transform:uppercase; color:var(--ink); opacity:.85; }
   #sub{ margin-top:1.4vh; font-size:1.2vw; letter-spacing:.18em; text-transform:uppercase; color:var(--dim); }
 
-  /* top bar: who + sync meter */
-  #top{ position:absolute; z-index:7; top:3vh; left:3vw; right:3vw; display:flex; align-items:center; gap:2vw;
-    font-size:1.1vw; letter-spacing:.2em; text-transform:uppercase; transition:opacity .8s ease; }
+  #top{ position:absolute; z-index:7; top:3vh; left:calc(var(--cl) + 3vw); width:calc(var(--cw) - 6vw);
+    display:flex; align-items:center; gap:2vw; font-size:1.1vw; letter-spacing:.2em; text-transform:uppercase; transition:opacity .8s ease; }
   #who{ color:var(--pc); white-space:nowrap; }
   #sync{ flex:1; display:flex; align-items:center; gap:1.2vw; color:var(--dim); }
   #sync-track{ flex:1; height:.5vh; background:#1b2427; position:relative; border-radius:1vh; overflow:hidden; }
-  #sync-fill{ position:absolute; left:0; top:0; bottom:0; width:50%; background:linear-gradient(90deg,#43e0c9,#f5b942); transition:width .2s linear; }
+  #sync-fill{ position:absolute; left:0; top:0; bottom:0; width:50%; background:linear-gradient(90deg,var(--a),var(--b)); transition:width .2s linear; }
   #sync-val{ min-width:4.5vw; text-align:right; color:var(--ink); }
 
-  /* bottom: band bars during the scan */
-  #bands{ position:absolute; z-index:7; left:3vw; right:3vw; bottom:4vh; display:grid; grid-template-columns:repeat(5,1fr); gap:2vw;
-    transition:opacity .8s ease; }
+  #bands{ position:absolute; z-index:7; left:calc(var(--cl) + 3vw); width:calc(var(--cw) - 6vw); bottom:4vh;
+    display:grid; grid-template-columns:repeat(5,1fr); gap:2vw; transition:opacity .8s ease; }
   .band .name{ font-size:1vw; letter-spacing:.2em; text-transform:uppercase; color:var(--dim); margin-bottom:.8vh; }
   .band .track{ height:.8vh; background:#141c1f; border-radius:1vh; overflow:hidden; }
   .band .fill{ height:100%; width:0; background:var(--pc); transition:width .25s linear; }
 
-  /* caption over the portrait and the film */
-  #caption{ position:absolute; z-index:8; left:0; right:0; bottom:0; padding:12vh 3vw 4vh;
-    background:linear-gradient(to top, rgba(0,0,0,.72), rgba(0,0,0,0));
+  /* caption over the images and films */
+  #caption{ position:absolute; z-index:8; bottom:0; left:var(--cl); width:var(--cw); padding:12vh 3vw 4vh;
+    background:linear-gradient(to top, rgba(0,0,0,.7), rgba(0,0,0,0));
     display:flex; align-items:flex-end; justify-content:space-between; gap:3vw; opacity:0; transition:opacity 1.2s ease; pointer-events:none; }
   #caption.show{ opacity:1; }
-  #cap-state{ font-family:'VT323', monospace; font-size:4.2vw; line-height:1; color:var(--pc); text-transform:lowercase; }
-  #cap-words{ font-size:1.6vw; margin-top:.8vh; color:var(--ink); }
-  #cap-right{ font-size:1vw; letter-spacing:.18em; text-transform:uppercase; color:#b9c6c4; text-align:right; white-space:nowrap; }
+  #caption.mid{ justify-content:center; text-align:center; }
+  .cap-state{ font-family:'VT323', monospace; font-size:4.2vw; line-height:1; color:var(--pc); text-transform:lowercase; }
+  .cap-state .a{ color:var(--a); } .cap-state .b{ color:var(--b); } .cap-state .x{ color:var(--dim); }
+  .cap-words{ font-size:1.6vw; margin-top:.8vh; color:var(--ink); }
+  .cap-small{ font-size:1vw; letter-spacing:.18em; text-transform:uppercase; color:#b9c6c4; white-space:nowrap; }
 
-  /* first click: go fullscreen */
   #hint{ position:absolute; z-index:20; left:50%; bottom:3vh; transform:translateX(-50%);
     font-size:12px; letter-spacing:.15em; text-transform:uppercase; color:var(--dim); transition:opacity .6s; }
   body.full #hint{ opacity:0; }
@@ -81,38 +92,41 @@
 </head>
 <body>
   <canvas id="live" class="layer"></canvas>
-  <img id="portrait" class="layer" alt="">
-  <video id="film-0" class="layer film" muted playsinline preload="auto"></video>
-  <video id="film-1" class="layer film" muted playsinline preload="auto"></video>
+  <div id="panes"></div>
   <div id="glow" class="layer"></div>
-
-  <div id="top">
-    <div id="who">participant A</div>
-    <div id="sync"><span>sync</span><div id="sync-track"><div id="sync-fill"></div></div><span id="sync-val">·</span></div>
-  </div>
-
+  <div id="top"><div id="who"></div><div id="sync"><span>sync</span><div id="sync-track"><div id="sync-fill"></div></div><span id="sync-val">·</span></div></div>
   <div id="center"><div id="big"></div><div id="line"></div><div id="sub"></div></div>
-
   <div id="bands"></div>
-
-  <div id="caption">
-    <div><div id="cap-state"></div><div id="cap-words"></div></div>
-    <div id="cap-right"></div>
-  </div>
-
+  <div id="caption"></div>
   <div id="hint">click to go fullscreen · press F</div>
 
 <script>
 (()=>{
   const $ = id => document.getElementById(id);
   const params = new URLSearchParams(location.search);
-  const K = params.get('p') === 'b' ? 'b' : 'a';
-  const COLOR = { a:'#43e0c9', b:'#f5b942' }[K];
-  const NAME = K.toUpperCase();
+  const COLORS = { a:'#43e0c9', b:'#f5b942' };
   const BANDS = ['delta','theta','alpha','beta','gamma'];
-  document.documentElement.style.setProperty('--pc', COLOR);
-  document.title = `Persona Machine: Projector ${NAME}`;
-  $('who').textContent = `participant ${NAME}`;
+  const VIDEO_SECONDS = 8;
+
+  // ---------- which wall is this window? ----------
+  const P = (params.get('p') || 'a').toLowerCase();
+  const CURVE = Math.min(0.45, Math.max(0, Number(params.get('curve') || 0.19)));
+  const WALL = {
+    a:      { people:['a'], curve:null },
+    b:      { people:['b'], curve:null },
+    left:   { people:['a'], curve:'right' },   // flat side on the left, curve on its right edge
+    right:  { people:['b'], curve:'left' },    // curve on its left edge, flat side on the right
+    middle: { people:['a','b'], curve:null },
+  }[P] || { people:['a'], curve:null };
+  const MID = WALL.people.length === 2;
+  const ONE = WALL.people[0];
+  const flatL = WALL.curve === 'left' ? CURVE : 0;
+  const flatW = WALL.curve ? 1 - CURVE : 1;
+  const root = document.documentElement.style;
+  root.setProperty('--cl', (flatL*100) + '%'); root.setProperty('--cw', (flatW*100) + '%');
+  root.setProperty('--pc', MID ? '#e8f0ee' : COLORS[ONE]);
+  document.title = `Persona Machine: ${P} projector`;
+  $('who').textContent = MID ? 'A + B' : `participant ${ONE.toUpperCase()}`;
   $('bands').innerHTML = BANDS.map(b=>`<div class="band"><div class="name">${b}</div><div class="track"><div class="fill" id="b-${b}"></div></div></div>`).join('');
 
   // ---------- fullscreen ----------
@@ -124,103 +138,177 @@
     document.body.classList.toggle('hide-cursor', !!document.fullscreenElement);
   });
 
+  // ---------- one participant's image + film, sharp on the flat wall ----------
+  // The blurred backdrop is drawn live from the same picture, so the curve and
+  // any edge show a soft continuation of the image instead of black.
+  function makePane(k){
+    const el = document.createElement('div'); el.className = 'pane';
+    el.innerHTML = `<canvas class="back" width="96" height="54"></canvas><div class="wrap"><img alt=""><video muted playsinline preload="auto"></video><video muted playsinline preload="auto"></video></div>`;
+    $('panes').appendChild(el);
+    const back = el.querySelector('.back'), bctx = back.getContext('2d');
+    const wrap = el.querySelector('.wrap'), img = el.querySelector('img'), vids = [...el.querySelectorAll('video')];
+    const pane = { k, el, wrap, back, img, vids, urls:[], front:0, idx:0, portrait:'' };
+
+    vids.forEach(v=> v.addEventListener('ended', ()=>{ if(v === vids[pane.front]) next(); }));
+    function next(){
+      const cur = vids[pane.front];
+      if(pane.urls.length < 2){ cur.currentTime = 0; cur.play().catch(()=>{}); return; }
+      pane.idx = (pane.idx + 1) % pane.urls.length;
+      const nxt = vids[1 - pane.front];
+      if(nxt.dataset.src !== pane.urls[pane.idx]){ nxt.dataset.src = pane.urls[pane.idx]; nxt.src = pane.urls[pane.idx]; }
+      nxt.currentTime = 0; nxt.style.opacity = 1; nxt.play().catch(()=>{});
+      cur.style.opacity = 0; pane.front = 1 - pane.front; preload();
+    }
+    function preload(){
+      if(pane.urls.length < 2) return;
+      const bk = vids[1 - pane.front], n = (pane.idx + 1) % pane.urls.length;
+      if(bk.dataset.src !== pane.urls[n]){ bk.dataset.src = pane.urls[n]; bk.src = pane.urls[n]; bk.load(); }
+    }
+    pane.setPortrait = url=>{
+      if(!url){ pane.portrait = ''; img.removeAttribute('src'); return; }
+      if(pane.portrait !== url){ pane.portrait = url; img.src = url; }
+    };
+    pane.setFilm = urls=>{
+      urls = urls || [];
+      if(!urls.length){ pane.clearFilm(); return; }
+      if(!pane.urls.length){
+        pane.urls = urls.slice(); pane.front = 0; pane.idx = 0;
+        vids[0].dataset.src = urls[0]; vids[0].src = urls[0]; vids[0].style.opacity = 1; vids[0].play().catch(()=>{});
+        vids[1].style.opacity = 0;
+      } else pane.urls = urls.slice();
+      preload();
+    };
+    pane.clearFilm = ()=>{
+      if(!pane.urls.length) return;
+      pane.urls = [];
+      vids.forEach(v=>{ v.pause(); v.removeAttribute('src'); delete v.dataset.src; v.style.opacity = 0; v.load(); });
+    };
+    pane.drawBack = ()=>{
+      const v = vids[pane.front];
+      const src = (pane.urls.length && v.readyState >= 2) ? v : (img.complete && img.naturalWidth ? img : null);
+      if(src){ try{ bctx.drawImage(src, 0, 0, back.width, back.height); }catch(e){} }
+    };
+    return pane;
+  }
+  const panes = {}; WALL.people.forEach(k=> panes[k] = makePane(k));
+
+  // where the sharp picture sits, and how its edges fade
+  function layoutPanes(levelKey){
+    if(!MID){
+      const p = panes[ONE];
+      p.wrap.style.left = (flatL*100) + '%'; p.wrap.style.width = (flatW*100) + '%';
+      // fade the sharp picture softly into the blurred curve
+      const m = WALL.curve === 'right' ? 'linear-gradient(to right, #000 88%, transparent 100%)'
+              : WALL.curve === 'left'  ? 'linear-gradient(to left, #000 88%, transparent 100%)' : 'none';
+      p.wrap.style.webkitMaskImage = p.wrap.style.maskImage = m;
+      return;
+    }
+    // middle wall: A flows in from the left, B from the right, meeting in the center.
+    // the more in sync the pair was, the wider they overlap and merge.
+    const W = { mirrored:0.68, echoing:0.6, apart:0.54 }[levelKey] || 0.6;
+    const solid = levelKey === 'mirrored' ? 45 : levelKey === 'apart' ? 82 : 65;   // % of each picture that stays solid
+    const A = panes.a, B = panes.b;
+    A.wrap.style.left = '0'; A.wrap.style.width = (W*100) + '%';
+    B.wrap.style.left = ((1-W)*100) + '%'; B.wrap.style.width = (W*100) + '%';
+    A.wrap.style.webkitMaskImage = A.wrap.style.maskImage = `linear-gradient(to right, #000 ${solid}%, transparent 100%)`;
+    B.wrap.style.webkitMaskImage = B.wrap.style.maskImage = `linear-gradient(to left, #000 ${solid}%, transparent 100%)`;
+    A.back.style.width = '50%'; B.back.style.left = '50%'; B.back.style.width = '50%';
+    B.el.style.zIndex = 3;
+  }
+  layoutPanes('');
+
   // ---------- state from the machine ----------
-  let S = { mode:'idle' };
-  let live = { phase:'', wave:null, rel:null, ref:null, sync:0.5, inSync:false, at:0 };
+  const S = { a:{ mode:'idle' }, b:{ mode:'idle' } };
+  let live = { phase:'', a:null, b:null, sync:0.5, inSync:false, at:0 };
   const bc = 'BroadcastChannel' in window ? new BroadcastChannel('persona-machine') : null;
-  const hello = ()=> bc && bc.postMessage({ t:'hello', p:K });
+  const hello = ()=> bc && bc.postMessage({ t:'hello', p:P });
   if(bc){
     bc.onmessage = ev=>{
       const m = ev.data || {};
-      if(m.t === 'state' && m.k === K){ S = m.s || { mode:'idle' }; render(); }
+      if(m.t === 'state' && S[m.k]){ S[m.k] = m.s || { mode:'idle' }; render(); }
       else if(m.t === 'live'){
-        const d = m[K]; if(!d) return;
-        live = { phase:m.phase, wave:d.wave, rel:d.rel, ref:d.ref, sync:m.sync, inSync:m.inSync, at:performance.now() };
-        if(S.mode === 'listen') renderListen();
+        live = { phase:m.phase, a:m.a, b:m.b, sync:m.sync, inSync:m.inSync, at:performance.now() };
+        if(mode() === 'listen') renderListen();
       }
     };
-    hello(); setInterval(hello, 3000);    // lets the machine know a projector is open
+    hello(); setInterval(hello, 3000);
   }
 
-  // ---------- film: two layers that hand over seamlessly ----------
-  const film = { urls:[], v:[$('film-0'), $('film-1')], front:0, idx:0, key:'' };
-  film.v.forEach(v=> v.addEventListener('ended', ()=>{ if(v === film.v[film.front]) nextPart(); }));
-  function nextPart(){
-    const cur = film.v[film.front];
-    if(film.urls.length < 2){ cur.currentTime = 0; cur.play().catch(()=>{}); return; }
-    film.idx = (film.idx + 1) % film.urls.length;
-    const nxt = film.v[1 - film.front];
-    if(nxt.dataset.src !== film.urls[film.idx]){ nxt.dataset.src = film.urls[film.idx]; nxt.src = film.urls[film.idx]; }
-    nxt.currentTime = 0; nxt.style.opacity = 1; nxt.play().catch(()=>{});
-    cur.style.opacity = 0; film.front = 1 - film.front;
-    preload();
-  }
-  function preload(){
-    if(film.urls.length < 2) return;
-    const back = film.v[1 - film.front], n = (film.idx + 1) % film.urls.length;
-    if(back.dataset.src !== film.urls[n]){ back.dataset.src = film.urls[n]; back.src = film.urls[n]; back.load(); }
-  }
-  function setFilm(urls){
-    urls = urls || [];
-    if(!urls.length){ clearFilm(); return; }
-    if(!film.urls.length){
-      film.urls = urls.slice(); film.front = 0; film.idx = 0;
-      const v = film.v[0]; v.dataset.src = urls[0]; v.src = urls[0]; v.style.opacity = 1; v.play().catch(()=>{});
-      film.v[1].style.opacity = 0;
-    } else film.urls = urls.slice();
-    preload();
-  }
-  function clearFilm(){
-    film.urls = []; film.v.forEach(v=>{ v.pause(); v.removeAttribute('src'); delete v.dataset.src; v.style.opacity = 0; v.load(); });
+  const MEDIA = m => m === 'portrait' || m === 'film';
+  // the overall moment for this wall
+  function mode(){
+    const ms = WALL.people.map(k=> S[k].mode);
+    if(ms.includes('listen')) return 'listen';
+    if(ms.some(MEDIA)) return 'media';
+    if(ms.includes('reading')) return 'reading';
+    if(ms.includes('making')) return 'making';
+    if(ms.includes('failed')) return 'failed';
+    return 'idle';
   }
 
-  // ---------- what each mode shows ----------
   const PHASE_TEXT = {
-    waiting:    ['connecting', 'put on your headband', ''],
+    waiting:    ['connecting', 'put on your headbands', ''],
     settling:   ['listening', 'stay still', ''],
     baseline:   ['rest', 'eyes open · breathe normally', 'learning your resting brain'],
     writing:    ['becoming', 'write who you are becoming', 'listening between your words'],
     holdSettle: ['hold', 'hands still', ''],
     reading:    ['hold', 'hold your words in mind', 'listen for the two tones meeting'],
   };
+  const esc = s => String(s || '').replace(/[&<>"]/g, c=>({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
   function show(el, on){ el.classList.toggle('hidden', !on); }
-  function center(big, line, sub){ $('big').textContent = big || ''; $('line').textContent = line || ''; $('sub').textContent = sub || ''; }
+  function center(big, line, sub, html){ $('big')[html ? 'innerHTML' : 'textContent'] = big || ''; $('line').textContent = line || ''; $('sub').textContent = sub || ''; }
+  const pair = (fa, fb) => `<span class="a">${esc(fa)}</span> <span class="x">·</span> <span class="b">${esc(fb)}</span>`;
 
   function render(){
-    const m = S.mode;
-    const scanning = m === 'listen';
-    show($('top'), scanning);
-    show($('bands'), scanning);
-    $('live').style.opacity = (m === 'portrait' || m === 'film') ? 0 : (scanning ? 1 : 0.45);
+    const m = mode();
+    show($('top'), m === 'listen');
+    show($('bands'), m === 'listen' && !MID);
+    $('live').style.opacity = m === 'media' ? 0 : (m === 'listen' ? 1 : 0.45);
     document.body.classList.toggle('in-sync', false);
 
-    // portrait
-    const img = $('portrait');
-    if((m === 'portrait' || m === 'film') && S.portrait){
-      if(img.dataset.src !== S.portrait){ img.classList.remove('show'); img.dataset.src = S.portrait; img.src = S.portrait; img.onload = ()=> img.classList.add('show'); }
-      else img.classList.add('show');
-    } else { img.classList.remove('show'); delete img.dataset.src; img.removeAttribute('src'); }
+    // pictures
+    layoutPanes(S.a.levelKey || S.b.levelKey || '');
+    WALL.people.forEach(k=>{
+      const s = S[k], p = panes[k];
+      const on = MEDIA(s.mode) && s.portrait;
+      p.setPortrait(on ? s.portrait : '');
+      if(s.mode === 'film') p.setFilm(s.films); else p.clearFilm();
+      p.el.classList.toggle('show', !!on);
+    });
 
-    // film
-    if(m === 'film') setFilm(S.films); else clearFilm();
-
-    // caption over portrait + film
-    const cap = m === 'portrait' || m === 'film';
-    $('caption').classList.toggle('show', cap);
-    $('cap-state').textContent = S.state || '';
-    $('cap-words').textContent = S.words ? `“${S.words}”` : '';
-    $('cap-right').textContent = m === 'portrait' ? (S.note || 'your film is being made…')
-      : m === 'film' ? (S.extending ? `film 0:${String((S.films||[]).length*8).padStart(2,'0')} · extending…` : (S.level || '')) : '';
+    // caption over the pictures
+    const cap = $('caption');
+    cap.classList.toggle('show', m === 'media');
+    cap.classList.toggle('mid', MID);
+    if(m === 'media'){
+      if(MID){
+        cap.innerHTML = `<div><div class="cap-state">${pair(S.a.state, S.b.state)}</div><div class="cap-small" style="margin-top:1vh">${esc(S.a.level || S.b.level || '')}</div></div>`;
+      } else {
+        const s = S[ONE];
+        const right = s.mode === 'portrait' ? (s.note || 'your film is being made…')
+          : (s.extending ? `film 0:${String((s.films||[]).length*VIDEO_SECONDS).padStart(2,'0')} · extending…` : (s.note || ''));
+        const words = `<div><div class="cap-state">${esc(s.state)}</div><div class="cap-words">${s.words ? '“' + esc(s.words) + '”' : ''}</div></div>`;
+        const small = `<div class="cap-small">${esc(right)}</div>`;
+        // B's wall reads from the right, so its caption sits on the right
+        cap.innerHTML = WALL.curve === 'left' ? small + words.replace('<div>', '<div style="text-align:right">') : words + small;
+      }
+    }
 
     // centered text
-    show($('center'), !cap);
-    if(m === 'idle') center('who are you becoming?', `participant ${NAME}`, '');
+    show($('center'), m !== 'media');
+    $('big').style.fontSize = '';
+    if(m === 'idle'){ center('who are you becoming?', MID ? '' : `participant ${ONE.toUpperCase()}`, ''); $('big').style.fontSize = MID ? '8vw' : '7vw'; }
     else if(m === 'listen') renderListen();
-    else if(m === 'reading') center(S.state || '', S.words ? `“${S.words}”` : '', S.meta || '');
-    else if(m === 'making') center(S.state || 'synthesizing', S.words ? `“${S.words}”` : '', 'synthesizing your portrait…');
-    else if(m === 'failed') center(S.state || '', S.words ? `“${S.words}”` : '', S.note || 'this portrait could not be made');
-    else if(cap) center('', '', '');
-    $('big').style.fontSize = (m === 'idle') ? '7vw' : '';
+    else if(MID){
+      if(m === 'reading') center(pair(S.a.state, S.b.state), S.a.level || '', '', true);
+      else if(m === 'making') center(pair(S.a.state, S.b.state), 'synthesizing two portraits…', S.a.level || '', true);
+      else center(pair(S.a.state, S.b.state), '', '', true);
+    } else {
+      const s = S[ONE];
+      if(m === 'reading') center(s.state, s.words ? `“${s.words}”` : '', s.meta || '');
+      else if(m === 'making') center(s.state || 'synthesizing', s.words ? `“${s.words}”` : '', 'synthesizing your portrait…');
+      else if(m === 'failed') center(s.state, s.words ? `“${s.words}”` : '', s.note || 'this portrait could not be made');
+    }
   }
 
   function renderListen(){
@@ -230,50 +318,57 @@
     $('sync-val').textContent = Math.round(live.sync * 100) + '%';
     document.body.classList.toggle('in-sync', !!live.inSync);
     if(live.inSync){ $('big').textContent = 'in sync'; $('sub').textContent = 'two minds meeting'; }
-    if(live.rel){
-      // bar length = change from this person's own resting level (middle = no change)
+    const d = !MID && live[ONE];
+    if(d && d.rel){
       BANDS.forEach(b=>{
-        const r = live.ref && live.ref[b] ? live.rel[b] / live.ref[b] : live.rel[b] * 5;
+        const r = d.ref && d.ref[b] ? d.rel[b] / d.ref[b] : d.rel[b] * 5;
         $(`b-${b}`).style.width = Math.max(2, Math.min(100, r * 50)) + '%';
       });
     }
   }
 
-  // ---------- the live wave / ambient lines (always drawing underneath) ----------
+  // ---------- brainwave lines (drawing underneath everything) ----------
   const cv = $('live'), ctx = cv.getContext('2d');
   function resize(){ cv.width = innerWidth * devicePixelRatio; cv.height = innerHeight * devicePixelRatio; }
   addEventListener('resize', resize); resize();
   function draw(t){
     const w = cv.width, h = cv.height;
     ctx.fillStyle = 'rgba(5,7,8,0.35)'; ctx.fillRect(0, 0, w, h);
-    const fresh = live.wave && performance.now() - live.at < 1500 && S.mode === 'listen';
-    const lines = 5;
-    for(let L=0; L<lines; L++){
-      const y0 = h * (0.2 + 0.6 * L / (lines - 1));
-      ctx.beginPath();
-      ctx.lineWidth = (L === 2 ? 3 : 1.2) * devicePixelRatio;
-      ctx.strokeStyle = COLOR; ctx.globalAlpha = L === 2 ? 0.9 : 0.25;
-      const n = 160;
-      for(let i=0; i<=n; i++){
-        const x = w * i / n;
-        let y;
-        if(fresh){
-          const src = live.wave, j = Math.floor(i / n * (src.length - 1));
-          const amp = h * (L === 2 ? 0.22 : 0.08);
-          y = y0 + Math.max(-1, Math.min(1, src[j] / 80)) * amp * (1 - Math.abs(L - 2) * 0.2);
-        } else {
-          y = y0 + Math.sin(i * 0.09 + t / 1400 + L * 1.3) * h * 0.025 + Math.sin(i * 0.31 + t / 900 + L) * h * 0.008;
+    const listening = mode() === 'listen' && performance.now() - live.at < 1500;
+    WALL.people.forEach((k, pi)=>{
+      const wave = listening && live[k] && live[k].wave;
+      const lines = MID ? 3 : 5;
+      for(let L=0; L<lines; L++){
+        const mainLine = L === Math.floor(lines/2);
+        // middle wall: A's lines in the upper half, B's in the lower half
+        const y0 = MID ? h * ((pi === 0 ? 0.22 : 0.56) + 0.22 * L / (lines - 1))
+                       : h * (0.2 + 0.6 * L / (lines - 1));
+        ctx.beginPath();
+        ctx.lineWidth = (mainLine ? 3 : 1.2) * devicePixelRatio;
+        ctx.strokeStyle = COLORS[k]; ctx.globalAlpha = mainLine ? 0.9 : 0.25;
+        const n = 180;
+        for(let i=0; i<=n; i++){
+          const x = w * i / n;
+          let y;
+          if(wave){
+            const j = Math.floor(i / n * (wave.length - 1));
+            const amp = h * (mainLine ? (MID ? 0.14 : 0.22) : 0.07);
+            y = y0 + Math.max(-1, Math.min(1, wave[j] / 80)) * amp;
+          } else {
+            y = y0 + Math.sin(i * 0.09 + t / 1400 + L * 1.3 + pi * 2) * h * 0.025 + Math.sin(i * 0.31 + t / 900 + L) * h * 0.008;
+          }
+          i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
         }
-        i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+        ctx.stroke();
       }
-      ctx.stroke();
-    }
+    });
     ctx.globalAlpha = 1;
+    Object.values(panes).forEach(p=>{ if(p.el.classList.contains('show')) p.drawBack(); });
     requestAnimationFrame(draw);
   }
   requestAnimationFrame(draw);
   render();
-  setTimeout(()=> $('hint').style.opacity = 0, 10000);   // the hint fades on its own
+  setTimeout(()=> $('hint').style.opacity = 0, 10000);
 })();
 </script>
 </body>
