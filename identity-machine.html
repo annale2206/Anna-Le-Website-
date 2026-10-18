@@ -539,9 +539,9 @@
   const ARCHIVE_DEFAULT = false;       // set to true to have the box ticked to start with
   // the film: one continuous video that keeps growing. Each new part starts
   // from the last frame of the part before, so it plays as one unbroken shot.
-  // each participant gets their own film of FILM_PARTS parts (2 x 8 s = 16 s each)
+  // each participant gets their own film of FILM_PARTS parts (3 x 8 s = 24 s each, 48 s for the pair)
   // ?parts=1 → one part each (cheaper for testing) · Veo part length: 4, 6 or 8 s
-  const FILM_PARTS = Math.min(4, Math.max(1, Number(params.get('parts')) || 2));
+  const FILM_PARTS = Math.min(4, Math.max(1, Number(params.get('parts')) || 3));
   const VIDEO_SECONDS = 8;
   // true → portraits and films are always landscape 16:9, to fill the projectors
   // false → tall 3:4 / 9:16 (only turns wide when a projector window is open)
@@ -1453,11 +1453,15 @@
     });
 
     const state = [strength, VOCAB[dom.b].state].filter(Boolean).join(' ');
-    const vs = personal ? 'vs own baseline' : 'vs typical';
-    return { k, state, dominant: dom.b, secondary: sec.b, portrait, portraitShown, scenes,
+    const vs = personal ? 'vs own resting baseline' : 'vs typical resting level';
+    // what visitors see: raw EEG numbers only (the word "state" stays in the archive record)
+    const change = b => pct(scores.find(x=>x.b === b).s);
+    const data = `${dom.b} ${pct(dom.s)}`;
+    const allBands = BANDS.map(b=> `${b} ${change(b)}`).join(' · ');
+    return { k, state, data, allBands, dominant: dom.b, secondary: sec.b, portrait, portraitShown, scenes,
              intent: intent || '', personal,
              writing: reading.writing,
-             meta: `${dom.b} ${pct(dom.s)} · ${sec.b} ${pct(sec.s)} ${vs} · ${reading.blinks} blinks` + (reading.writing && reading.writing.used ? ` · ${Math.round(reading.writing.pauseSeconds)} s of writing pauses` : '') };
+             meta: `${allBands} ${vs} · ${reading.blinks} blinks` + (reading.writing && reading.writing.used ? ` · ${Math.round(reading.writing.pauseSeconds)} s of writing pauses` : '') };
   }
 
   function interpretPair(pr, intents){
@@ -1474,12 +1478,12 @@
     };
   }
 
-  const LEVEL_TEXT = { mirrored:'mirrored: one shared world', echoing:'echoing: two worlds that echo', apart:'apart: two separate worlds' };
+  const LEVEL_TEXT = { mirrored:'portraits mirrored', echoing:'portraits echoing', apart:'portraits apart' };
   function showReading(R){
     return new Promise(resolve=>{
       PEOPLE.forEach(k=>{
         const r = R[k];
-        $(`state-${k}`).textContent = r.state;
+        $(`state-${k}`).textContent = r.data;
         $(`meta-${k}`).textContent = r.meta;
         $(`words-${k}`).textContent = r.intent ? `“${r.intent}”` : '';
         $(`portrait-${k}`).textContent = r.portraitShown;
@@ -1664,7 +1668,7 @@
     const wide = LANDSCAPE || proj.connected();   // wide 16:9 portraits and films for the projectors
     PEOPLE.forEach(k=>{
       R[k].wide = wide;
-      proj.set(k, { mode:'reading', state:R[k].state, words:R[k].intent, meta:R[k].meta, level:LEVEL_TEXT[R.shared.level], levelKey:R.shared.level });
+      proj.set(k, { mode:'reading', state:R[k].data, words:R[k].intent, meta:R[k].meta, level:`in sync ${Math.round(R.sync.fraction*100)}% of holding time · ${LEVEL_TEXT[R.shared.level]}`, levelKey:R.shared.level });
     });
     addToBaseline(pr.a.avg); addToBaseline(pr.b.avg);
     const info = k => ({ words:R[k].intent, state:R[k].state, meta:R[k].meta, personal:R[k].personal, writing:R[k].writing,
@@ -1676,7 +1680,7 @@
 
     showScreen(floorScreen);
     showStage(2);
-    $('cap-2').textContent = `A: ${R.a.state} · B: ${R.b.state} · ${R.shared.level}`;
+    $('cap-2').textContent = `A: ${R.a.data} · B: ${R.b.data} · in sync ${Math.round(R.sync.fraction*100)}%`;
     $('cap-3').textContent = '';
     const stopTimer = startTimer($('status-2'), 'synthesizing two portraits');
     const urls = await Promise.all(PEOPLE.map(k=> generatePortrait(k, shots[k], R[k], sid)));
@@ -1691,7 +1695,7 @@
     await filmsDone;
     if(sid === session){
       busy = false;
-      $('cap-3').textContent = `A: ${R.a.state} · B: ${R.b.state} · ${LEVEL_TEXT[R.shared.level]} · tap to finish`;
+      $('cap-3').textContent = `A: ${R.a.data} · B: ${R.b.data} · in sync ${Math.round(R.sync.fraction*100)}% · tap to finish`;
     }
   });
 
