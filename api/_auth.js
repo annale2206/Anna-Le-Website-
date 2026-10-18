@@ -16,7 +16,7 @@ import crypto from 'crypto';
 const PASS_HOURS = 8;
 
 export function accessCode() {
-  return String(process.env.IM_ACCESS_CODE || '2206');
+  return String(process.env.IM_ACCESS_CODE || '1996');
 }
 
 function secret() {
