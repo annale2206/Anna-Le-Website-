@@ -540,7 +540,9 @@
   // how much of the reading they spent in sync decides how alike their portraits are
   const MIRROR_FULL = 0.35;           // 35% or more → same world (same place and light)
   const MIRROR_SOME = 0.10;           // 10% or more → their worlds echo each other
-  const SOUND_VOLUME = 0.14;          // the two tones (0 to 1)
+  const SOUND_VOLUME = 0.22;          // the two soft pads (0 to 1)
+  const CUE_VOLUME = 0.35;            // the eyes open / eyes closed bells (louder on purpose)
+  const CUE_VOICE = true;             // also say: please close / open your eyes
   const PERSON = { a:{ name:'A', color:'#43e0c9', turn:'body and gaze turned slightly toward the right of the frame' },
                    b:{ name:'B', color:'#f5b942', turn:'body and gaze turned slightly toward the left of the frame' } };
   // ?scan=20 → scan length in seconds
@@ -1226,80 +1228,123 @@
      chord blooms over them, with a chime each time they arrive.
      ===================================================================== */
   const sound = {
-    ctx:null, n:null,
+    ctx:null, n:null, verb:null,
     unlock(){
       const AC = window.AudioContext || window.webkitAudioContext;
       if(!AC) return;
       if(!this.ctx) this.ctx = new AC();
       if(this.ctx.state === 'suspended') this.ctx.resume();
     },
+    // a soft, long room reverb made from fading noise (no sound files needed)
+    reverb(){
+      if(this.verb) return this.verb;
+      const c = this.ctx, len = Math.floor(c.sampleRate * 4.5);
+      const buf = c.createBuffer(2, len, c.sampleRate);
+      for(let ch=0; ch<2; ch++){
+        const d = buf.getChannelData(ch);
+        for(let i=0; i<len; i++) d[i] = (Math.random()*2 - 1) * Math.pow(1 - i/len, 3.2);
+      }
+      const v = c.createConvolver(); v.buffer = buf;
+      const wet = c.createGain(); wet.gain.value = 0.55;
+      v.connect(wet); wet.connect(c.destination);
+      this.verb = v;
+      return v;
+    },
+    // each mind is a warm, slow pad: two gently detuned sines with a slow sway
     start(){
       if(!this.ctx || this.n) return;
-      const c = this.ctx, t = c.currentTime;
+      const c = this.ctx, t = c.currentTime, verb = this.reverb();
       const master = c.createGain(); master.gain.value = 0;
-      const tone = c.createBiquadFilter(); tone.type = 'lowpass'; tone.frequency.value = 1600;
-      // a little space: a soft echo
-      const delay = c.createDelay(1); delay.delayTime.value = 0.32;
-      const fb = c.createGain(); fb.gain.value = 0.32;
-      const wet = c.createGain(); wet.gain.value = 0.35;
-      tone.connect(master); tone.connect(delay); delay.connect(fb); fb.connect(delay); delay.connect(wet); wet.connect(master);
-      master.connect(c.destination);
-      const voice = (type, gain) => { const o = c.createOscillator(); o.type = type; const g = c.createGain(); g.gain.value = gain; o.connect(g); g.connect(tone); o.start(); return { o, g }; };
-      const a = voice('triangle', 0.5), b = voice('triangle', 0.5);
-      const bloom = c.createGain(); bloom.gain.value = 0; bloom.connect(tone);
-      const chord = [1, 1.5, 2, 2.5].map(() => { const o = c.createOscillator(); o.type = 'sine'; o.connect(bloom); o.start(); return o; });
-      master.gain.setTargetAtTime(SOUND_VOLUME, t, 0.8);
+      const warm = c.createBiquadFilter(); warm.type = 'lowpass'; warm.frequency.value = 900; warm.Q.value = 0.3;
+      warm.connect(master); master.connect(c.destination); master.connect(verb);
+      const voice = (detune) => {
+        const g = c.createGain(); g.gain.value = 0.32; g.connect(warm);
+        const o1 = c.createOscillator(); o1.type = 'sine';
+        const o2 = c.createOscillator(); o2.type = 'sine'; o2.detune.value = detune;
+        const lfo = c.createOscillator(); lfo.frequency.value = 0.08 + Math.random()*0.05;
+        const lfoGain = c.createGain(); lfoGain.gain.value = 0.12;
+        lfo.connect(lfoGain); lfoGain.connect(g.gain);      // slow breathing swell
+        o1.connect(g); o2.connect(g); o1.start(); o2.start(); lfo.start();
+        return { o1, o2, lfo, g };
+      };
+      const a = voice(7), b = voice(-7);
+      // the "together" chord: very soft, slow to arrive and slow to leave
+      const bloom = c.createGain(); bloom.gain.value = 0; bloom.connect(warm);
+      const chord = [1, 1.5, 2, 3].map(() => { const o = c.createOscillator(); o.type = 'sine'; o.connect(bloom); o.start(); return o; });
+      master.gain.setTargetAtTime(SOUND_VOLUME, t, 2.0);
       this.n = { master, a, b, bloom, chord };
     },
-    // centroid of the band pattern → pitch (slower rhythms sound lower)
+    // brain pattern → a note of a calm pentatonic scale (slower rhythms sound lower)
     pitch(rel){
       let c = 0; BANDS.forEach((b, i) => c += (rel[b]||0) * i);
-      return 174.6 * Math.pow(2, (Math.min(3, Math.max(0, c)) - 1.2) * 0.55);
+      const steps = [0, 2, 4, 7, 9, 12, 14, 16];            // major pentatonic, no clashing notes
+      const x = Math.min(0.999, Math.max(0, (c - 0.6) / 1.8));
+      return 130.81 * Math.pow(2, steps[Math.floor(x * steps.length)] / 12);   // from C3 upward
     },
     update(relA, relB, sim, inSync){
       if(!this.n) return;
       const t = this.ctx.currentTime;
       const fa = this.pitch(relA), fb = this.pitch(relB), mid = (fa + fb) / 2;
-      // pull 0 → each tone on its own, 1 → both on the same note
       const pull = Math.pow(Math.min(1, Math.max(0, (sim - 0.6) / (SYNC_THRESHOLD - 0.6))), 2);
-      this.n.a.o.frequency.setTargetAtTime(fa + (mid - fa) * pull, t, 0.25);
-      this.n.b.o.frequency.setTargetAtTime(fb + (mid - fb) * pull, t, 0.25);
-      [1, 1.5, 2, 2.5].forEach((r, i) => this.n.chord[i].frequency.setTargetAtTime(mid * r, t, 0.3));
-      this.n.bloom.gain.setTargetAtTime(inSync ? 0.32 : 0, t, inSync ? 0.5 : 0.8);
+      const set = (v, f) => { v.o1.frequency.setTargetAtTime(f, t, 1.5); v.o2.frequency.setTargetAtTime(f, t, 1.5); };
+      set(this.n.a, fa + (mid - fa) * pull);
+      set(this.n.b, fb + (mid - fb) * pull);
+      [1, 1.5, 2, 3].forEach((r, i) => this.n.chord[i].frequency.setTargetAtTime(mid * r, t, 2));
+      this.n.bloom.gain.setTargetAtTime(inSync ? 0.14 : 0, t, inSync ? 2.5 : 3);
     },
-    // a soft two-note tone: falling = close your eyes, rising = open your eyes
+    // in sync: a soft, low singing-bowl swell instead of a bright chime
+    chime(){
+      if(!this.ctx || !this.n) return;
+      const c = this.ctx, t = c.currentTime, verb = this.reverb();
+      [261.63, 392.0, 523.25, 659.25].forEach((f, i) => {
+        const o = c.createOscillator(); o.type = 'sine'; o.frequency.value = f;
+        const g = c.createGain();
+        const at = t + i * 0.25;
+        g.gain.setValueAtTime(0, at);
+        g.gain.linearRampToValueAtTime(0.05, at + 1.2);       // slow, gentle arrival
+        g.gain.exponentialRampToValueAtTime(0.0001, at + 7);  // long, soft fade
+        o.connect(g); g.connect(this.ctx.destination); g.connect(verb);
+        o.start(at); o.stop(at + 7.2);
+      });
+    },
+    // eyes cue: a clear bell melody, louder than everything else and played twice,
+    // plus a calm spoken instruction. up = open your eyes, down = close your eyes
     cue(up){
       if(!this.ctx) return;
-      const c = this.ctx, t = c.currentTime, out = this.n ? this.n.master : c.destination;
-      (up ? [523.25, 783.99] : [783.99, 523.25]).forEach((f, i) => {
-        const o = c.createOscillator(); o.type = 'sine'; o.frequency.value = f;
-        const g = c.createGain(); g.gain.setValueAtTime(0, t + i*0.35);
-        g.gain.linearRampToValueAtTime(this.n ? 1.2 : 0.15, t + i*0.35 + 0.03);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + i*0.35 + 1.6);
-        o.connect(g); g.connect(out); o.start(t + i*0.35); o.stop(t + i*0.35 + 1.8);
-      });
+      const c = this.ctx, verb = this.reverb();
+      const notes = up ? [523.25, 659.25, 783.99, 1046.5] : [1046.5, 783.99, 659.25, 523.25];
+      [0, 1.6].forEach(rep => notes.forEach((f, i) => {
+        const at = c.currentTime + rep + i * 0.28;
+        [1, 2.76].forEach((h, hi) => {                         // bell: tone + a soft overtone
+          const o = c.createOscillator(); o.type = 'sine'; o.frequency.value = f * h;
+          const g = c.createGain();
+          g.gain.setValueAtTime(0, at);
+          g.gain.linearRampToValueAtTime(hi ? CUE_VOLUME * 0.25 : CUE_VOLUME, at + 0.01);
+          g.gain.exponentialRampToValueAtTime(0.0001, at + 1.4);
+          o.connect(g); g.connect(c.destination); g.connect(verb);
+          o.start(at); o.stop(at + 1.5);
+        });
+      }));
+      if(CUE_VOICE && 'speechSynthesis' in window){
+        setTimeout(()=>{
+          try{
+            const u = new SpeechSynthesisUtterance(up ? 'Please open your eyes.' : 'Please close your eyes.');
+            u.rate = 0.85; u.pitch = 1; u.volume = 0.9;
+            speechSynthesis.cancel(); speechSynthesis.speak(u);
+          }catch(e){}
+        }, 3400);
+      }
     },
     // softer while people are writing
     quiet(on){
       if(!this.n) return;
-      this.n.master.gain.setTargetAtTime(on ? SOUND_VOLUME*0.25 : SOUND_VOLUME, this.ctx.currentTime, 0.6);
-    },
-    chime(){
-      if(!this.ctx || !this.n) return;
-      const c = this.ctx, t = c.currentTime;
-      [880, 1318.5, 1760].forEach((f, i) => {
-        const o = c.createOscillator(); o.type = 'sine'; o.frequency.value = f;
-        const g = c.createGain(); g.gain.setValueAtTime(0, t + i*0.09);
-        g.gain.linearRampToValueAtTime(0.18, t + i*0.09 + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + i*0.09 + 2.2);
-        o.connect(g); g.connect(this.n.master); o.start(t + i*0.09); o.stop(t + i*0.09 + 2.4);
-      });
+      this.n.master.gain.setTargetAtTime(on ? SOUND_VOLUME*0.25 : SOUND_VOLUME, this.ctx.currentTime, 0.8);
     },
     stop(){
       if(!this.n) return;
       const n = this.n, t = this.ctx.currentTime; this.n = null;
-      n.master.gain.setTargetAtTime(0, t, 0.6);
-      setTimeout(()=>{ try{ [n.a.o, n.b.o, ...n.chord].forEach(o => o.stop()); n.master.disconnect(); }catch(e){} }, 4000);
+      n.master.gain.setTargetAtTime(0, t, 1.2);
+      setTimeout(()=>{ try{ [n.a.o1, n.a.o2, n.a.lfo, n.b.o1, n.b.o2, n.b.lfo, ...n.chord].forEach(o => o.stop()); n.master.disconnect(); }catch(e){} }, 6000);
     }
   };
 
@@ -1604,7 +1649,7 @@
           } else {
             $('scan-instruction').textContent = poor.length
               ? `adjust ${poor.map(k=>k.toUpperCase()).join(' and ')}'s headband, sensors need skin contact`
-              : isBase ? (closed ? `close your eyes now · relax · a soft tone will tell you to open them · ${left} s`
+              : isBase ? (closed ? `close your eyes now · relax · a bell and a voice will tell you to open them · ${left} s`
                                  : `keep your eyes open · look softly at the screen · breathe normally · stay still · ${left} s`)
                        : 'hold your own words in mind · hands still, soft gaze · listen for your two tones meeting';
             PEOPLE.forEach(k=>{
