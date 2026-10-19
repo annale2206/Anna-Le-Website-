@@ -61,6 +61,13 @@
     letter-spacing:.12em; text-transform:uppercase; cursor:pointer;
   }
   #source-badge .led-dot{ flex:none; }
+  /* connect the headbands right from the top bar, before the visit starts */
+  #muse-box{ display:flex; flex-direction:column; align-items:flex-end; gap:6px; position:relative; }
+  #muse-bar{ display:flex; gap:6px; }
+  .mini-btn{ padding:5px 10px; border:1px solid #43e0c9; border-radius:3px; background:none; color:#43e0c9;
+    font-family:'Space Mono', monospace; font-size:10px; letter-spacing:.12em; text-transform:uppercase; cursor:pointer; }
+  .mini-btn:hover{ background:#43e0c9; color:#0b0f10; }
+  #muse-msg{ max-width:320px; font-size:10px; line-height:1.4; letter-spacing:.06em; color:#8a9aa0; text-align:right; }
 
   /* ---------- gate ---------- */
   #gate{ flex-direction:column; gap:36px; }
@@ -341,7 +348,14 @@
     <div class="stat-label">Videos Generated</div>
     <div class="stat-value" id="stat-videos">000</div>
   </div>
-  <button id="source-badge"><span class="led-dot" id="source-led"></span><span id="source-text">signal</span></button>
+  <div id="muse-box">
+    <button id="source-badge"><span class="led-dot" id="source-led"></span><span id="source-text">signal</span></button>
+    <div id="muse-bar">
+      <button class="mini-btn" id="top-connect-a">connect A</button>
+      <button class="mini-btn" id="top-connect-b">connect B</button>
+    </div>
+    <div id="muse-msg"></div>
+  </div>
 </div>
 
 <!-- gate -->
@@ -944,6 +958,19 @@
     m.connected = true;
   }
 
+  function museMsg(text){ $('connect-msg').textContent = text; $('muse-msg').textContent = text; }
+  // turn browser Bluetooth errors into something a person can act on
+  function museHint(err){
+    const msg = (err && err.message) || '';
+    if(/cancel/i.test(msg)) return 'the popup was closed before a headband was picked. click connect again.';
+    if(/adapter not available|bluetooth.*(off|unavailable)|globally disabled/i.test(msg))
+      return 'Bluetooth is off or Chrome is not allowed to use it. Turn Bluetooth on. On a Mac: System Settings → Privacy & Security → Bluetooth → allow Google Chrome, then restart Chrome.';
+    if(/same headband/i.test(msg)) return msg + '.';
+    if(/GATT|connection|network/i.test(msg))
+      return 'the headband was found but would not connect. Turn it off and on, make sure the Muse phone app is closed, keep it close to the laptop, then try again.';
+    return (msg ? msg + '. ' : '') + 'make sure it is on, charged, and not connected to the phone app, then try again.';
+  }
+
   async function connectMuse(k){
     const m = P[k].muse;
     if(m.connected || m.connecting) return;
@@ -952,15 +979,15 @@
       return;
     }
     m.connecting = true; updateSourceUI();
-    $('connect-msg').textContent = `pick muse ${k.toUpperCase()} in the browser popup…`;
+    museMsg(`pick muse ${k.toUpperCase()} in the browser popup…`);
     try{
       await startClient(k, null);
-      $('connect-msg').textContent = needsConnecting().length
-        ? `muse ${k.toUpperCase()} connected (${m.name}). now turn on the other headband and connect it.`
-        : `both connected: A ${P.a.muse.name} · B ${P.b.muse.name}`;
+      museMsg(needsConnecting().length
+        ? `muse ${k.toUpperCase()} connected (${m.name}). now connect the other headband.`
+        : `both connected: A ${P.a.muse.name} · B ${P.b.muse.name}`);
     } catch(err){
       console.error(err);
-      $('connect-msg').textContent = 'could not connect muse ' + k.toUpperCase() + ' (' + (err && err.message ? err.message : 'cancelled') + '). make sure it is on, charged, and not paired to the phone app, then try again.';
+      museMsg(`muse ${k.toUpperCase()} not connected: ` + museHint(err));
     }
     m.connecting = false; updateSourceUI();
   }
@@ -998,9 +1025,15 @@
     else if(PEOPLE.some(k => P[k].muse.connecting)) led.classList.add('warn','pulse');
     else led.classList.add('bad');
     $('connect-a').style.display = P.a.source === 'muse' && !P.a.muse.connected ? '' : 'none';
+    $('top-connect-a').style.display = P.a.source === 'muse' && !P.a.muse.connected ? '' : 'none';
+    $('top-connect-b').style.display = P.b.source === 'muse' && !P.b.muse.connected ? '' : 'none';
+    if(!needsConnecting().length) $('muse-msg').textContent = PEOPLE.some(k => P[k].source === 'muse') ? 'headbands ready' : '';
+    else if(!$('muse-msg').textContent) $('muse-msg').textContent = 'turn on both headbands, then connect A and B';
     $('connect-b').style.display = P.b.source === 'muse' && !P.b.muse.connected ? '' : 'none';
   }
   $('source-badge').addEventListener('click', ()=>{ const k = needsConnecting()[0]; if(k) connectMuse(k); });
+  $('top-connect-a').addEventListener('click', e=>{ e.stopPropagation(); connectMuse('a'); });
+  $('top-connect-b').addEventListener('click', e=>{ e.stopPropagation(); connectMuse('b'); });
 
   /* =====================================================================
      SOUND: each mind is a soft tone. The closer their patterns, the more the
