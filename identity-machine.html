@@ -463,6 +463,7 @@
   <div class="panel-title">neural scan · two minds</div>
   <div class="phase-tag" id="scan-phase"></div>
   <div class="panel-sub" id="scan-instruction">relax · eyes open · stay still</div>
+  <button class="btn" id="scan-start" style="display:none; margin:10px auto 0">start recording</button>
   <div class="scan-panel" id="scan-panel">
     <canvas id="wave-canvas"></canvas>
     <div class="pair-cols">
@@ -549,6 +550,11 @@
   const READING_SECONDS = 8;
   // the visitor's own words (optional), mixed with the EEG reading
   const INTENT_MAX = 120;
+  // the recording waits for the "start recording" button (or the space bar), so people
+  // can put the headbands on and settle first. ?autostart=1 → start on its own like before
+  const AUTO_START = params.get('autostart') === '1';
+  const WORN_SENSORS = 3;        // green sensors per person that count as "wearing it"
+  const WORN_HOLD_SECONDS = 5;   // both must stay worn this long before recording starts
   const INTENT_IDLE_SECONDS = 90;      // nobody typing → continue without words
   // EEG while writing: only the pauses between words are used
   const WRITING_EEG = true;            // false → use only the holding phase
@@ -968,7 +974,7 @@
     const proto = BluetoothRemoteGATTService.prototype, original = proto.getCharacteristic;
     proto.getCharacteristic = async function(uuid){
       const id0 = String(uuid).toLowerCase();
-      if(MUSE_SKIP.some(s => id0.startsWith(s))){
+      if(MUSE_LITE && MUSE_SKIP.some(s => id0.startsWith(s))){
         museLog('channel skipped (not needed)', id0.slice(0,8));
         return standIn(this, uuid);
       }
@@ -987,6 +993,9 @@
   // subscribing to them cuts the Bluetooth traffic of each headband, which is
   // what lets one laptop keep two headbands streaming at the same time.
   const MUSE_SKIP = ['273e000b', '273e0009', '273e000a'];
+  // ?lite=1 → skip them on purpose (less Bluetooth traffic). Off by default, so each
+  // headband connects exactly like in the one-person machine.
+  const MUSE_LITE = params.get('lite') === '1';
   function standIn(service, uuid){
     const stand = new EventTarget();
     stand.uuid = uuid; stand.service = service; stand.value = null;
@@ -1092,14 +1101,14 @@
       await startClient(k, null);
       await resumeOther();
       // check that brainwaves are really arriving, not just a connection
-      await sleep(3000);
-      // no data yet: send the start command again (some headbands miss the first one)
-      for(let tries=1; tries<=2 && m.connected && !P[k].eeg.count.some(c => c > 0); tries++){
+      // older headbands can take several seconds before the first brainwaves arrive
+      for(let w=0; w<16 && m.connected && !P[k].eeg.count.some(c => c > 0); w++) await sleep(500);
+      // still nothing: send the start command once more (some headbands miss the first one)
+      for(let tries=1; tries<=1 && m.connected && !P[k].eeg.count.some(c => c > 0); tries++){
         museLog(`${k.toUpperCase()}: no brainwaves yet, sending start again (${tries})`);
         museMsg(`muse ${k.toUpperCase()} connected, waking up its sensors… (${tries})`);
-        try{ await m.client.pause(); }catch(e){}
         try{ await m.client.start(); }catch(e){ museLog(`${k.toUpperCase()}: start failed ${e.message}`); }
-        await sleep(3000);
+        for(let w=0; w<12 && m.connected && !P[k].eeg.count.some(c => c > 0); w++) await sleep(500);
       }
       m.noData = m.connected && !P[k].eeg.count.some(c => c > 0);
       if(m.noData){
@@ -1147,7 +1156,8 @@
       const was = m.noData;
       m.noData = !e.count.some(c => c > 0) || quiet > 3000;
       if(was !== m.noData) updateSourceUI();
-      if(!m.noData || performance.now() - (m.lastKick || 0) < 8000) continue;
+      const stalled = e.count.some(c => c > 0) && quiet > 6000;     // it streamed, then stopped
+      if(!stalled || performance.now() - (m.lastKick || 0) < 20000) continue;
       m.kicking = true; m.lastKick = performance.now();
       museLog(`${k.toUpperCase()}: no brainwaves for ${(quiet/1000).toFixed(0)} s, restarting its stream`);
       if(m.noData) museMsg(`muse ${k.toUpperCase()} (${m.name}) is connected but not sending brainwaves, restarting it…`);
@@ -1343,6 +1353,7 @@
       ? 'connect muse A here. muse B: open annale22.com/muse-partner.html on the second device and connect it there.'
       : 'turn on both Muse headbands, then connect them one at a time.');
     $('connect-overlay').classList.add('show');
+    $('scan-start').style.display = 'none';
     updateSourceUI();
     scan.phase = 'waiting';
   }
@@ -1417,9 +1428,15 @@
     box.addEventListener('blur', ()=>{ if(writing.turn === k) writing.turn = null; });
   });
 
+  $('scan-start').addEventListener('click', ()=>{ if(scan.phase === 'ready') scan.go = true; });
+  window.addEventListener('keydown', e=>{
+    if(e.code === 'Space' && scan.phase === 'ready' && scanScreen.classList.contains('active')){ e.preventDefault(); scan.go = true; }
+  });
+
   function runScan(){
     return new Promise(resolve=>{
-      scan.active = true; scan.resolve = resolve;
+      scan.active = true; scan.resolve = resolve; scan.go = false;
+      $('scan-start').style.display = 'none';
       const sid = session;
       const rec = {};
       PEOPLE.forEach(k=> rec[k] = { baseFrames:[], pauseFrames:[], frames:[], baseBlinks:0, blinks:0, personal:null,
@@ -1505,7 +1522,29 @@
           $('connect-overlay').classList.remove('show');
           scan.phase = 'settling'; scan.startAt = performance.now();
         }
-        if(scan.phase === 'settling' && now - scan.startAt > 1500){ scan.phase = 'baseline'; scan.startAt = now; }
+        if(scan.phase === 'settling' && now - scan.startAt > 1500){
+          if(AUTO_START){ scan.phase = 'baseline'; scan.startAt = now; }
+          else { scan.phase = 'ready'; scan.go = false; $('scan-start').style.display = ''; }
+        }
+        if(scan.phase === 'ready'){
+          // live signal is shown, nothing is recorded yet. Recording starts by itself
+          // once BOTH people are wearing their headband (enough green sensors) for a few
+          // seconds in a row, or straight away with the button / space bar.
+          const good = k => res[k].quality.filter(q => q === 'good').length;
+          const worn = PEOPLE.every(k => signalLive(P[k].eeg) && good(k) >= WORN_SENSORS);
+          if(worn){ if(!scan.wornSince) scan.wornSince = now; } else scan.wornSince = 0;
+          const held = scan.wornSince ? (now - scan.wornSince) / 1000 : 0;
+          $('scan-phase').textContent = 'get ready';
+          $('scan-instruction').textContent = worn
+            ? `both headbands on · starting in ${Math.max(0, Math.ceil(WORN_HOLD_SECONDS - held))} s · stay still`
+            : `put on the headbands · waiting for good contact (A ${good('a')}/4 · B ${good('b')}/4 sensors) · or press start`;
+          if(worn && held >= WORN_HOLD_SECONDS) scan.go = true;
+          if(scan.go){
+            scan.wornSince = 0;
+            scan.go = false; $('scan-start').style.display = 'none';
+            scan.phase = 'baseline'; scan.startAt = now;
+          }
+        }
 
         // ---- writing: keep only the pauses between words ----
         if(scan.phase === 'writing'){
@@ -1912,6 +1951,7 @@
     });
     addToBaseline(pr.a.avg); addToBaseline(pr.b.avg);
     const info = k => ({ words:R[k].intent, state:R[k].state, meta:R[k].meta, personal:R[k].personal, writing:R[k].writing,
+                         source: P[k].source === 'remote' ? 'muse (2nd device)' : P[k].source === 'muse' ? 'muse' : 'simulated',
                          parts:R[k].scenes.map(sc=>({ band:sc.band, change:sc.change })) });
     saveToArchive({ kind:'info', info:{ pair:true, a:info('a'), b:info('b'),
       sync:{ seconds:R.sync.seconds, fraction:R.sync.fraction, moments:R.sync.moments, peak:R.sync.peak, mean:R.sync.mean, level:R.shared.level } } });
