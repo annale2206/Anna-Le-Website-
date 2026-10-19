@@ -100,7 +100,16 @@
   async function startMuse(gatt){
     const { MuseClient } = await museLib;
     const c = new MuseClient();
-    await c.connect(gatt || undefined);
+    if(!gatt){
+      // list anything that looks like a Muse, by its service or by its name
+      const d = await navigator.bluetooth.requestDevice({
+        filters: [{ services: [0xfe8d] }, { namePrefix: 'Muse' }, { namePrefix: 'MUSE' }],
+        optionalServices: [0xfe8d]
+      });
+      say('opening connection to ' + d.name + '…');
+      gatt = await d.gatt.connect();
+    }
+    await c.connect(gatt);
     await c.start();
     c.eegReadings.subscribe(r=>{
       if(r.electrode > 3) return;

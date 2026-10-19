@@ -1012,7 +1012,8 @@
     const { MuseClient } = await loadMuseLib();
     const client = new MuseClient();
     museLog(`${k.toUpperCase()}: connecting…`);
-    await client.connect(gatt || undefined);
+    if(!gatt) gatt = await pickMuse();
+    await client.connect(gatt);
     const device = client.gatt && client.gatt.device;
     museLog(`${k.toUpperCase()}: connected to ${client.deviceName}`);
     if(device && !device.__logged){
@@ -1053,6 +1054,17 @@
     if(/GATT|connection|network/i.test(msg))
       return 'the headband was found but would not connect. Turn it off and on, make sure the Muse phone app is closed, keep it close to the laptop, then try again.';
     return (msg ? msg + '. ' : '') + 'make sure it is on, charged, and not connected to the phone app, then try again.';
+  }
+
+  // the browser popup: list anything that looks like a Muse (by its service or by its name,
+  // since some firmware does not announce the service until connected)
+  async function pickMuse(){
+    const device = await navigator.bluetooth.requestDevice({
+      filters: [{ services: [0xfe8d] }, { namePrefix: 'Muse' }, { namePrefix: 'MUSE' }],
+      optionalServices: [0xfe8d]
+    });
+    museLog(`picked ${device.name}, opening connection…`);
+    return await device.gatt.connect();
   }
 
   async function connectMuse(k){
