@@ -542,6 +542,7 @@
   const MIRROR_SOME = 0.10;           // 10% or more → their worlds echo each other
   const SOUND_VOLUME = 0.22;          // the two soft pads (0 to 1)
   const CUE_VOLUME = 0.35;            // the eyes open / eyes closed bells (louder on purpose)
+  const AMBIENT_SOUND = false;        // true → the two people are also heard as soft pads the whole time
   const CUE_VOICE = true;             // also say: please close / open your eyes
   const PERSON = { a:{ name:'A', color:'#43e0c9', turn:'body and gaze turned slightly toward the right of the frame' },
                    b:{ name:'B', color:'#f5b942', turn:'body and gaze turned slightly toward the left of the frame' } };
@@ -1253,6 +1254,8 @@
     // each mind is a warm, slow pad: two gently detuned sines with a slow sway
     start(){
       if(!this.ctx || this.n) return;
+      // background pads off: only the sync swell and the eye cues sound
+      if(!AMBIENT_SOUND){ this.n = { silent:true }; this.reverb(); return; }
       const c = this.ctx, t = c.currentTime, verb = this.reverb();
       const master = c.createGain(); master.gain.value = 0;
       const warm = c.createBiquadFilter(); warm.type = 'lowpass'; warm.frequency.value = 900; warm.Q.value = 0.3;
@@ -1282,7 +1285,7 @@
       return 130.81 * Math.pow(2, steps[Math.floor(x * steps.length)] / 12);   // from C3 upward
     },
     update(relA, relB, sim, inSync){
-      if(!this.n) return;
+      if(!this.n || this.n.silent) return;
       const t = this.ctx.currentTime;
       const fa = this.pitch(relA), fb = this.pitch(relB), mid = (fa + fb) / 2;
       const pull = Math.pow(Math.min(1, Math.max(0, (sim - 0.6) / (SYNC_THRESHOLD - 0.6))), 2);
@@ -1337,11 +1340,12 @@
     },
     // softer while people are writing
     quiet(on){
-      if(!this.n) return;
+      if(!this.n || this.n.silent) return;
       this.n.master.gain.setTargetAtTime(on ? SOUND_VOLUME*0.25 : SOUND_VOLUME, this.ctx.currentTime, 0.8);
     },
     stop(){
       if(!this.n) return;
+      if(this.n.silent){ this.n = null; return; }
       const n = this.n, t = this.ctx.currentTime; this.n = null;
       n.master.gain.setTargetAtTime(0, t, 1.2);
       setTimeout(()=>{ try{ [n.a.o1, n.a.o2, n.a.lfo, n.b.o1, n.b.o2, n.b.lfo, ...n.chord].forEach(o => o.stop()); n.master.disconnect(); }catch(e){} }, 6000);
@@ -1651,7 +1655,7 @@
               ? `adjust ${poor.map(k=>k.toUpperCase()).join(' and ')}'s headband, sensors need skin contact`
               : isBase ? (closed ? `close your eyes now · relax · a bell and a voice will tell you to open them · ${left} s`
                                  : `keep your eyes open · look softly at the screen · breathe normally · stay still · ${left} s`)
-                       : 'hold your own words in mind · hands still, soft gaze · listen for your two tones meeting';
+                       : 'hold your own words in mind · hands still, soft gaze · a soft bell sounds when your two minds meet';
             PEOPLE.forEach(k=>{
               const r = rec[k];
               if(isBase && closed){ r.closedFrames.push(res[k].rel); }
