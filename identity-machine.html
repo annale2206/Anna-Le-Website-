@@ -921,6 +921,29 @@
   }
   if(USE_MUSE) loadMuseLib(); // preload so the connect click stays a direct user gesture
 
+  // connect one headband: k = 'a' or 'b'. gatt = an already chosen headband (reconnecting)
+  async function startClient(k, gatt){
+    const m = P[k].muse, other = P[k === 'a' ? 'b' : 'a'].muse;
+    const { MuseClient } = await loadMuseLib();
+    const client = new MuseClient();
+    await client.connect(gatt || undefined);
+    const device = client.gatt && client.gatt.device;
+    // the browser list shows both headbands with similar names; stop the same one being picked twice
+    if(device && other.device && other.connected && device.id === other.device.id){
+      try{ client.disconnect(); }catch(e){}
+      throw new Error(`that is the same headband as ${k === 'a' ? 'B' : 'A'} (${client.deviceName}). pick the other Muse in the list`);
+    }
+    await client.start();
+    client.eegReadings.subscribe(r => pushSamples(P[k].eeg, r.electrode, r.samples));
+    client.connectionStatus.subscribe(ok => {
+      if(m.client !== client) return;          // an older connection, ignore
+      m.connected = ok; updateSourceUI();
+      if(!ok) autoReconnect(k);
+    });
+    m.client = client; m.device = device; m.name = client.deviceName || '';
+    m.connected = true;
+  }
+
   async function connectMuse(k){
     const m = P[k].muse;
     if(m.connected || m.connecting) return;
@@ -931,23 +954,32 @@
     m.connecting = true; updateSourceUI();
     $('connect-msg').textContent = `pick muse ${k.toUpperCase()} in the browser popup…`;
     try{
-      const { MuseClient } = await loadMuseLib();
-      const client = new MuseClient();
-      await client.connect();
-      await client.start();
-      client.eegReadings.subscribe(r => pushSamples(P[k].eeg, r.electrode, r.samples));
-      client.connectionStatus.subscribe(ok => {
-        m.connected = ok; updateSourceUI();
-        if(!ok && scanScreen.classList.contains('active')) showConnectOverlay(`muse ${k.toUpperCase()} disconnected. turn it back on and reconnect.`);
-      });
-      m.client = client;
-      m.connected = true;
-      $('connect-msg').textContent = needsConnecting().length ? `muse ${k.toUpperCase()} connected. now connect the other one.` : 'both connected.';
+      await startClient(k, null);
+      $('connect-msg').textContent = needsConnecting().length
+        ? `muse ${k.toUpperCase()} connected (${m.name}). now turn on the other headband and connect it.`
+        : `both connected: A ${P.a.muse.name} · B ${P.b.muse.name}`;
     } catch(err){
       console.error(err);
-      $('connect-msg').textContent = 'could not connect (' + (err && err.message ? err.message : 'cancelled') + '). make sure the Muse is on and not paired to the phone app, then try again.';
+      $('connect-msg').textContent = 'could not connect muse ' + k.toUpperCase() + ' (' + (err && err.message ? err.message : 'cancelled') + '). make sure it is on, charged, and not paired to the phone app, then try again.';
     }
     m.connecting = false; updateSourceUI();
+  }
+
+  // a headband dropped: try to reconnect to the same one on its own (no popup needed)
+  async function autoReconnect(k){
+    const m = P[k].muse;
+    if(m.reconnecting || !m.device) return;
+    m.reconnecting = true; m.connecting = true; updateSourceUI();
+    for(let i=0; i<10 && !m.connected; i++){
+      if(scanScreen.classList.contains('active')) showConnectOverlay(`muse ${k.toUpperCase()} dropped, reconnecting… (${i+1}/10)`);
+      try{ const gatt = await m.device.gatt.connect(); await startClient(k, gatt); }
+      catch(e){ console.warn('[muse ' + k + '] reconnect', e && e.message); await sleep(3000); }
+    }
+    m.reconnecting = false; m.connecting = false; updateSourceUI();
+    if(!m.connected && scanScreen.classList.contains('active'))
+      showConnectOverlay(`muse ${k.toUpperCase()} disconnected. turn it back on and press connect ${k.toUpperCase()}.`);
+    else if(m.connected && scanScreen.classList.contains('active') && !needsConnecting().length)
+      $('connect-overlay').classList.remove('show');
   }
   const needsConnecting = () => PEOPLE.filter(k => P[k].source === 'muse' && !P[k].muse.connected);
 
@@ -957,7 +989,7 @@
     const part = k => {
       const p = P[k];
       if(p.source === 'sim') return `${k.toUpperCase()}: sim`;
-      return `${k.toUpperCase()}: ` + (p.muse.connected ? 'muse ✓' : p.muse.connecting ? 'connecting…' : 'muse ✕');
+      return `${k.toUpperCase()}: ` + (p.muse.connected ? `${p.muse.name || 'muse'} ✓` : p.muse.reconnecting ? 'reconnecting…' : p.muse.connecting ? 'connecting…' : 'muse ✕');
     };
     txt.textContent = PEOPLE.map(part).join(' · ');
     const anyMuse = PEOPLE.some(k => P[k].source === 'muse');
