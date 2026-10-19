@@ -67,6 +67,9 @@
   .mini-btn{ padding:5px 10px; border:1px solid #43e0c9; border-radius:3px; background:none; color:#43e0c9;
     font-family:'Space Mono', monospace; font-size:10px; letter-spacing:.12em; text-transform:uppercase; cursor:pointer; }
   .mini-btn:hover{ background:#43e0c9; color:#0b0f10; }
+  #muse-log{ display:none; position:absolute; top:100%; right:0; margin-top:6px; width:440px; max-height:46vh; overflow:auto; z-index:50;
+    background:#05080a; border:1px solid #2a3a3f; padding:8px; font-size:10px; line-height:1.45; color:#9fb3b0; white-space:pre-wrap; text-align:left; }
+  body.muse-debug #muse-log{ display:block; }
   #muse-msg{ max-width:320px; font-size:10px; line-height:1.4; letter-spacing:.06em; color:#8a9aa0; text-align:right; }
 
   /* ---------- gate ---------- */
@@ -355,6 +358,7 @@
       <button class="mini-btn" id="top-connect-b">connect B</button>
     </div>
     <div id="muse-msg"></div>
+    <pre id="muse-log"></pre>
   </div>
 </div>
 
@@ -940,6 +944,15 @@
   // stops with "No Characteristics matching UUID…". The machine only needs the
   // EEG channels, so a missing extra channel is replaced by a silent stand-in.
   const MUSE_EEG_UUIDS = ['273e0003','273e0004','273e0005','273e0006'];
+  // ?musedebug=1 → a log of every Bluetooth step under the connect buttons (for fixing connection problems)
+  const MUSE_DEBUG = params.get('musedebug') === '1';
+  if(MUSE_DEBUG) document.body.classList.add('muse-debug');
+  const museT0 = performance.now();
+  function museLog(...a){
+    const line = `${((performance.now()-museT0)/1000).toFixed(1).padStart(6)}s  ${a.join(' ')}`;
+    console.log('[muse]', line);
+    const el = $('muse-log'); if(el){ el.textContent += line + '\n'; el.scrollTop = el.scrollHeight; }
+  }
   const museMissing = new Set();
   let musePatched = false;
   function patchMuseCharacteristics(){
@@ -947,8 +960,9 @@
     musePatched = true;
     const proto = BluetoothRemoteGATTService.prototype, original = proto.getCharacteristic;
     proto.getCharacteristic = async function(uuid){
-      try{ return await original.call(this, uuid); }
+      try{ const c = await original.call(this, uuid); museLog('channel ok', String(uuid).slice(0,8)); return c; }
       catch(err){
+        museLog('channel MISSING', String(uuid).slice(0,8));
         const id = String(uuid).toLowerCase();
         if(!id.startsWith('273e') || id.startsWith('273e0001')) throw err;   // the control channel is essential
         museMissing.add(id.slice(0, 8));
@@ -978,15 +992,28 @@
     const m = P[k].muse, other = P[k === 'a' ? 'b' : 'a'].muse;
     const { MuseClient } = await loadMuseLib();
     const client = new MuseClient();
+    museLog(`${k.toUpperCase()}: connecting…`);
     await client.connect(gatt || undefined);
     const device = client.gatt && client.gatt.device;
+    museLog(`${k.toUpperCase()}: connected to ${client.deviceName}`);
+    if(device && !device.__logged){
+      device.__logged = true;
+      try{ device.addEventListener('gattserverdisconnected', ()=> museLog(`${k.toUpperCase()}: ${device.name} DISCONNECTED (samples so far: ${P[k].eeg.count.join('/')})`)); }catch(e){}
+      try{
+        const svc = await client.gatt.getPrimaryService(0xfe8d);
+        const chars = await svc.getCharacteristics();
+        museLog(`${k.toUpperCase()}: headband offers ${chars.map(c=>String(c.uuid).slice(4,8)).join(' ')}`);
+      }catch(e){ museLog('could not list channels', e.message); }
+    }
     // the browser list shows both headbands with similar names; stop the same one being picked twice
     if(device && other.device && other.connected && device.id === other.device.id){
       try{ client.disconnect(); }catch(e){}
       throw new Error(`that is the same headband as ${k === 'a' ? 'B' : 'A'} (${client.deviceName}). pick the other Muse in the list`);
     }
     await client.start();
-    client.eegReadings.subscribe(r => pushSamples(P[k].eeg, r.electrode, r.samples));
+    museLog(`${k.toUpperCase()}: start command sent`);
+    let firstData = true;
+    client.eegReadings.subscribe(r => { if(firstData){ firstData = false; museLog(`${k.toUpperCase()}: first brainwave data arrived`); } pushSamples(P[k].eeg, r.electrode, r.samples); });
     client.connectionStatus.subscribe(ok => {
       if(m.client !== client) return;          // an older connection, ignore
       m.connected = ok; updateSourceUI();
@@ -1034,6 +1061,7 @@
         : `both connected: A ${P.a.muse.name} · B ${P.b.muse.name}`);
     } catch(err){
       console.error(err);
+      museLog(`${k.toUpperCase()}: ERROR ${err && err.name} ${err && err.message}`);
       museMsg(`muse ${k.toUpperCase()} not connected: ` + museHint(err));
     }
     m.connecting = false; updateSourceUI();
@@ -1047,7 +1075,7 @@
     for(let i=0; i<10 && !m.connected; i++){
       if(scanScreen.classList.contains('active')) showConnectOverlay(`muse ${k.toUpperCase()} dropped, reconnecting… (${i+1}/10)`);
       try{ const gatt = await m.device.gatt.connect(); await startClient(k, gatt); }
-      catch(e){ console.warn('[muse ' + k + '] reconnect', e && e.message); await sleep(3000); }
+      catch(e){ museLog(`${k.toUpperCase()}: reconnect ${i+1} failed: ${e && e.message}`); await sleep(3000); }
     }
     m.reconnecting = false; m.connecting = false; updateSourceUI();
     if(!m.connected && scanScreen.classList.contains('active'))
