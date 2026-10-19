@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Persona Machine: Headband B</title>
+<!--
+  SECOND DEVICE for headband B.
+  Open this on another laptop (Chrome) or an Android phone (Chrome) when the
+  main laptop cannot keep two Muse headbands connected at once. It connects
+  Muse B and sends its brainwaves to the main machine, which must be opened
+  with  identity-machine.html?muse=1&partner=remote
+  (iPhone and iPad cannot be used: their browsers have no Bluetooth access.)
+-->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{ min-height:100vh; background:#0b0f10; color:#e8f0ee; font-family:'Space Mono', monospace;
+    display:flex; align-items:center; justify-content:center; padding:24px 16px; }
+  .card{ width:100%; max-width:440px; display:flex; flex-direction:column; gap:18px; text-align:center; }
+  h1{ font-size:14px; letter-spacing:.25em; text-transform:uppercase; color:#f5b942; }
+  .sub{ font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:#6d8086; line-height:1.6; }
+  input{ font-family:inherit; font-size:22px; letter-spacing:.5em; text-align:center; padding:10px; width:100%;
+    background:#05080a; color:#e8f0ee; border:1px solid #2a3a3f; border-radius:3px; }
+  button{ font-family:inherit; font-size:13px; letter-spacing:.18em; text-transform:uppercase; padding:14px;
+    background:#f5b942; color:#0b0f10; border:none; border-radius:3px; cursor:pointer; }
+  button:disabled{ opacity:.4; cursor:default; }
+  #status{ font-size:12px; line-height:1.6; color:#b9c6c4; min-height:3em; }
+  .sensors{ display:flex; justify-content:center; gap:14px; font-size:11px; color:#6d8086; }
+  .dot{ display:inline-block; width:9px; height:9px; border-radius:50%; background:#3a2626; margin-right:5px; vertical-align:middle; }
+  .dot.on{ background:#43e0c9; } .dot.warn{ background:#f5b942; } .dot.bad{ background:#e0435a; }
+  #big{ font-size:44px; color:#f5b942; }
+  .hidden{ display:none !important; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>persona machine · headband B</h1>
+
+  <div id="step-code">
+    <div class="sub" style="margin-bottom:12px">enter the access code</div>
+    <input id="code" inputmode="numeric" maxlength="4" autocomplete="off">
+  </div>
+
+  <div id="step-connect" class="hidden">
+    <div class="sub" style="margin-bottom:14px">turn on muse B, then connect it here.<br>keep this screen open during the show.</div>
+    <button id="connect">connect muse B</button>
+  </div>
+
+  <div id="step-live" class="hidden">
+    <div id="big">●</div>
+    <div class="sub" id="live-name"></div>
+    <div class="sensors" id="sensors"></div>
+  </div>
+
+  <div id="status"></div>
+</div>
+
+<script type="module">
+  const $ = id => document.getElementById(id);
+  const say = t => { $('status').textContent = t; };
+  let token = '', client = null, device = null, name = '', sent = 0, lastSentAt = 0;
+  const NAMES = ['TP9','AF7','AF8','TP10'];
+  const pending = [[],[],[],[]];          // samples waiting to be sent
+  const recent = [[],[],[],[]];           // last second, for the contact dots
+
+  // ---------- access code ----------
+  $('code').addEventListener('input', async e=>{
+    const code = e.target.value.replace(/\D/g, '').slice(0, 4);
+    e.target.value = code;
+    if(code.length < 4) return;
+    try{
+      const r = await fetch('/api/unlock', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ code }) });
+      const d = r.ok ? await r.json() : {};
+      if(d.token){ token = d.token; $('step-code').classList.add('hidden'); $('step-connect').classList.remove('hidden'); say(''); return; }
+    }catch(err){}
+    say('wrong code'); e.target.value = '';
+  });
+
+  // ---------- Muse: only the 4 brainwave channels (less Bluetooth traffic) ----------
+  const SKIP = ['273e000b', '273e0009', '273e000a'];
+  function standIn(service, uuid){
+    const s = new EventTarget(); s.uuid = uuid; s.service = service; s.value = null;
+    s.startNotifications = async ()=> s; s.stopNotifications = async ()=> s;
+    s.writeValue = s.writeValueWithResponse = s.writeValueWithoutResponse = async ()=>{};
+    s.readValue = async ()=> new DataView(new ArrayBuffer(20));
+    return s;
+  }
+  if(typeof BluetoothRemoteGATTService !== 'undefined'){
+    const proto = BluetoothRemoteGATTService.prototype, original = proto.getCharacteristic;
+    proto.getCharacteristic = async function(uuid){
+      const id = String(uuid).toLowerCase();
+      if(SKIP.some(s => id.startsWith(s))) return standIn(this, uuid);
+      try{ return await original.call(this, uuid); }
+      catch(err){ if(id.startsWith('273e') && !id.startsWith('273e0001')) return standIn(this, uuid); throw err; }
+    };
+  }
+  const museLib = import('./muse.bundle.js').catch(()=> import('https://cdn.jsdelivr.net/npm/muse-js@3.3.0/+esm'));
+
+  async function startMuse(gatt){
+    const { MuseClient } = await museLib;
+    const c = new MuseClient();
+    await c.connect(gatt || undefined);
+    await c.start();
+    c.eegReadings.subscribe(r=>{
+      if(r.electrode > 3) return;
+      for(const v of r.samples){
+        if(!Number.isFinite(v)) continue;
+        pending[r.electrode].push(v);
+        recent[r.electrode].push(v); if(recent[r.electrode].length > 256) recent[r.electrode].shift();
+      }
+    });
+    c.connectionStatus.subscribe(ok=>{ if(client === c && !ok) reconnect(); });
+    client = c; device = c.gatt && c.gatt.device; name = c.deviceName || 'muse';
+  }
+
+  $('connect').addEventListener('click', async ()=>{
+    if(!navigator.bluetooth){ say('this browser has no Bluetooth. use Chrome on a laptop or an Android phone (iPhone does not work).'); return; }
+    $('connect').disabled = true; say('pick muse B in the popup…');
+    try{
+      await startMuse(null);
+      $('step-connect').classList.add('hidden'); $('step-live').classList.remove('hidden');
+      $('live-name').textContent = name;
+      say('connected. sending brainwaves to the machine…');
+      try{ await navigator.wakeLock.request('screen'); }catch(e){}   // keep a phone screen on
+    }catch(err){
+      say('could not connect: ' + (err && err.message ? err.message : 'cancelled') + '. turn the headband off and on and try again.');
+    }
+    $('connect').disabled = false;
+  });
+
+  let reconnecting = false;
+  async function reconnect(){
+    if(reconnecting || !device) return;
+    reconnecting = true;
+    for(let i=1; i<=10; i++){
+      say(`headband dropped, reconnecting… (${i}/10)`);
+      try{ const gatt = await device.gatt.connect(); await startMuse(gatt); say('reconnected. sending brainwaves…'); break; }
+      catch(e){ await new Promise(r=> setTimeout(r, 3000)); }
+    }
+    reconnecting = false;
+  }
+
+  // ---------- send twice a second ----------
+  setInterval(async ()=>{
+    if(!token || !client || !pending[0].length) return;
+    const ch = pending.map(a => a.splice(0, a.length));
+    try{
+      const r = await fetch('/api/relay', { method:'POST',
+        headers:{ 'Content-Type':'application/json', 'x-im-token': token },
+        body: JSON.stringify({ t: Date.now(), name, ch }) });
+      if(r.status === 401){ say('access expired, reload this page and enter the code again'); return; }
+      sent++; lastSentAt = Date.now();
+    }catch(e){ say('no internet connection, retrying…'); }
+  }, 500);
+
+  // ---------- live status ----------
+  setInterval(()=>{
+    if(!client) return;
+    $('sensors').innerHTML = recent.map((x, i)=>{
+      let q = 'bad';
+      if(x.length > 200){
+        const m = x.reduce((s,v)=>s+v,0)/x.length;
+        const sd = Math.sqrt(x.reduce((s,v)=>s+(v-m)**2,0)/x.length);
+        q = sd < 1.5 ? 'bad' : sd > 100 ? 'warn' : 'on';
+      }
+      return `<span><span class="dot ${q}"></span>${NAMES[i]}</span>`;
+    }).join('');
+    const ok = Date.now() - lastSentAt < 2000;
+    $('big').style.color = ok ? '#43e0c9' : '#e0435a';
+    if(ok && !reconnecting) say(`sending brainwaves to the machine · ${sent} packets`);
+  }, 500);
+</script>
+</body>
+</html>

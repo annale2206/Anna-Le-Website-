@@ -527,6 +527,9 @@
   // ?muse=1&partner=sim → one real headset for A, participant B simulated (for testing)
   let USE_MUSE = params.get('muse') === '1';
   const PARTNER_SIM = params.get('partner') === 'sim';
+  // ?partner=remote → headband B is connected to a second device (muse-partner.html)
+  // and its brainwaves arrive through /api/relay
+  const PARTNER_REMOTE = params.get('partner') === 'remote';
 
   // TWO PARTICIPANTS + SYNC
   // "in sync" = the two band patterns are at least SYNC_THRESHOLD similar
@@ -752,7 +755,11 @@
   }
   // live = samples arriving and at least one sensor has a full second of data
   // (works even if one sensor, e.g. TP9, is missing or broken)
-  function signalLive(e){ return performance.now() - e.lastSampleAt < 1000 && Math.max(...e.count) >= 256; }
+  function signalLive(e){
+    // samples from a second device arrive in bursts over the internet, so allow a longer gap
+    const gap = (PARTNER_REMOTE && P.b && e === P.b.eeg) ? 2500 : 1000;
+    return performance.now() - e.lastSampleAt < gap && Math.max(...e.count) >= 256;
+  }
 
   // in-place radix-2 FFT
   function fft(re, im){
@@ -907,7 +914,7 @@
   PEOPLE.forEach(k=>{
     const e = makeEEG();
     P[k] = { eeg:e, sim:makeSim(e), muse:{ client:null, connected:false, connecting:false },
-             source: (USE_MUSE && !(k === 'b' && PARTNER_SIM)) ? 'muse' : 'sim' };
+             source: (k === 'b' && PARTNER_REMOTE) ? 'remote' : (USE_MUSE && !(k === 'b' && PARTNER_SIM)) ? 'muse' : 'sim' };
   });
   let followB = false;     // testing: participant B's simulator copies A's
 
@@ -1137,7 +1144,30 @@
     }
   }, 2000);
 
-  const needsConnecting = () => PEOPLE.filter(k => P[k].source === 'muse' && !P[k].muse.connected);
+  const needsConnecting = () => PEOPLE.filter(k => (P[k].source === 'muse' && !P[k].muse.connected) || (P[k].source === 'remote' && !remoteLive()));
+
+  // ---- headband B on a second device: collect its samples from /api/relay ----
+  const remote = { since: 0, lastAt: 0, name: '', busy: false };
+  const remoteLive = () => performance.now() - remote.lastAt < 3000;
+  if(PARTNER_REMOTE){
+    let wasLive = false;
+    setInterval(async ()=>{
+      if(!accessToken || remote.busy) return;
+      remote.busy = true;
+      try{
+        const r = await fetch('/api/relay?since=' + remote.since, { cache:'no-store', headers: authHeaders() });
+        const d = await r.json();
+        for(const item of (d.items || [])){
+          if(item.t <= remote.since) continue;
+          remote.since = item.t; remote.name = item.name || remote.name;
+          (item.ch || []).forEach((arr, ch)=> pushSamples(P.b.eeg, ch, arr));
+          remote.lastAt = performance.now();
+        }
+      }catch(e){}
+      remote.busy = false;
+      if(wasLive !== remoteLive()){ wasLive = remoteLive(); updateSourceUI(); }
+    }, 500);
+  }
 
   function updateSourceUI(){
     const led = $('source-led'), txt = $('source-text');
@@ -1145,10 +1175,11 @@
     const part = k => {
       const p = P[k];
       if(p.source === 'sim') return `${k.toUpperCase()}: sim`;
+      if(p.source === 'remote') return `${k.toUpperCase()}: ` + (remoteLive() ? `${remote.name || 'muse'} (2nd device) ✓` : 'waiting for 2nd device…');
       return `${k.toUpperCase()}: ` + (p.muse.connected ? `${p.muse.name || 'muse'} ${p.muse.noData ? '· no data' : '✓'}` : p.muse.reconnecting ? 'reconnecting…' : p.muse.connecting ? 'connecting…' : 'muse ✕');
     };
     txt.textContent = PEOPLE.map(part).join(' · ');
-    const anyMuse = PEOPLE.some(k => P[k].source === 'muse');
+    const anyMuse = PEOPLE.some(k => P[k].source === 'muse' || P[k].source === 'remote');
     if(!anyMuse) led.classList.add('warn');
     else if(!needsConnecting().length) led.classList.add('on');
     else if(PEOPLE.some(k => P[k].muse.connecting)) led.classList.add('warn','pulse');
@@ -1296,7 +1327,9 @@
   const scan = { active:false, phase:'idle', startAt:0, resolve:null, raf:0 };
 
   function showConnectOverlay(msg){
-    $('connect-msg').textContent = msg || 'turn on both Muse headbands, then connect them one at a time.';
+    $('connect-msg').textContent = msg || (PARTNER_REMOTE && !remoteLive()
+      ? 'connect muse A here. muse B: open annale22.com/muse-partner.html on the second device and connect it there.'
+      : 'turn on both Muse headbands, then connect them one at a time.');
     $('connect-overlay').classList.add('show');
     updateSourceUI();
     scan.phase = 'waiting';
