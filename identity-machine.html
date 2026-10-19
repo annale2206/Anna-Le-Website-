@@ -930,8 +930,46 @@
      ===================================================================== */
   let museLib = null;
   function loadMuseLib(){
+    patchMuseCharacteristics();
     if(!museLib) museLib = import(MUSE_LIB).catch(()=> import(MUSE_LIB_CDN));
     return museLib;
+  }
+
+  // Some Muse headbands (newer firmware) don't offer every channel muse-js asks
+  // for, e.g. battery/telemetry (273e000b), gyro or accelerometer. muse-js then
+  // stops with "No Characteristics matching UUID…". The machine only needs the
+  // EEG channels, so a missing extra channel is replaced by a silent stand-in.
+  const MUSE_EEG_UUIDS = ['273e0003','273e0004','273e0005','273e0006'];
+  const museMissing = new Set();
+  let musePatched = false;
+  function patchMuseCharacteristics(){
+    if(musePatched || typeof BluetoothRemoteGATTService === 'undefined') return;
+    musePatched = true;
+    const proto = BluetoothRemoteGATTService.prototype, original = proto.getCharacteristic;
+    proto.getCharacteristic = async function(uuid){
+      try{ return await original.call(this, uuid); }
+      catch(err){
+        const id = String(uuid).toLowerCase();
+        if(!id.startsWith('273e') || id.startsWith('273e0001')) throw err;   // the control channel is essential
+        museMissing.add(id.slice(0, 8));
+        console.warn('[muse] channel not offered by this headband, skipping:', id);
+        const stand = new EventTarget();
+        stand.uuid = uuid; stand.service = this; stand.value = null;
+        stand.startNotifications = async ()=> stand;
+        stand.stopNotifications = async ()=> stand;
+        stand.writeValue = stand.writeValueWithResponse = stand.writeValueWithoutResponse = async ()=>{};
+        stand.readValue = async ()=> new DataView(new ArrayBuffer(20));
+        return stand;
+      }
+    };
+  }
+  // what the headband actually offers (for the message when no EEG arrives)
+  async function museChannels(k){
+    try{
+      const svc = await P[k].muse.client.gatt.getPrimaryService(0xfe8d);
+      const chars = await svc.getCharacteristics();
+      return chars.map(c=> String(c.uuid).slice(4, 8)).join(' ');
+    }catch(e){ return '?'; }
   }
   if(USE_MUSE) loadMuseLib(); // preload so the connect click stays a direct user gesture
 
@@ -982,6 +1020,15 @@
     museMsg(`pick muse ${k.toUpperCase()} in the browser popup…`);
     try{
       await startClient(k, null);
+      // check that brainwaves are really arriving, not just a connection
+      await sleep(3000);
+      if(m.connected && !P[k].eeg.count.some(c => c > 0)){
+        const eegMissing = MUSE_EEG_UUIDS.filter(u => museMissing.has(u));
+        museMsg(`muse ${k.toUpperCase()} (${m.name}) is connected but sends no brainwaves` +
+          (eegMissing.length ? `: it does not offer the EEG channels this machine reads (it may be a newer Muse model). channels it has: ${await museChannels(k)}` : '. take it off, turn it off and on, and connect again.'));
+        m.connecting = false; updateSourceUI();
+        return;
+      }
       museMsg(needsConnecting().length
         ? `muse ${k.toUpperCase()} connected (${m.name}). now connect the other headband.`
         : `both connected: A ${P.a.muse.name} · B ${P.b.muse.name}`);
