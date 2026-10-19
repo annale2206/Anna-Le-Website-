@@ -960,6 +960,11 @@
     musePatched = true;
     const proto = BluetoothRemoteGATTService.prototype, original = proto.getCharacteristic;
     proto.getCharacteristic = async function(uuid){
+      const id0 = String(uuid).toLowerCase();
+      if(MUSE_SKIP.some(s => id0.startsWith(s))){
+        museLog('channel skipped (not needed)', id0.slice(0,8));
+        return standIn(this, uuid);
+      }
       try{ const c = await original.call(this, uuid); museLog('channel ok', String(uuid).slice(0,8)); return c; }
       catch(err){
         museLog('channel MISSING', String(uuid).slice(0,8));
@@ -967,15 +972,22 @@
         if(!id.startsWith('273e') || id.startsWith('273e0001')) throw err;   // the control channel is essential
         museMissing.add(id.slice(0, 8));
         console.warn('[muse] channel not offered by this headband, skipping:', id);
-        const stand = new EventTarget();
-        stand.uuid = uuid; stand.service = this; stand.value = null;
-        stand.startNotifications = async ()=> stand;
-        stand.stopNotifications = async ()=> stand;
-        stand.writeValue = stand.writeValueWithResponse = stand.writeValueWithoutResponse = async ()=>{};
-        stand.readValue = async ()=> new DataView(new ArrayBuffer(20));
-        return stand;
+        return standIn(this, uuid);
       }
     };
+  }
+  // battery, gyroscope and accelerometer are not used by the machine. Not
+  // subscribing to them cuts the Bluetooth traffic of each headband, which is
+  // what lets one laptop keep two headbands streaming at the same time.
+  const MUSE_SKIP = ['273e000b', '273e0009', '273e000a'];
+  function standIn(service, uuid){
+    const stand = new EventTarget();
+    stand.uuid = uuid; stand.service = service; stand.value = null;
+    stand.startNotifications = async ()=> stand;
+    stand.stopNotifications = async ()=> stand;
+    stand.writeValue = stand.writeValueWithResponse = stand.writeValueWithoutResponse = async ()=>{};
+    stand.readValue = async ()=> new DataView(new ArrayBuffer(20));
+    return stand;
   }
   // what the headband actually offers (for the message when no EEG arrives)
   async function museChannels(k){
@@ -1045,11 +1057,33 @@
     }
     m.connecting = true; updateSourceUI();
     museMsg(`pick muse ${k.toUpperCase()} in the browser popup…`);
+    const otherK = k === 'a' ? 'b' : 'a', other = P[otherK].muse;
+    museBusy = true;
+    // the other headband pauses while this one connects (connecting while the
+    // other streams at full speed is what makes the second one fail)
+    if(other.connected && other.client){ try{ await other.client.pause(); museLog(`${otherK.toUpperCase()}: paused while ${k.toUpperCase()} connects`); }catch(e){} }
+    const resumeOther = async ()=>{
+      if(other.connected && other.client){
+        await sleep(800);
+        try{ await other.client.start(); museLog(`${otherK.toUpperCase()}: streaming again`); }catch(e){ museLog(`${otherK.toUpperCase()}: restart failed ${e.message}`); }
+      }
+      museBusy = false;
+    };
     try{
       await startClient(k, null);
+      await resumeOther();
       // check that brainwaves are really arriving, not just a connection
       await sleep(3000);
-      if(m.connected && !P[k].eeg.count.some(c => c > 0)){
+      // no data yet: send the start command again (some headbands miss the first one)
+      for(let tries=1; tries<=2 && m.connected && !P[k].eeg.count.some(c => c > 0); tries++){
+        museLog(`${k.toUpperCase()}: no brainwaves yet, sending start again (${tries})`);
+        museMsg(`muse ${k.toUpperCase()} connected, waking up its sensors… (${tries})`);
+        try{ await m.client.pause(); }catch(e){}
+        try{ await m.client.start(); }catch(e){ museLog(`${k.toUpperCase()}: start failed ${e.message}`); }
+        await sleep(3000);
+      }
+      m.noData = m.connected && !P[k].eeg.count.some(c => c > 0);
+      if(m.noData){
         const eegMissing = MUSE_EEG_UUIDS.filter(u => museMissing.has(u));
         museMsg(`muse ${k.toUpperCase()} (${m.name}) is connected but sends no brainwaves` +
           (eegMissing.length ? `: it does not offer the EEG channels this machine reads (it may be a newer Muse model). channels it has: ${await museChannels(k)}` : '. take it off, turn it off and on, and connect again.'));
@@ -1061,6 +1095,7 @@
         : `both connected: A ${P.a.muse.name} · B ${P.b.muse.name}`);
     } catch(err){
       console.error(err);
+      if(museBusy) await resumeOther();
       museLog(`${k.toUpperCase()}: ERROR ${err && err.name} ${err && err.message}`);
       museMsg(`muse ${k.toUpperCase()} not connected: ` + museHint(err));
     }
@@ -1083,6 +1118,25 @@
     else if(m.connected && scanScreen.classList.contains('active') && !needsConnecting().length)
       $('connect-overlay').classList.remove('show');
   }
+  let museBusy = false;     // true while a headband is being connected
+  // watchdog: a connected headband that stops sending brainwaves gets its stream restarted
+  setInterval(async ()=>{
+    for(const k of PEOPLE){
+      const m = P[k].muse, e = P[k].eeg;
+      if(museBusy || P[k].source !== 'muse' || !m.connected || !m.client || m.connecting || m.kicking) continue;
+      const quiet = performance.now() - (e.lastSampleAt || 0);
+      const was = m.noData;
+      m.noData = !e.count.some(c => c > 0) || quiet > 3000;
+      if(was !== m.noData) updateSourceUI();
+      if(!m.noData || performance.now() - (m.lastKick || 0) < 8000) continue;
+      m.kicking = true; m.lastKick = performance.now();
+      museLog(`${k.toUpperCase()}: no brainwaves for ${(quiet/1000).toFixed(0)} s, restarting its stream`);
+      if(m.noData) museMsg(`muse ${k.toUpperCase()} (${m.name}) is connected but not sending brainwaves, restarting it…`);
+      try{ await m.client.pause(); await m.client.start(); }catch(err){ museLog(`${k.toUpperCase()}: restart failed ${err.message}`); }
+      m.kicking = false;
+    }
+  }, 2000);
+
   const needsConnecting = () => PEOPLE.filter(k => P[k].source === 'muse' && !P[k].muse.connected);
 
   function updateSourceUI(){
@@ -1091,7 +1145,7 @@
     const part = k => {
       const p = P[k];
       if(p.source === 'sim') return `${k.toUpperCase()}: sim`;
-      return `${k.toUpperCase()}: ` + (p.muse.connected ? `${p.muse.name || 'muse'} ✓` : p.muse.reconnecting ? 'reconnecting…' : p.muse.connecting ? 'connecting…' : 'muse ✕');
+      return `${k.toUpperCase()}: ` + (p.muse.connected ? `${p.muse.name || 'muse'} ${p.muse.noData ? '· no data' : '✓'}` : p.muse.reconnecting ? 'reconnecting…' : p.muse.connecting ? 'connecting…' : 'muse ✕');
     };
     txt.textContent = PEOPLE.map(part).join(' · ');
     const anyMuse = PEOPLE.some(k => P[k].source === 'muse');
@@ -1102,7 +1156,8 @@
     $('connect-a').style.display = P.a.source === 'muse' && !P.a.muse.connected ? '' : 'none';
     $('top-connect-a').style.display = P.a.source === 'muse' && !P.a.muse.connected ? '' : 'none';
     $('top-connect-b').style.display = P.b.source === 'muse' && !P.b.muse.connected ? '' : 'none';
-    if(!needsConnecting().length) $('muse-msg').textContent = PEOPLE.some(k => P[k].source === 'muse') ? 'headbands ready' : '';
+    const silent = PEOPLE.filter(k => P[k].source === 'muse' && P[k].muse.connected && P[k].muse.noData);
+    if(!needsConnecting().length && !silent.length) $('muse-msg').textContent = PEOPLE.some(k => P[k].source === 'muse') ? 'headbands ready' : '';
     else if(!$('muse-msg').textContent) $('muse-msg').textContent = 'turn on both headbands, then connect A and B';
     $('connect-b').style.display = P.b.source === 'muse' && !P.b.muse.connected ? '' : 'none';
   }
