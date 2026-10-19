@@ -546,7 +546,9 @@
   // ?scan=20 → scan length in seconds
   const SCAN_SECONDS = Math.max(5, Number(params.get('scan')) || 15);
   // ?baseline=15 → personal baseline length in seconds (recorded before the scan)
-  const BASELINE_SECONDS = Math.max(5, Number(params.get('baseline')) || 10);
+  // the baseline has two halves: eyes open, then eyes closed (30 s + 30 s by default)
+  const BASELINE_SECONDS = Math.max(10, Number(params.get('baseline')) || 60);
+  const EYES_OPEN_SECONDS = BASELINE_SECONDS / 2;
   const READING_SECONDS = 8;
   // the visitor's own words (optional), mixed with the EEG reading
   const INTENT_MAX = 120;
@@ -1265,6 +1267,18 @@
       [1, 1.5, 2, 2.5].forEach((r, i) => this.n.chord[i].frequency.setTargetAtTime(mid * r, t, 0.3));
       this.n.bloom.gain.setTargetAtTime(inSync ? 0.32 : 0, t, inSync ? 0.5 : 0.8);
     },
+    // a soft two-note tone: falling = close your eyes, rising = open your eyes
+    cue(up){
+      if(!this.ctx) return;
+      const c = this.ctx, t = c.currentTime, out = this.n ? this.n.master : c.destination;
+      (up ? [523.25, 783.99] : [783.99, 523.25]).forEach((f, i) => {
+        const o = c.createOscillator(); o.type = 'sine'; o.frequency.value = f;
+        const g = c.createGain(); g.gain.setValueAtTime(0, t + i*0.35);
+        g.gain.linearRampToValueAtTime(this.n ? 1.2 : 0.15, t + i*0.35 + 0.03);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + i*0.35 + 1.6);
+        o.connect(g); g.connect(out); o.start(t + i*0.35); o.stop(t + i*0.35 + 1.8);
+      });
+    },
     // softer while people are writing
     quiet(on){
       if(!this.n) return;
@@ -1439,7 +1453,8 @@
       $('scan-start').style.display = 'none';
       const sid = session;
       const rec = {};
-      PEOPLE.forEach(k=> rec[k] = { baseFrames:[], pauseFrames:[], frames:[], baseBlinks:0, blinks:0, personal:null,
+      scan.closedCue = false; scan.eyesClosed = false;
+      PEOPLE.forEach(k=> rec[k] = { baseFrames:[], closedFrames:[], pauseFrames:[], frames:[], baseBlinks:0, blinks:0, personal:null,
                                     pauseSeconds:0, pauses:0, inPause:false, writingSeconds:0 });
       const sync = { rel:{}, smooth:0.5, holdFrom:null, inSync:false, seconds:0, moments:0, peak:0, sum:0, n:0, series:[] };
       let intents = { a:'', b:'' };
@@ -1516,7 +1531,7 @@
         $('sync-val').textContent = Math.round(sync.smooth * 100) + '%';
         $('scan-panel').classList.toggle('in-sync', sync.inSync);
         sound.update(sync.rel.a, sync.rel.b, sync.smooth, sync.inSync);
-        proj.live(scan.phase, res, rec, sync);
+        proj.live(scan.phase === 'baseline' && scan.eyesClosed ? 'baselineClosed' : scan.phase, res, rec, sync);
 
         if(scan.phase === 'waiting' && !needsConnecting().length && bothLive()){
           $('connect-overlay').classList.remove('show');
@@ -1575,18 +1590,27 @@
 
         if(recording){
           const isBase = scan.phase === 'baseline';
-          $('scan-phase').textContent = isBase ? '01 · your baselines' : '03 · holding your words';
+          const elapsed0 = (now - scan.startAt) / 1000;
+          // second half of the baseline: eyes closed. A soft tone marks the change and the end,
+          // because nobody can read the screen with their eyes closed.
+          const closed = isBase && elapsed0 >= EYES_OPEN_SECONDS;
+          if(closed && !scan.closedCue){ scan.closedCue = true; sound.cue(false); }
+          scan.eyesClosed = closed;
+          const left = Math.max(0, Math.ceil((closed ? BASELINE_SECONDS : EYES_OPEN_SECONDS) - elapsed0));
+          $('scan-phase').textContent = isBase ? (closed ? '01 · baseline · eyes closed' : '01 · baseline · eyes open') : '03 · holding your words';
           const poor = PEOPLE.filter(k => res[k].quality.filter(q => q === 'good').length < 2);
           if(!bothLive()){
             $('scan-instruction').textContent = 'waiting for both signals…';
           } else {
             $('scan-instruction').textContent = poor.length
               ? `adjust ${poor.map(k=>k.toUpperCase()).join(' and ')}'s headband, sensors need skin contact`
-              : isBase ? 'baselines · eyes open · breathe normally · stay still'
+              : isBase ? (closed ? `close your eyes now · relax · a soft tone will tell you to open them · ${left} s`
+                                 : `keep your eyes open · look softly at the screen · breathe normally · stay still · ${left} s`)
                        : 'hold your own words in mind · hands still, soft gaze · listen for your two tones meeting';
             PEOPLE.forEach(k=>{
               const r = rec[k];
-              if(isBase){ r.baseFrames.push(res[k].rel); if(detectBlink(P[k].eeg)) r.baseBlinks++; }
+              if(isBase && closed){ r.closedFrames.push(res[k].rel); }
+              else if(isBase){ r.baseFrames.push(res[k].rel); if(detectBlink(P[k].eeg)) r.baseBlinks++; }
               else { r.frames.push(res[k].rel); if(detectBlink(P[k].eeg)) r.blinks++; }
             });
             if(!isBase){
@@ -1601,6 +1625,8 @@
           $('scan-progress').style.width = Math.min(100, done/total*100) + '%';
 
           if(isBase && elapsed >= BASELINE_SECONDS){
+            sound.cue(true);                         // "open your eyes"
+            // writing and holding happen with eyes open, so they are compared with the eyes-open half
             PEOPLE.forEach(k=> rec[k].personal = averageFrames(rec[k].baseFrames));
             startWriting();
           } else if(!isBase && elapsed >= SCAN_SECONDS){
@@ -1679,7 +1705,10 @@
       const sd = Math.sqrt(s.reduce((a,v)=>a+(v-m)**2,0)/s.length);
       cv = m ? sd/m : 0;
     }
-    return { base, avg, segments, blinks: r.blinks, baseBlinks: r.baseBlinks, variability: cv, seconds: SCAN_SECONDS,
+    const closedAvg = averageFrames(r.closedFrames);
+    // how much alpha rose with eyes closed (a classic check that the headband reads real brain activity)
+    const eyesClosedAlpha = (closedAvg && base && base.alpha) ? closedAvg.alpha / base.alpha : null;
+    return { base, avg, segments, blinks: r.blinks, baseBlinks: r.baseBlinks, variability: cv, seconds: SCAN_SECONDS, eyesClosedAlpha,
              writing: { used: !!pauseAvg, pauseSeconds: r.pauseSeconds, pauses: r.pauses, writingSeconds: r.writingSeconds } };
   }
   function rank(values, ref){
@@ -1739,7 +1768,7 @@
     const allBands = BANDS.map(b=> `${b} ${change(b)}`).join(' · ');
     return { k, state, data, allBands, dominant: dom.b, secondary: sec.b, portrait, portraitShown, scenes,
              intent: intent || '', personal,
-             writing: reading.writing,
+             writing: reading.writing, eyesClosedAlpha: reading.eyesClosedAlpha,
              meta: `${allBands} ${vs} · ${reading.blinks} blinks` + (reading.writing && reading.writing.used ? ` · ${Math.round(reading.writing.pauseSeconds)} s of writing pauses` : '') };
   }
 
@@ -1951,6 +1980,7 @@
     });
     addToBaseline(pr.a.avg); addToBaseline(pr.b.avg);
     const info = k => ({ words:R[k].intent, state:R[k].state, meta:R[k].meta, personal:R[k].personal, writing:R[k].writing,
+                         eyesClosedAlpha: R[k].eyesClosedAlpha,
                          source: P[k].source === 'remote' ? 'muse (2nd device)' : P[k].source === 'muse' ? 'muse' : 'simulated',
                          parts:R[k].scenes.map(sc=>({ band:sc.band, change:sc.change })) });
     saveToArchive({ kind:'info', info:{ pair:true, a:info('a'), b:info('b'),

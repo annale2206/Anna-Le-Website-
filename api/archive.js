@@ -69,6 +69,13 @@ export default async function handler(req, res) {
           state: String(p.state || '').slice(0, 60),
           reading: String(p.meta || '').slice(0, 200),
           baseline: p.personal ? 'personal' : 'typical',
+          // real headband or simulated signal (simulated visits should be left out of the research)
+          source: String(p.source || '').slice(0, 24),
+          // alpha with eyes closed ÷ alpha with eyes open, from the baseline (above 1 = alpha rose)
+          eyesClosedAlpha: Number.isFinite(Number(p.eyesClosedAlpha)) && p.eyesClosedAlpha !== null ? Math.round(Number(p.eyesClosedAlpha) * 100) / 100 : null,
+          // EEG while writing: how much of the pauses between words was used
+          writing: p.writing ? { used: !!p.writing.used, pauseSeconds: Math.round(Number(p.writing.pauseSeconds || 0) * 10) / 10,
+                                 pauses: Math.round(Number(p.writing.pauses || 0)), writingSeconds: Math.round(Number(p.writing.writingSeconds || 0)) } : null,
           parts: (Array.isArray(p.parts) ? p.parts : []).slice(0, 9).map(x => ({
             band: String(x.band || '').slice(0, 10),
             change: Math.round(Number(x.change || 0) * 100) / 100,
