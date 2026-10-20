@@ -233,6 +233,64 @@
     };
     hello(); setInterval(hello, 3000);
   }
+  let lastLocal = 0;
+  // only messages from the machine itself count (other projector windows also say hello)
+  if(bc){ const orig = bc.onmessage; bc.onmessage = ev=>{ const t = ev.data && ev.data.t; if(t === 'state' || t === 'live') lastLocal = performance.now(); orig(ev); }; }
+
+  // ---------- projectors on another computer: follow the machine through the website ----------
+  // The machine posts every change to /api/show. This window reads it, unless the machine is
+  // open in this same browser (then the direct messages above are faster and win).
+  const TOKEN_KEY = 'im-show-token';
+  let token = '';
+  try{ const saved = JSON.parse(localStorage.getItem(TOKEN_KEY) || 'null'); if(saved && saved.exp > Date.now()) token = saved.token; }catch(e){}
+  const seen = { a:0, b:0, live:0 };
+  async function poll(){
+    const listening = mode() === 'listen';
+    setTimeout(poll, listening ? 500 : 1500);
+    if(!token || performance.now() - lastLocal < 5000) return;
+    try{
+      const r = await fetch('/api/show', { cache:'no-store', headers:{ 'x-im-token': token } });
+      if(r.status === 401){ token = ''; try{ localStorage.removeItem(TOKEN_KEY); }catch(e){} askCode(); return; }
+      const d = await r.json();
+      let changed = false;
+      ['a','b'].forEach(k=>{ const x = d[k]; if(x && x.t > seen[k]){ seen[k] = x.t; S[k] = x.s || { mode:'idle' }; changed = true; } });
+      if(changed) render();
+      const L = d.live;
+      if(L && L.t > seen.live && d.now - L.t < 4000){
+        seen.live = L.t;
+        live = { phase:L.phase, a:L.a, b:L.b, sync:L.sync, inSync:L.inSync, at:performance.now() };
+        if(mode() === 'listen') renderListen();
+      }
+    }catch(e){}
+  }
+  // the access code, asked once per projector (remembered for 8 hours)
+  function askCode(){
+    if($('code-box')) return;
+    const box = document.createElement('div'); box.id = 'code-box';
+    box.style.cssText = 'position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:rgba(5,7,8,.92);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:#6d8086';
+    box.innerHTML = `<div>projector ${P} · enter the access code</div><input id="code-in" inputmode="numeric" maxlength="4" style="font:inherit;font-size:28px;letter-spacing:.5em;text-align:center;width:200px;padding:10px;background:#05080a;color:#e8f0ee;border:1px solid #2a3a3f">`;
+    document.body.appendChild(box);
+    const inp = $('code-in'); inp.focus();
+    inp.addEventListener('click', e=> e.stopPropagation());
+    inp.addEventListener('input', async ()=>{
+      const code = inp.value.replace(/\D/g,'').slice(0,4); inp.value = code;
+      if(code.length < 4) return;
+      try{
+        const r = await fetch('/api/unlock', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ code }) });
+        const d = r.ok ? await r.json() : {};
+        if(d.token){
+          token = d.token;
+          try{ localStorage.setItem(TOKEN_KEY, JSON.stringify({ token, exp: Date.now() + 7.5*3600*1000 })); }catch(e){}
+          box.remove(); return;
+        }
+      }catch(e){}
+      inp.value = '';
+    });
+  }
+  // no machine in this browser after a few seconds → this projector is on another computer
+  setTimeout(()=>{ if(!token && performance.now() - lastLocal > 3000) askCode(); }, 3500);
+  if(params.get('remote') === '1' && !token) askCode();
+  setTimeout(poll, 500);   // after the rest of the page is set up
 
   const MEDIA = m => m === 'portrait' || m === 'film';
   // the overall moment for this wall

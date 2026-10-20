@@ -558,6 +558,9 @@
   // the recording waits for the "start recording" button (or the space bar), so people
   // can put the headbands on and settle first. ?autostart=1 → start on its own like before
   const AUTO_START = params.get('autostart') === '1';
+  // projectors on ANOTHER computer get everything through the website (/api/show).
+  // on by default; ?screens=local → only projector windows in this same browser
+  const REMOTE_SCREENS = params.get('screens') !== 'local';
   const WORN_SENSORS = 3;        // green sensors per person that count as "wearing it"
   const WORN_HOLD_SECONDS = 5;   // both must stay worn this long before recording starts
   const INTENT_IDLE_SECONDS = 90;      // nobody typing → continue without words
@@ -1365,14 +1368,22 @@
     set(k, s, replace){
       this.snap[k] = replace ? { ...s } : { ...this.snap[k], ...s };
       if(this.bc) this.bc.postMessage({ t:'state', k, s:this.snap[k] });
+      this.post({ state:{ k, s:this.snap[k] } });
+    },
+    // the same messages also go through the website, for projectors on another computer
+    lastPost: 0,
+    post(body){
+      if(!REMOTE_SCREENS || !accessToken) return;
+      fetch('/api/show', { method:'POST', headers: authHeaders({ 'Content-Type':'application/json' }), body: JSON.stringify(body) }).catch(()=>{});
     },
     reset(){ PEOPLE.forEach(k=> this.set(k, { mode:'idle' }, true)); },
     // live brainwaves for the projectors, about 15 times a second
     live(phase, res, rec, sync){
-      if(!this.bc || !this.connected()) return;
       const now = performance.now();
-      if(now - this.lastLive < 66) return;
-      this.lastLive = now;
+      const local = this.bc && this.connected() && now - this.lastLive >= 66;
+      const remote = REMOTE_SCREENS && now - this.lastPost >= 500;      // twice a second over the internet
+      if(!local && !remote) return;
+      if(local) this.lastLive = now;
       const msg = { t:'live', phase, sync: sync.smooth, inSync: sync.inSync };
       PEOPLE.forEach(k=>{
         const e = P[k].eeg;
@@ -1385,7 +1396,8 @@
         }
         msg[k] = { wave, rel: res[k].rel, ref: rec[k].personal || null };
       });
-      this.bc.postMessage(msg);
+      if(local) this.bc.postMessage(msg);
+      if(remote){ this.lastPost = now; this.post({ live: msg }); }
     }
   };
   if(proj.bc) proj.bc.onmessage = ev=>{
@@ -1977,6 +1989,8 @@
     updateSourceUI();
     logSession('participant');
     refreshStats();
+    // projectors on another computer: start them from a clean, idle wall
+    PEOPLE.forEach(k=> proj.post({ state:{ k, s:proj.snap[k] } }));
 
     if(!window.isSecureContext){ flashError('this page needs to run on https:// (or localhost), camera won\'t work opened directly from a file.'); return; }
     if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ flashError('this browser has no camera API available'); return; }
