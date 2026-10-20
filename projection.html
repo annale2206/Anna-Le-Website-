@@ -287,6 +287,21 @@
       inp.value = '';
     });
   }
+  // ?code=1996 in the link → unlock on its own, no typing (handy after every refresh)
+  async function unlockWith(code){
+    try{
+      const r = await fetch('/api/unlock', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ code }) });
+      const d = r.ok ? await r.json() : {};
+      if(d.token){
+        token = d.token;
+        try{ localStorage.setItem(TOKEN_KEY, JSON.stringify({ token, exp: Date.now() + 7.5*3600*1000 })); }catch(e){}
+        const box = $('code-box'); if(box) box.remove();
+        return true;
+      }
+    }catch(e){}
+    return false;
+  }
+  if(!token && params.get('code')) unlockWith(params.get('code'));
   // no machine in this browser after a few seconds → this projector is on another computer
   setTimeout(()=>{ if(!token && performance.now() - lastLocal > 3000) askCode(); }, 3500);
   if(params.get('remote') === '1' && !token) askCode();
