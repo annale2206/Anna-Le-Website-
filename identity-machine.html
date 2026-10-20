@@ -734,6 +734,9 @@
       }
     }
   }
+  // ?code=1996 in the link → skip the keypad (useful when refreshing during a show)
+  if(params.get('code')) setTimeout(()=> checkCode(String(params.get('code')).slice(0, 8)), 300);
+
   const authHeaders = extra => ({ ...(extra || {}), 'x-im-token': accessToken || '' });
 
 
