@@ -5,6 +5,25 @@
 <style>#siteBack{position:fixed;left:14px;bottom:58px;z-index:40;font:600 12px/1 Figtree,system-ui,sans-serif;color:#eef1e6;background:rgba(22,33,27,.72);border:1px solid rgba(255,255,255,.18);padding:7px 11px;border-radius:999px;text-decoration:none}#siteBack:hover{background:rgba(242,180,90,.9);color:#2a1c08}</style>
 </head><body>
 <a id="siteBack" href="index.html">&larr; anna_le</a>
+<script>window.__p2p=new Promise(function(r){ window.__p2pResolve=r; setTimeout(function(){ r(null); },90000); });</script>
+<script type="module">
+// Multiplayer on annale22.com: guests find each other peer-to-peer (WebRTC), no server or sign-in needed.
+import {joinRoom} from './garden-life-p2p.js';
+try{
+  const room=joinRoom({appId:'annale22.com/garden-life'},'valley');
+  const act=room.makeAction('pres'), peers=new Map(); let last=null;
+  act.onMessage=(d,ctx)=>{ if(d&&typeof d==='object'&&!Array.isArray(d)) peers.set(ctx.peerId,{p:d,t:Date.now()}); };
+  room.onPeerJoin=id=>{ if(last) act.send(last,{target:id}).catch(()=>{}); };
+  room.onPeerLeave=id=>{ peers.delete(id); };
+  setInterval(()=>{ if(last) act.send(last).catch(()=>{}); },4000);
+  addEventListener('pagehide',()=>{ try{ room.leave(); }catch(e){} });
+  window.__p2pResolve({
+    presence:async st=>{ last=st; try{ await act.send(st); }catch(e){} },
+    peers:()=>{ const now=Date.now(), out=[]; for(const [id,v] of peers){ if(now-v.t>60000){ peers.delete(id); continue; } out.push({peer:id,presence:v.p,by:null,kind:'viewer',sameTab:false}); } return out; },
+    onPeers:()=>{}
+  });
+}catch(e){ window.__p2pResolve(null); }
+</script>
 <title>Garden Life · anna_le</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2808,7 +2827,7 @@ function welcome(){
 }
 welcome();
 $("whoHere").textContent="";
-(async()=>{ if(!window.claude||!window.claude.use) return;
+(async()=>{ if(!window.claude||!window.claude.use){ try{ const r=window.__p2p?await window.__p2p:null; if(r){ room=r; sendPresence(true); } }catch(e){} return; }
   try{ const [u,d,r]=await Promise.all([claude.use("user"),claude.use("db"),claude.use("room")]); user=u; db=d; room=r;
     if(user){ profile=await user.me(); myId=profile.id; const ni=$("nameIn"); if(ni&&!ni.value&&profile.name) ni.value=clean(profile.name,20); }
     if(room){ sendPresence(true); room.onPeers(()=>{},()=>{ room=null; }); }
