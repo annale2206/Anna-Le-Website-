@@ -55,7 +55,11 @@ body{background:var(--moss);color:var(--paper);font-family:var(--body);font-size
 .brand{font-family:var(--display);font-size:clamp(20px,3vw,28px);line-height:1.1;text-shadow:0 1px 14px rgba(0,0,0,.55)}
 .clock{font-size:13px;color:var(--paper);letter-spacing:.04em;margin-top:4px;text-shadow:0 1px 8px rgba(0,0,0,.8);font-variant-numeric:tabular-nums}
 .clock b{font-weight:600}
-.who-here{font-size:12px;color:var(--paper);opacity:.9;margin-top:2px;text-shadow:0 1px 8px rgba(0,0,0,.8)}
+.who-here{font-size:12px;color:var(--paper);opacity:.9;margin-top:2px;text-shadow:0 1px 8px rgba(0,0,0,.8);cursor:pointer}
+.who-here.some{display:inline-block;margin-top:6px;padding:5px 11px;border-radius:999px;background:var(--ember);color:#2a1c08;text-shadow:none;font-weight:600;opacity:1}
+.guests{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.guests li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:12px}
+.guests small{opacity:.75;display:block;font-size:12px}
 .tools{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:min(560px,70vw)}
 button{font:inherit;font-weight:500;color:var(--paper);background:var(--panel);border:1px solid var(--line);border-radius:12px;
   padding:9px 14px;cursor:pointer;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:border-color .2s,background .2s}
@@ -1730,9 +1734,20 @@ function updateOthers(dt,t){
   for(const [peer,o] of others) if(!seen.has(peer)){ scene.remove(o.c.g); if(o.bubble) scene.remove(o.bubble); others.delete(peer); }
   if(needNames.length) resolveNames(needNames);
   const n=others.size; const txt=n===0?"You're the only guest in the valley right now":n===1?"1 other guest is in the valley":`${n} other guests are in the valley`;
-  if($("whoHere").textContent!==txt) $("whoHere").textContent=txt;
+  const shown=n?txt+" · find them":txt; if($("whoHere").textContent!==shown){ $("whoHere").textContent=shown; $("whoHere").classList.toggle("some",n>0); }
 }
 
+
+/* ================= who's here: list guests and walk to one ================= */
+function openGuests(){ const list=[...others.values()];
+  if(!list.length){ openSheet(`<div class="eyebrow">Guests</div><h2>Just you right now</h2><p class="meta">When someone else steps into the valley they'll appear here, and you can walk straight to them.</p><div class="actions"><button class="primary" id="gX">Close</button></div>`); $("gX").onclick=closeSheet; return; }
+  const where=o=>o.cb>=0?"inside a cabin":Math.hypot(o.x-P.x,o.z-P.z)<12?"right near you":Math.round(Math.hypot(o.x-P.x,o.z-P.z))+" steps away";
+  openSheet(`<div class="eyebrow">Guests in the valley</div><h2>Who's here</h2><ul class="guests">${list.map((o,i)=>`<li><div><b>${esc(o.nm||"A guest")}</b><small>${where(o)}</small></div><button class="primary" data-gi="${i}">Walk to them</button></li>`).join("")}</ul><div class="actions"><button id="gX">Close</button></div>`);
+  $("gX").onclick=closeSheet;
+  $("card").querySelectorAll("[data-gi]").forEach(b=>b.onclick=()=>{ const o=list[+b.dataset.gi]; closeSheet(); if(P.seat) standUp();
+    const goal=()=>({x:o.x,z:o.z}); P.route={steps:buildRoute(o.x,o.z,o.cb>=0),goal,act:()=>toast(`You found ${o.nm||"a guest"}. Say hello!`,2600),arrive:1.8};
+    toast(`Walking to ${o.nm||"a guest"}…`,2200); }); }
+$("whoHere").onclick=openGuests;
 
 /* ================= choices above your head + walking there ================= */
 const nearestOf=(arr,f)=>{ let b=null,bd=1e9; for(const o of arr){ if(f&&!f(o)) continue; const d=Math.hypot(P.x-o.x,P.z-o.z); if(d<bd){ b=o; bd=d; } } return b; };
