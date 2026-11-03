@@ -166,9 +166,17 @@ textarea:focus-visible,input:focus-visible{outline:2px solid var(--ember)}
 @media (prefers-reduced-motion: reduce){ .bite{animation:none} }
 /* phone: tools fold into one Menu button so they never cover the choices above your head */
 #bMenu{display:none}
+.talk{display:none}
+.headmenu button.talkbtn{background:#fff3d6;color:#2a1c08;border-color:transparent;font-weight:600}
 .zoom{position:fixed;right:max(16px, env(safe-area-inset-right,0px));top:42%;display:flex;flex-direction:column;gap:8px;z-index:2}
 .zoom button{width:44px;height:44px;padding:0;font-size:22px;line-height:1;border-radius:50%}
 @media (max-width:640px), (pointer:coarse){
+  .talk{display:flex;position:fixed;right:max(14px, env(safe-area-inset-right,0px));bottom:calc(62px + env(safe-area-inset-bottom,0px));gap:10px;z-index:6}
+  .talk button{width:64px;height:64px;padding:0;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:12px;font-weight:700;
+    background:#fff3d6;color:#2a1c08;border:2px solid var(--ember);box-shadow:0 6px 18px rgba(0,0,0,.35)}
+  .talk button span{font-size:24px;line-height:1}
+  #bSay,#bEmo{display:none!important}
+  .headmenu .talkbtn{display:none}
   .stick{width:136px;height:136px} .stick i{width:56px;height:56px;margin:-28px 0 0 -28px}
   .headmenu{left:0!important;right:0!important;top:auto!important;bottom:calc(178px + env(safe-area-inset-bottom,0px))!important;transform:none!important;align-items:stretch;padding:0 12px}
   .headmenu .hm{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;max-width:none;scrollbar-width:none;padding:2px 2px 4px;-webkit-overflow-scrolling:touch}
@@ -218,6 +226,7 @@ textarea:focus-visible,input:focus-visible{outline:2px solid var(--ember)}
 <div class="headmenu" id="headMenu" hidden></div>
 <div class="notebook" id="notebook" hidden></div>
 <div class="stick" id="stick" hidden><i id="knob"></i></div>
+<div class="talk" id="talkDock"><button id="tSay" aria-label="Say something"><span>💬</span>Say</button><button id="tEmo" aria-label="Show how you feel"><span>😊</span>Feel</button></div>
 <div class="zoom" id="zoomBtns" hidden><button id="bZin" aria-label="Zoom in">+</button><button id="bZout" aria-label="Zoom out">&minus;</button></div>
 <div class="toast" id="toast"></div>
 <div class="sheet" id="sheet" hidden><div class="card" id="card" role="dialog" aria-modal="true"></div></div>
@@ -307,12 +316,16 @@ const rDist=(x,z)=>Math.abs(z-riverZ(x));
 const inRiver=(x,z,pad=0)=>rDist(x,z)<RW/2+1.4+pad;
 const CABIN={x:0,z:-9}, FIRE={x:6.5,z:6.5}, SPAWN={x:0,z:6}, BEDS={x:15,z:-7}, BERRY={x:-31,z:3}, SISTERS={x:-17,z:-25}, KITCHEN={x:-17,z:-9}, BEDROOM={x:17,z:-19}, ART={x:34,z:-20},
       MAPLE={x:-30,z:-27}, ORCHARD={x:6,z:-29}, ASTER={x:27,z:-3}, HILL={x:30,z:-36}, GROVE={x:-12,z:52}, DEERM={x:12,z:48}, STONE_X=-12, VEG={x:-30,z:-14}, BLUE={x:-43,z:-5}, RASP={x:-9,z:-34}, FALLS={x:26,z:0}, SWING={x:11.5,z:3}, MED={x:-3,z:-48};
+// more places to gather when the valley is busy: a meadow camp east of the cabin, and a river camp across the stepping stones
+const FIRE2={x:20,z:9}, FIRE3={x:3,z:31}, SWING2={x:14.5,z:10.5}, SWING3={x:-2.2,z:30};
+const CAMPS=[FIRE2,FIRE3,SWING2,SWING3];
+const nearCamp=(x,z,r)=>CAMPS.some(c=>Math.hypot(x-c.x,z-c.z)<r);
 const BANK=x=>riverZ(x)-RW/2-1.6;
 const RBENCH={x:-6,z:BANK(-6)-.4};
 function B(x,z){ let h=(fbm(x*.016+10,z*.016+10)-.5)*14; const r=Math.hypot(x,z); if(r>100){ const k=r-100; h+=k*k*.012; }
   h+=7*Math.exp(-((x-HILL.x)**2+(z-HILL.z)**2)/260);
   const f=1-smooth(8,30,rDist(x,z)); return h*(1-f)+.9*f; }
-const FLATS=[{c:CABIN,r:21},{c:BEDS,r:9},{c:BERRY,r:13},{c:SISTERS,r:10},{c:ASTER,r:14},{c:GROVE,r:15},{c:MAPLE,r:11},{c:DEERM,r:14},{c:ORCHARD,r:13},{c:KITCHEN,r:12},{c:BEDROOM,r:11},{c:ART,r:12},{c:VEG,r:14},{c:BLUE,r:11},{c:RASP,r:9},{c:MED,r:12}].map(f=>Object.assign(f,{t:Math.max(.7,B(f.c.x,f.c.z))}));
+const FLATS=[{c:CABIN,r:21},{c:BEDS,r:9},{c:BERRY,r:13},{c:SISTERS,r:10},{c:ASTER,r:14},{c:GROVE,r:15},{c:MAPLE,r:11},{c:DEERM,r:14},{c:ORCHARD,r:13},{c:KITCHEN,r:12},{c:BEDROOM,r:11},{c:ART,r:12},{c:VEG,r:14},{c:BLUE,r:11},{c:RASP,r:9},{c:MED,r:12},{c:FIRE2,r:10},{c:FIRE3,r:11}].map(f=>Object.assign(f,{t:Math.max(.7,B(f.c.x,f.c.z))}));
 function flat(h,x,z,c,r,t){ const f=1-smooth(r*.55,r,Math.hypot(x-c.x,z-c.z)); return h*(1-f)+t*f; }
 function H(x,z){ let h=B(x,z); for(const f of FLATS) h=flat(h,x,z,f.c,f.r,f.t);
   const d=rDist(x,z); const bank=smooth(RW/2-1.4,RW/2+1.6,d); h=h*bank+(-1.6)*(1-bank);
@@ -450,7 +463,7 @@ const STONE_TOP=.32;
 const obstacles=[], canopies=[];
 const rockN=150, rocks=new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1,0),std(0x8a8c84),rockN); rocks.castShadow=rocks.receiveShadow=true;
 for(let i=0;i<rockN;i++){ let x,z; const nr=i<80;
-  if(nr){ x=(rnd()-.5)*220; if(Math.abs(x-STONE_X)<3||Math.abs(x)<3) x+=7; z=riverZ(x)+(rnd()<.5?-1:1)*(RW/2+.5+rnd()*2.5); } else { x=(rnd()-.5)*220; z=(rnd()-.5)*220; if(Math.hypot(x-CABIN.x,z-CABIN.z)<22||nearCabin(x,z,4)) { x+=45; } }
+  if(nr){ x=(rnd()-.5)*220; if(Math.abs(x-STONE_X)<3||Math.abs(x)<3) x+=7; z=riverZ(x)+(rnd()<.5?-1:1)*(RW/2+.5+rnd()*2.5); } else { x=(rnd()-.5)*220; z=(rnd()-.5)*220; if(Math.hypot(x-CABIN.x,z-CABIN.z)<22||nearCabin(x,z,4)) { x+=45; } } if(nearCamp(x,z,5)) x+=40;
   const s=(nr?.25:.3)+rnd()*rnd()*(nr?1:1.6); M.compose(V.set(x,H(x,z)+s*.15,z),Q.setFromEuler(E.set(rnd()*3,rnd()*3,rnd()*3)),S3.set(s*1.3,s*.75,s)); rocks.setMatrixAt(i,M);
   rocks.setColorAt(i,tmp.set(0x8a8c84).multiplyScalar(.7+rnd()*.45)); if(s>.32) obstacles.push({x,z,r:s*1.05}); }
 scene.add(rocks);
@@ -459,6 +472,7 @@ function clearOf(x,z,m){
   if(Math.hypot(x-BEDS.x,z-BEDS.z)<8+m) return false; if(Math.hypot(x-SISTERS.x,z-SISTERS.z)<8+m) return false;
   if(Math.hypot(x-BERRY.x,z-BERRY.z)<10+m) return false; if(Math.hypot(x-ASTER.x,z-ASTER.z)<11+m) return false;
   if(Math.hypot(x-HILL.x,z-HILL.z)<6+m) return false; if(Math.hypot(x-VEG.x,z-VEG.z)<11.5+m) return false; if(Math.hypot(x-BLUE.x,z-BLUE.z)<8+m) return false; if(Math.hypot(x-RASP.x,z-RASP.z)<7+m) return false; if(Math.hypot(x-SWING.x,z-SWING.z)<5+m) return false; if(Math.hypot(x-FALLS.x,z-(riverZ(FALLS.x)+9))<10+m) return false; if(Math.hypot(x-ORCHARD.x,z-ORCHARD.z)<11+m) return false; if(Math.hypot(x-DEERM.x,z-DEERM.z)<10+m) return false; if(inRiver(x,z,1+m)) return false; if(pathD(x,z)<2.4+m) return false;
+  if(nearCamp(x,z,6+m)) return false;
   return Math.hypot(x,z)<150; }
 
 /* ================= trees ================= */
@@ -531,7 +545,7 @@ function scatter(n,geo,mat,place){ const im=new THREE.InstancedMesh(geo,mat,n); 
 const gc=new THREE.Color();
 const grassIM=scatter(touch?13000:52000,bladeGeo(.028,.3,0x1d6414,0x82d63a),addSway(new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide}),.09),()=>{
   const ang=rnd()*6.283, rr=Math.sqrt(rnd())*85, x=SPAWN.x+Math.cos(ang)*rr*1.1, z=SPAWN.z+Math.sin(ang)*rr; const h=H(x,z);
-  if(h<.35||pathD(x,z)<1.1||inGBed(x,z)||nearCabin(x,z,.6)||Math.hypot(x-FIRE.x,z-FIRE.z)<2.6||Math.abs(x-BEDS.x)<5&&Math.abs(z-BEDS.z)<4) return null;
+  if(h<.35||pathD(x,z)<1.1||inGBed(x,z)||nearCabin(x,z,.6)||Math.hypot(x-FIRE.x,z-FIRE.z)<2.6||nearCamp(x,z,2.4)||Math.abs(x-BEDS.x)<5&&Math.abs(z-BEDS.z)<4) return null;
   if(Math.abs(x-SISTERS.x)<5&&Math.abs(z-SISTERS.z)<5) return null;
   const s=.55+rnd()*.7; return {x,y:h-.03,z,s,sy:s*(.7+rnd()*.6),rx:(rnd()-.5)*.35,rz:(rnd()-.5)*.35,c:gc.setScalar(.8+rnd()*.35)}; });
 const stemGeo=new THREE.CylinderGeometry(.012,.016,1,4).translate(0,.5,0);
@@ -554,7 +568,7 @@ function flowerField(n,place,headGeo,colors,hmin,hmax){
   pts.forEach((p,i)=>{ M.compose(V.set(p.x,p.y,p.z),Q.setFromEuler(E.set((rnd()-.5)*.25,rnd()*6,(rnd()-.5)*.25)),S3.set(1,p.s,1)); stemIm.setMatrixAt(i,M); headIm.setMatrixAt(i,M); headIm.setColorAt(i,p.c); if(cIm) cIm.setMatrixAt(i,M); });
   [stemIm,headIm,cIm].forEach(m=>{ if(m){ m.userData.full=pts.length; FLOWER_IMS.push(m); scene.add(m); } }); return pts; }
 const around=(center,radius)=>()=>{ const a=rnd()*6.283,r=Math.sqrt(rnd())*radius,x=center.x+Math.cos(a)*r,z=center.z+Math.sin(a)*r,h=H(x,z);
-  if(h<.4||pathD(x,z)<1.2||nearCabin(x,z,.8)||inRiver(x,z,.5)||inGBed(x,z)) return null; return {x,y:h,z}; };
+  if(h<.4||pathD(x,z)<1.2||nearCabin(x,z,.8)||inRiver(x,z,.5)||inGBed(x,z)||nearCamp(x,z,3.4)) return null; return {x,y:h,z}; };
 const inBeds=()=>{ const b=GBEDS[rnd()<.5?0:1]; const x=b.x0+.3+rnd()*(b.x1-b.x0-.6),z=b.z0+.3+rnd()*(b.z1-b.z0-.6); return {x,y:H(x,z),z}; };
 const asterPts=flowerField(touch?350:1300,around(ASTER,16),daisyGeo,[0x9a7ad8,0xb39ae8,0x7f5fc8,0xc4b2f0],.45,.85);
 flowerField(touch?300:1100,around(ASTER,17),plumeGeo,[0xe8c440,0xf0d050,0xd8b030],.55,1.05);
@@ -1380,7 +1394,7 @@ function nearest(){
   rabbits.forEach(r=>cand(r,2.6,"Say hello to the rabbit",()=>greetRabbit(r)));
   if(hunt&&hunt.deer) cand(hunt.deer,4.5,"Ask the deer for permission",askDeer);
   PLOTS.forEach((pl,i)=>cand(pl,1.9,plotLabel(i),()=>usePlot(i)));
-  cand(SWING,1.9,"Sit on the swing",sitSwing);
+  SWINGS.forEach(sw=>cand(sw,1.9,"Sit on the swing",()=>sitSwing(sw)));
   vegBeds.forEach(o=>cand(o,1.9,curSeason==="winter"?null:vegRipe(o)>0?`Pick ${o.kind==="lettuce"||o.kind==="cabbage"||o.kind==="broccoli"?"a head of "+o.kind:/^[aeiou]/.test(o.kind)?"an "+o.kind:"a "+o.kind}`:null,()=>pickVeg(o)));
   wildTrees.forEach(o=>cand(o,2.4,wildRipe(o)>0?`Pick a ${FRUITS[o.t].n}`:null,()=>pickWild(o)));
   cand(cat,1.8,"Pet the cat",petCat);
@@ -1405,7 +1419,7 @@ function basketColors(){ const key=BASKET_ORDER.map(k=>have(k)).join(","); if(ke
 function sitAt(seat,mode){ P.seat=seat; P.mode=mode; }
 function standUp(){ if(!P.seat) { P.mode="walk"; return; } const s=P.seat; P.seat=null; P.mode="walk";
   if(s.free){ C.g.position.set(P.x,groundY(P.x,P.z),P.z); return; }
-  if(s.swing){ P.x=SWING.x; P.z=SWING.z-1.2; unstick(null); C.g.position.set(P.x,groundY(P.x,P.z),P.z); C.g.rotation.x=0; return; }
+  if(s.swing){ const sw=s.sw||SWINGS[0]; P.x=sw.x; P.z=sw.z-1.2; unstick(null); C.g.position.set(P.x,groundY(P.x,P.z),P.z); C.g.rotation.x=0; return; }
   if(s.out){ P.x=s.out.x; P.z=s.out.z; unstick(s.cabin); C.g.position.set(P.x,groundY(P.x,P.z),P.z); return; }
   const back=s.indoor?.9:1.1; const sc=s.cabin||(s.indoor?CABS[0]:null); P.x=s.x-Math.sin(s.face)*back; P.z=s.z-Math.cos(s.face)*back; if(blocked(P.x,P.z)){ P.x=s.x+Math.sin(s.face)*back; P.z=s.z+Math.cos(s.face)*back; }
   if(sc&&cabinAt(P.x,P.z)!==sc){ const dx=sc.x-s.x,dz=sc.z-s.z,d=Math.hypot(dx,dz)||1; P.x=s.x+dx/d*.9; P.z=s.z+dz/d*.9; }
@@ -1735,7 +1749,7 @@ $("bGuest").onclick=openGuestbook;
 /* ================= together: other guests in real time ================= */
 const clean=(v,max)=>String(v||"").replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2060-\u206f\ufeff]/g,"").replace(/\s+/g," ").trim().slice(0,max);
 const others=new Map(); let names={}, lastSent="", sayText="", sayAt=0;
-function bubbleFor(text){ const s=textSprite(text,{size:30,bg:"rgba(245,242,232,.95)",fg:"#1b2a22",maxW:420}); s.center.set(.5,0); s.scale.multiplyScalar(.85); s.userData.until=performance.now()+8000; scene.add(s); return s; }
+function bubbleFor(text){ const s=textSprite(text,{size:40,bg:"rgba(245,242,232,.95)",fg:"#1b2a22",maxW:520}); s.center.set(.5,0); s.scale.multiplyScalar(.95); s.userData.until=performance.now()+10000; scene.add(s); return s; }
 function openSay(){
   openSheet(`<div class="eyebrow">Say something</div><h2>Speak to whoever is here</h2><p class="meta">${room?"Guests in the valley right now will see it over your head for a few seconds.":"You're the only one here, or this view can't connect to other guests. Your words still float up for a moment."}</p>
     <input type="text" id="sayIn" maxlength="120" placeholder="Hello from the river!" autocomplete="off">
@@ -1746,15 +1760,15 @@ function openSay(){
   $("sayGo").onclick=()=>go(inp.value); $("sayX").onclick=closeSheet; inp.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); go(inp.value); } };
   $("card").querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>go(b.dataset.s));
 }
-$("bSay").onclick=openSay;
+$("bSay").onclick=openSay; $("tSay").onclick=openSay;
 const EMOJI=["😊","😂","🥰","😴","🤔","😢","😮","😎","🥳","👋","🙏","🌸","🍓","🐟","🎶","☕","🌙","✨"];
 const isEmote=t=>typeof t==="string"&&t.length<=8&&!/[A-Za-z0-9]/.test(t)&&/\p{Extended_Pictographic}/u.test(t);
 function emoteSprite(e){ const c=document.createElement("canvas"); c.width=c.height=128; const g=c.getContext("2d"); g.font="96px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif"; g.textAlign="center"; g.textBaseline="middle"; g.fillText(e,64,70);
-  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false,transparent:true})); s.center.set(.5,0); s.scale.set(.62,.62,1); s.renderOrder=11; s.userData.until=performance.now()+6000; scene.add(s); return s; }
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false,transparent:true})); s.center.set(.5,0); s.scale.set(1,1,1); s.renderOrder=11; s.userData.until=performance.now()+8000; scene.add(s); return s; }
 function emote(e){ sayText=e; sayAt=Date.now(); if(myBubble) scene.remove(myBubble); myBubble=emoteSprite(e); P.emote=performance.now(); sendPresence(true); closeSheet(); }
 function openEmo(){ openSheet(`<div class="eyebrow">Feelings</div><h2>How do you feel?</h2><div class="emo">${EMOJI.map(e=>`<button data-e="${e}" aria-label="${e}">${e}</button>`).join("")}</div><div class="actions"><button id="emX">Close</button></div>`,{low:true});
   $("emX").onclick=closeSheet; $("card").querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>emote(b.dataset.e)); }
-$("bEmo").onclick=openEmo;
+$("bEmo").onclick=openEmo; $("tEmo").onclick=openEmo;
 function sendPresence(force){ if(!room) return; const st={x:+P.x.toFixed(2),z:+P.z.toFixed(2),y:+C.g.position.y.toFixed(2),f:+P.face.toFixed(2),m:P.mode,mv:+(C.speed||0).toFixed(2),
     cb:P.insideC?CABS.indexOf(P.insideC):-1,lk:lookArr(),nm:J.name||"",b:Math.min(10,have("strawberry")),in:P.inside?1:0,say:sayText,sayAt,id:myId||null,gid:GID};
   const s=JSON.stringify(st); if(!force&&s===lastSent) return; lastSent=s; room.presence(st).catch(()=>{}); }
@@ -1763,7 +1777,7 @@ function setLabel(o,name){ if(o.label) o.c.g.remove(o.label); o.label=textSprite
 function updateOthers(dt,t){
   if(!room) return; const ps=room.peers(); const seen=new Set(); const needNames=[];
   for(const p of ps){ if(p.sameTab||p.kind!=="viewer") continue; const pr=p.presence||{}; if(typeof pr.x!=="number") continue; seen.add(p.peer);
-    let o=others.get(p.peer); if(!o){ o={c:makeChar(),by:p.by||pr.id||null,x:pr.x,z:pr.z,y:pr.y||0,face:pr.f||0,bubble:null,lastSay:0}; scene.add(o.c.g); others.set(p.peer,o); setLabel(o,o.by?names[o.by]:""); if(o.by&&!(o.by in names)) needNames.push(o.by); }
+    let o=others.get(p.peer); if(!o){ o={c:makeChar(),by:p.by||pr.id||null,x:pr.x,z:pr.z,y:pr.y||0,face:pr.f||0,bubble:null,lastSay:pr.sayAt||0,seenAt:performance.now()}; scene.add(o.c.g); others.set(p.peer,o); setLabel(o,o.by?names[o.by]:""); if(o.by&&!(o.by in names)) needNames.push(o.by); }
     o.cb=Number.isInteger(pr.cb)?pr.cb:-1;
     const nm=typeof pr.nm==="string"?clean(pr.nm,24):""; if(nm&&nm!==o.nm){ o.nm=nm; setLabel(o,nm); }
     const lk=Array.isArray(pr.lk)?pr.lk.map(n=>Math.max(0,Math.min(5,n|0))):[0,0,1]; const lkKey=lk.join(","); if(o.lk!==lkKey){ o.lk=lkKey; applyLookTo(o.c,lk); }
@@ -1772,7 +1786,7 @@ function updateOthers(dt,t){
     const mode=["walk","sit","read","tea","lie","fish"].includes(pr.m)?pr.m:"walk";
     poseChar(o.c,{mode,moving:Math.min(1.6,Math.max(0,+pr.mv||0)),face:o.face,berries:Math.max(0,Math.min(10,pr.b|0))},dt,t);
     o.c.g.visible=!(pr.in&&!P.inside)||true;
-    if(typeof pr.say==="string"&&pr.say&&pr.sayAt!==o.lastSay&&Date.now()-(+pr.sayAt||0)<10000){ o.lastSay=pr.sayAt; if(o.bubble) scene.remove(o.bubble); o.bubble=isEmote(pr.say)?emoteSprite(pr.say):bubbleFor(pr.say.slice(0,120)); }
+    if(typeof pr.say==="string"&&pr.say&&pr.sayAt!==o.lastSay){ o.lastSay=pr.sayAt; if(o.bubble) scene.remove(o.bubble); o.bubble=isEmote(pr.say)?emoteSprite(pr.say):bubbleFor(pr.say.slice(0,120)); }
     if(o.bubble){ o.bubble.position.set(o.c.g.position.x,o.c.g.position.y+2.64,o.c.g.position.z); if(performance.now()>o.bubble.userData.until){ scene.remove(o.bubble); o.bubble=null; } } }
   for(const [peer,o] of others) if(!seen.has(peer)){ scene.remove(o.c.g); if(o.bubble) scene.remove(o.bubble); others.delete(peer); }
   if(needNames.length) resolveNames(needNames);
@@ -1854,7 +1868,7 @@ function goTo(id){
     case "veggies":{ const v=nearestOf(vegBeds,o=>vegRipe(o)>0)||nearestOf(vegBeds); g=v; arrive=1.9; label="the veggie garden"; act=()=>{ if(vegRipe(v)>0) pickVeg(v); else toast("These are still growing. Try another bed."); }; break; }
     case "meditate":{ const c=MEDC, sp=CW(c,0,-.6); g=sp; arrive=.6; indoor=true; label="the meditation cabin"; act=meditate; break; }
     case "firefun": openCampfire(); return;
-    case "swing": g={x:SWING.x,z:SWING.z-1.3}; arrive=1; label="the swing"; act=sitSwing; break;
+    case "swing":{ const sw=nearestSwing(); g={x:sw.x,z:sw.z-1.3}; arrive=1; label="the swing"; act=()=>sitSwing(sw); break; }
     case "raspberries":{ const p=pick("raspberry",o=>o.left>o.max/2); g=p; arrive=1.4; label="the raspberry canes"; act=()=>{ if(!p.asked||p.left>p.max/2) usePatch(p); }; break; }
     case "falls":{ const sp={x:FALLS.x+1.5,z:BANK(FALLS.x+1.5)-.3}; g=sp; arrive=.8; label="the waterfall"; act=()=>{ P.face=0; sitAt({x:P.x,y:groundY(P.x,P.z),z:P.z,face:Math.atan2(FALLS.x-P.x,FALL_Z-P.z),free:1,ground:1},"sit"); hmKey=""; toast("You sit on the bank. The waterfall roars softly, and cool mist drifts across the river.",4200); }; break; }
     case "blueberries":{ const p=pick("blueberry",o=>o.left>o.max/2); g=p; arrive=1.4; label="the blueberry bushes"; act=()=>{ if(!p.asked||p.left>p.max/2) usePatch(p); }; break; }
@@ -1913,7 +1927,7 @@ function hmContext(){ const c=P.insideC, L=[], d=(o,r)=>Math.hypot(P.x-o.x,P.z-o
   if(d(VEG,12)) L.push(["veggies","Pick vegetables"]);
   if(d(BLUE,11)) L.push(["blueberries","Pick blueberries"]);
   if(d(RASP,10)) L.push(["raspberries","Pick raspberries"]);
-  if(d(SWING,9)) L.push(["swing","Play on the swing"]);
+  if(SWINGS.some(sw=>d(sw,9))) L.push(["swing","Play on the swing"]);
   if(Math.hypot(P.x-FALLS.x,P.z-FALL_Z)<20) L.push(["falls","Sit by the waterfall"]);
   if(d(BERRY,9)) L.push(["berries","Pick strawberries"]);
   if(d(BEDS,10)) L.push(["plant","Plant strawberries"]);
@@ -1937,8 +1951,8 @@ function buildHeadMenu(){ const el=$("headMenu"), seated=!!P.seat;
   const row2=!seated?[["sit","Sit here"],["lie","Lie down here"]]:P.seat.fire?[["firefun","Cook at the fire"],["stand","Stand up"]]:P.seat.free?(P.mode==="lie"?[["sit","Sit up"],["stand","Stand up"]]:[["lie","Lie down"],["stand","Stand up"]]):[["stand","Stand up"]];
   el.innerHTML=(moreOpen?`<div class="more">${HM_MORE.map(([id,l])=>`<button data-go="${id}">${l}</button>`).join("")}</div>`:"")+
     (`<div class="hm">${hmList.map(([id,l])=>`<button data-go="${id}"${id==="more"?` aria-expanded="${moreOpen}"`:""}${id==="more"?"":' class="primary"'}>${id==="more"&&moreOpen?"Fewer choices":l}</button>`).join("")}</div>`)+
-    `<div class="hm">${row2.map(([id,l])=>`<button data-go="${id}">${l}</button>`).join("")}</div>`;
-  el.querySelectorAll("[data-go]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); const id=b.dataset.go; if(id==="more"){ moreOpen=!moreOpen; hmKey=""; buildHeadMenu(); } else goTo(id); }); }
+    `<div class="hm"><button class="talkbtn" data-go="say">💬 Say something</button><button class="talkbtn" data-go="emo">😊 Feelings</button>${row2.map(([id,l])=>`<button data-go="${id}">${l}</button>`).join("")}</div>`;
+  el.querySelectorAll("[data-go]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); const id=b.dataset.go; if(id==="more"){ moreOpen=!moreOpen; hmKey=""; buildHeadMenu(); } else if(id==="say") openSay(); else if(id==="emo") openEmo(); else goTo(id); }); }
 const hmV=new THREE.Vector3(); let hmBuilt=false;
 let hmKey="";
 function updateHeadMenu(){ const el=$("headMenu"), seated=!!P.seat&&!P.seat.sky;
@@ -2280,23 +2294,66 @@ function updateLamps(k){ lampHeadMat.emissiveIntensity=k*1.8; lampGlow.material.
   if((lampPick++)%20===0){ const near=LAMPS.map(l=>[Math.hypot(l.x-P.x,l.z-P.z),l]).sort((a,b)=>a[0]-b[0]).slice(0,lampPool.length); lampPool.forEach((L,i)=>{ const l=near[i]&&near[i][1]; if(l) L.position.set(l.x,l.y+1.75,l.z); }); }
   lampPool.forEach(L=>L.intensity=k*.8); }
 
-/* ================= swing ================= */
-const SWG={amp:0,t:0,ang:0};
-const swingPivot=new THREE.Group();
-{ const g=new THREE.Group(), y=H(SWING.x,SWING.z); g.position.set(SWING.x,y,SWING.z); scene.add(g); const wood=smt(0x7a5a3a), rope=std(0xd8c8a0);
+/* ================= more campfires: always burning, logs to sit on together ================= */
+const EXTRA_FIRES=[FIRE2,FIRE3].map(c=>{ const y=H(c.x,c.z), g=new THREE.Group(); g.position.set(c.x,y,c.z); scene.add(g);
+  const sm=std(0x8a8c84), dw=smt(0x4a3020), lw=smt(0x7a5638);
+  for(let i=0;i<10;i++){ const a=i/10*6.283,s=new THREE.Mesh(new THREE.DodecahedronGeometry(.26,0),sm); s.position.set(Math.cos(a)*.85,.1,Math.sin(a)*.85); s.castShadow=true; g.add(s); }
+  for(let i=0;i<5;i++){ const l=new THREE.Mesh(new THREE.CylinderGeometry(.08,.09,1.1,6),dw); l.rotation.z=1.2; l.rotation.y=i*1.25; l.position.y=.3; g.add(l); }
+  const seats=[]; for(const a of [.6,2.2,3.8,5.4]){ const b=new THREE.Mesh(new THREE.CylinderGeometry(.24,.24,1.8,8),lw); b.rotation.z=Math.PI/2; b.rotation.y=-a+Math.PI/2; b.position.set(Math.cos(a)*2.4,.24,Math.sin(a)*2.4); b.castShadow=true; g.add(b);
+    const wx=c.x+Math.cos(a)*2.4, wz=c.z+Math.sin(a)*2.4; obstacles.push({x:wx,z:wz,r:.6}); seats.push({x:wx,z:wz,y:y+.32,face:Math.atan2(c.x-wx,c.z-wz)}); }
+  const fl=[]; for(let i=0;i<3;i++){ const f=new THREE.Mesh(new THREE.ConeGeometry(.3-i*.06,1-i*.15,6),new THREE.MeshBasicMaterial({color:[0xff8a2a,0xffb040,0xffe070][i],transparent:true,opacity:.9})); f.position.y=.55; g.add(f); fl.push(f); }
+  const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:dotTex,color:0xff9a40,transparent:true,opacity:.55,depthWrite:false,blending:THREE.AdditiveBlending})); glow.scale.set(4.5,4.5,1); glow.position.y=.8; g.add(glow);
+  obstacles.push({x:c.x,z:c.z,r:1.1});
+  seats.forEach(st=>spots.push({x:st.x+(c.x-st.x)*.25,z:st.z+(c.z-st.z)*.25,r:1.1,label:()=>"Sit by the fire",act:()=>{ sitAt({x:st.x,y:st.y-.25,z:st.z,face:st.face},"sit"); hmKey=""; }}));
+  return {c,fl,glow}; });
+function updateExtraFires(t){ for(const f of EXTRA_FIRES){ f.fl.forEach((m,i)=>{ const k=1+Math.sin(t*(9+i*3)+i+f.c.x)*.12; m.scale.set(1,k,1); m.rotation.y=t*(1+i); }); f.glow.material.opacity=.45+Math.sin(t*7+f.c.z)*.1; } }
+
+/* ================= signposts: wooden signs that name each place ================= */
+function makeSign(x,z,text,look){ const g=new THREE.Group(), y=H(x,z); g.position.set(x,y,z); g.rotation.y=Math.atan2(look.x-x,look.z-z); scene.add(g);
+  const wood=smt(0x6a4a2e,{roughness:.85});
+  const post=new THREE.Mesh(new THREE.CylinderGeometry(.06,.07,1.7,8),wood); post.position.y=.85; g.add(post);
+  const c=document.createElement("canvas"); c.width=512; c.height=160; const k=c.getContext("2d");
+  k.fillStyle="#e9d6ae"; k.fillRect(0,0,512,160); k.strokeStyle="#7a5530"; k.lineWidth=14; k.strokeRect(7,7,498,146);
+  for(let i=0;i<6;i++){ k.strokeStyle="rgba(122,85,48,.12)"; k.lineWidth=2; k.beginPath(); k.moveTo(14,30+i*20); k.bezierCurveTo(180,24+i*21,330,36+i*19,498,28+i*20); k.stroke(); }
+  k.fillStyle="#3a2614"; let fs=64; k.font=`700 ${fs}px Georgia, "Young Serif", serif`; while(k.measureText(text).width>460&&fs>30){ fs-=4; k.font=`700 ${fs}px Georgia, "Young Serif", serif`; }
+  k.textAlign="center"; k.textBaseline="middle"; k.fillText(text,256,84);
+  const tex=new THREE.CanvasTexture(c); tex.encoding=THREE.sRGBEncoding; tex.anisotropy=renderer.capabilities.getMaxAnisotropy();
+  const board=new THREE.Mesh(new THREE.BoxGeometry(1.6,.5,.06),[wood,wood,wood,wood,new THREE.MeshStandardMaterial({map:tex,roughness:.8}),new THREE.MeshStandardMaterial({map:tex,roughness:.8})]); board.position.set(0,1.5,.05); board.castShadow=true; g.add(board);
+  obstacles.push({x,z,r:.25}); return g; }
+[[2.6,3.7,"Flower Garden",{x:2.6,z:9}],
+ [12.2,-25.5,"Fruit Garden",BEDS],
+ [-20.6,-1.2,"Chicken House",{x:-12,z:-4}],
+ [-3.4,9.6,"Fishing Spot",{x:-3,z:4}],
+ [-23.5,4.8,"Berry Patch",{x:-8,z:3}],
+ [-14.4,-21.8,"Three Sisters Garden",{x:-12,z:-14}],
+ [-20.4,-11.6,"Veggie Garden",{x:-12,z:-12}],
+ [3.4,7.6,"Campfire",{x:0,z:4}],
+ [FIRE2.x-3.6,FIRE2.z-3.4,"Meadow Camp",FIRE],
+ [FIRE3.x-1.5,FIRE3.z-4.2,"River Camp",{x:-12,z:24}],
+ [SWING.x-2.4,SWING.z+1.2,"Swing",{x:6,z:3}]
+].forEach(([x,z,t,l])=>makeSign(x,z,t,l));
+
+/* ================= swings (three of them, so friends can swing side by side) ================= */
+const SWINGS=[SWING,SWING2,SWING3].map(p=>({x:p.x,z:p.z,amp:0,t:Math.random()*5,ang:0,pivot:new THREE.Group()}));
+const SWG=SWINGS[0];
+SWINGS.forEach(sw=>{ const g=new THREE.Group(), y=H(sw.x,sw.z); g.position.set(sw.x,y,sw.z); scene.add(g); const wood=smt(0x7a5a3a), rope=std(0xd8c8a0);
   for(const sx of [-1.3,1.3]) for(const sz of [-1,1]){ const L=new THREE.Mesh(new THREE.CylinderGeometry(.06,.07,2.85,7),wood); L.position.set(sx,1.33,sz*.42); L.rotation.x=-sz*.33; g.add(L); }
   const beam=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,2.9,8),wood); beam.rotation.z=Math.PI/2; beam.position.y=2.68; g.add(beam);
-  swingPivot.position.y=2.66; g.add(swingPivot);
-  for(const sx of [-.32,.32]){ const r=new THREE.Mesh(new THREE.CylinderGeometry(.015,.015,2.08,5),rope); r.position.set(sx,-1.04,0); swingPivot.add(r); }
-  const seat=new THREE.Mesh(new THREE.BoxGeometry(.8,.06,.32),smt(0xa86a3a)); seat.position.y=-2.1; swingPivot.add(seat);
-  const fl=[0xe2566e,0xf2b45a,0xa98be0]; for(let k=0;k<6;k++){ const f=new THREE.Mesh(new THREE.SphereGeometry(.05,6,5),smt(fl[k%3])); f.position.set(k<3?-.32:.32,-1.98-(k%3)*.3+.6,0); swingPivot.add(f); }
+  const pv=sw.pivot; pv.position.y=2.66; g.add(pv);
+  for(const sx of [-.32,.32]){ const r=new THREE.Mesh(new THREE.CylinderGeometry(.015,.015,2.08,5),rope); r.position.set(sx,-1.04,0); pv.add(r); }
+  const seat=new THREE.Mesh(new THREE.BoxGeometry(.8,.06,.32),smt(0xa86a3a)); seat.position.y=-2.1; pv.add(seat);
+  const fl=[0xe2566e,0xf2b45a,0xa98be0]; for(let k=0;k<6;k++){ const f=new THREE.Mesh(new THREE.SphereGeometry(.05,6,5),smt(fl[k%3])); f.position.set(k<3?-.32:.32,-1.98-(k%3)*.3+.6,0); pv.add(f); }
   g.traverse(o=>{ if(o.isMesh) o.castShadow=true; });
-  obstacles.push({x:SWING.x-1.3,z:SWING.z,r:.5},{x:SWING.x+1.3,z:SWING.z,r:.5}); }
-function sitSwing(){ P.route=null; P.x=SWING.x; P.z=SWING.z; sitAt({x:SWING.x,y:0,z:SWING.z,face:0,swing:1},"sit"); SWG.amp=Math.max(SWG.amp,.1);
+  obstacles.push({x:sw.x-1.3,z:sw.z,r:.5},{x:sw.x+1.3,z:sw.z,r:.5}); });
+const swingPivot=SWINGS[0].pivot;
+const nearestSwing=()=>SWINGS.reduce((b,s)=>Math.hypot(s.x-P.x,s.z-P.z)<Math.hypot(b.x-P.x,b.z-P.z)?s:b,SWINGS[0]);
+function sitSwing(sw){ sw=sw&&sw.pivot?sw:nearestSwing(); P.route=null; P.x=sw.x; P.z=sw.z; sitAt({x:sw.x,y:0,z:sw.z,face:0,swing:1,sw},"sit"); sw.amp=Math.max(sw.amp,.1);
   openSheet(`<div class="eyebrow">The swing</div><h2>Up and back</h2><p>Lean back, kick your feet, and watch the river come and go.</p><div class="actions"><button id="swUp">Swing higher</button><button class="primary" id="swOff">Hop off</button></div>`,{low:true,close:()=>{ standUp(); }});
-  $("swUp").onclick=()=>{ SWG.amp=Math.min(.5,SWG.amp+.09); chirp(700); }; $("swOff").onclick=closeSheet; }
+  $("swUp").onclick=()=>{ sw.amp=Math.min(.5,sw.amp+.09); chirp(700); }; $("swOff").onclick=closeSheet; }
 const swV=new THREE.Vector3();
-function updateSwing(dt){ const on=P.seat&&P.seat.swing; SWG.amp=on?Math.min(.5,SWG.amp+dt*.006):SWG.amp*Math.pow(.6,dt); SWG.t+=dt; SWG.ang=SWG.amp*Math.sin(SWG.t*1.55); swingPivot.rotation.x=SWG.ang;
+function updateSwing(dt){ let SWG=null;
+  for(const sw of SWINGS){ const mine=P.seat&&P.seat.sw===sw; sw.amp=mine?Math.min(.5,sw.amp+dt*.006):sw.amp*Math.pow(.6,dt); sw.t+=dt; sw.ang=sw.amp*Math.sin(sw.t*1.55); sw.pivot.rotation.x=sw.ang; if(mine) SWG=sw; }
+  const on=!!SWG; const swingPivot=on?SWG.pivot:null;
   if(on){ swingPivot.updateMatrixWorld(true); swV.set(0,-2.44,-.02); swingPivot.localToWorld(swV); C.g.position.copy(swV); P.seat.x=swV.x; P.seat.y=swV.y; P.seat.z=swV.z; C.g.rotation.set(SWG.ang,0,0);
     C.armL.rotation.set(-2.75,0,-.12); C.armR.rotation.set(-2.75,0,.12); C.hips.position.y=.4; C.legL.rotation.x=C.legR.rotation.x=-1.57-SWG.ang*.7; C.kneeL.rotation.x=C.kneeR.rotation.x=1.4+Math.sin(SWG.t*1.55+1)*.35; } }
 
@@ -2861,7 +2918,7 @@ function updateAnimals(dt,t){
 const clock=new THREE.Clock(); let promptT=0,presT=0,lastPlotSec=-1;
 function loop(){
   const dt=Math.min(.05,clock.getDelta()),t=clock.elapsedTime,now=performance.now(); TIME.value=t; rU.uTime.value=t;
-  updatePlayer(dt,t); updateCamera(dt); updateSky(dt,t); updateFishing(now,t,dt); updateShoot(t); regrow(now); updateAudio(t); updateAnimals(dt,t); updateDucks(dt,t); updateSquirrels(dt,t); updateJumps(dt,t); updateFx(dt); updatePlotAnim(dt); updateClouds(dt); updateTrail(dt,t); updateWeather(dt,t); updateDJ(dt,t); updateFalls(t); updateSwing(dt); updateCook(dt,t); updateCrumbs(); updateCampfire(t); updateCat(dt,t); updateChickens(dt,t); updateFrogs(dt,t); updateDragonflies(dt,t); updateHedgehogs(dt,t); updateRobins(dt,t); updateOthers(dt,t); updateHunt(dt,t); updateHeadMenu();
+  updatePlayer(dt,t); updateCamera(dt); updateSky(dt,t); updateFishing(now,t,dt); updateShoot(t); regrow(now); updateAudio(t); updateAnimals(dt,t); updateDucks(dt,t); updateSquirrels(dt,t); updateJumps(dt,t); updateFx(dt); updatePlotAnim(dt); updateClouds(dt); updateTrail(dt,t); updateWeather(dt,t); updateDJ(dt,t); updateFalls(t); updateSwing(dt); updateExtraFires(t); updateCook(dt,t); updateCrumbs(); updateCampfire(t); updateCat(dt,t); updateChickens(dt,t); updateFrogs(dt,t); updateDragonflies(dt,t); updateHedgehogs(dt,t); updateRobins(dt,t); updateOthers(dt,t); updateHunt(dt,t); updateHeadMenu();
   if((presT+=dt)>.12){ presT=0; sendPresence(false); }
   smoke.forEach(s=>{ s.userData.t=(s.userData.t+dt*.07)%1; const k=s.userData.t; s.position.set(chimTop.x+Math.sin(k*6+t*.3)*k*1.5+k*2,chimTop.y+k*9,chimTop.z+k*1.2);
     const sc=.6+k*3; s.scale.set(sc,sc,1); s.material.opacity=.32*(1-k)*Math.min(1,k*6); s.material.color.setScalar(.5+.45*(1-night)); });
