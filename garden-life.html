@@ -2335,32 +2335,38 @@ const plotVis=PLOTS.map((p,pi)=>{ const g=new THREE.Group(); g.position.set(p.x,
   leaves.receiveShadow=true; flowers.castShadow=true; g.add(leaves,flowers);
   const tree=new THREE.Group(); g.add(tree); obstacles.push({x:p.x,z:p.z,r:.55}); return {g,tree,type:null,fruits:[],soil,target:0}; });
 function buildTree(v,type){
-  // Shared geometry and materials survive replants; dispose only per-tree instance buffers.
-  v.tree.traverse(o=>{ if(o.isInstancedMesh) o.dispose(); });
-  while(v.tree.children.length) v.tree.remove(v.tree.children[0]);
-  v.fruits=[]; v.type=type; if(!type) return; const F=FRUITS[type],tall=F.tall;
-  const trunk=new THREE.Mesh(fruitBarkG,orchardTwigM); trunk.scale.set(.8,tall, .8); v.tree.add(trunk);
-  const count=touch?240:420, foliage=new THREE.InstancedMesh(orchardLeafG,orchardLeafM,count);
-  // Individual leaves form airy, irregular crowns with light between the branches.
-  for(let k=0;k<count;k++){ const a=k*2.399963, u=(k+.5)/count, h=1-2*u, ring=Math.sqrt(1-h*h),r=.78+.22*Math.sin(k*17.31);
-    const x=Math.cos(a)*ring*r*1.25,z=Math.sin(a)*ring*r*1.25,y=(2.24+h*.85*r)*tall;
-    M.compose(V.set(x,y,z),Q.setFromEuler(E.set(.35+Math.sin(k*1.7)*.6,a,.25*Math.cos(k))),S3.set(type==='mango'?.28:.22,.045,type==='mango'?.075:.11)); foliage.setMatrixAt(k,M);
-    foliage.setColorAt(k,tmp.set(F.leaf[type==='cherry'?0:k%2]).multiplyScalar(.77+(h+1)*.16+(k%5)*.035)); }
-  foliage.castShadow=foliage.receiveShadow=true; v.tree.add(foliage);
-  for(let k=0;k<8;k++){ const a=k*2.4,from=new THREE.Vector3(.06,1.25*tall,0),to=new THREE.Vector3(Math.cos(a)*.95,(1.94+(k%3)*.24)*tall,Math.sin(a)*.95),delta=to.clone().sub(from);
-    const branch=new THREE.Mesh(orchardTwigG,orchardTwigM); branch.position.copy(from).addScaledVector(delta,.5); branch.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),delta.clone().normalize()); branch.scale.y=delta.length(); v.tree.add(branch); }
-  for(let k=0;k<6;k++){ const a=k*1.047+.3,fruit=new THREE.Group(),y=(1.87+(k%3)*.22)*tall;
-    fruit.position.set(Math.cos(a)*1.16,y,Math.sin(a)*1.16);
-    const skin=new THREE.Mesh(orchardFruitG,orchardFruitM[type]); skin.scale.set(F.shape[0],F.shape[2],F.shape[1]); fruit.add(skin);
-    const stem=new THREE.Mesh(orchardTwigG,orchardTwigM); stem.position.y=.15; stem.scale.set(.35,.13,.35); stem.rotation.z=-.2; fruit.add(stem);
-    const leaf=new THREE.Mesh(orchardLeafG,orchardLeafM); leaf.position.set(.08,.2,0); leaf.scale.set(.1,.018,.04); leaf.rotation.z=.4; fruit.add(leaf);
-    v.tree.add(fruit); v.fruits.push(fruit); }
-  v.tree.traverse(o=>{ if(o.isMesh) o.castShadow=true; }); v.tree.scale.setScalar(.15);
+  v.tree.traverse(o=>{if(o.isInstancedMesh)o.dispose();});
+  while(v.tree.children.length)v.tree.remove(v.tree.children[0]);v.fruits=[];v.type=type;if(!type)return;
+  const F=FRUITS[type],tall=F.tall,cherry=type==='cherry';
+  const trunk=new THREE.Mesh(fruitBarkG,orchardTwigM);trunk.scale.set(1.15,tall,1.15);v.tree.add(trunk);
+  const lobes=[];
+  for(let k=0;k<7;k++){const a=k*2.399,r=k===6?0:1.03;lobes.push(new THREE.Vector3(Math.cos(a)*r,(k===6?3.08:2.4+(k%3)*.23)*tall,Math.sin(a)*r));}
+  // Spreading limbs carry distinct cushions of foliage with individual leaves.
+  for(let k=0;k<6;k++){const from=new THREE.Vector3(.06,1.15*tall,0),to=lobes[k].clone(),d=to.clone().sub(from),branch=new THREE.Mesh(orchardTwigG,orchardTwigM);
+    branch.position.copy(from).addScaledVector(d,.5);branch.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.clone().normalize());branch.scale.set(2.1,d.length(),2.1);v.tree.add(branch);}
+  const per=touch?66:110,n=lobes.length*per,foliage=new THREE.InstancedMesh(orchardLeafG,orchardLeafM,n);
+  lobes.forEach((center,j)=>{for(let k=0;k<per;k++){const a=k*2.399+j,h=1-2*(k+.5)/per,ring=Math.sqrt(1-h*h),r=.68+.1*Math.sin(k*7.3);
+    M.compose(V.set(center.x+Math.cos(a)*ring*r,center.y+h*.48*tall,center.z+Math.sin(a)*ring*r),Q.setFromEuler(E.set(.25+Math.sin(k)*.35,a,.25*Math.cos(k))),S3.set(type==='mango'?.27:.22,.05,type==='mango'?.08:.12));foliage.setMatrixAt(j*per+k,M);
+    foliage.setColorAt(j*per+k,tmp.set(F.leaf[cherry?0:k%2]).multiplyScalar(.72+(h+1)*.17+(k%4)*.035));}});
+  foliage.castShadow=foliage.receiveShadow=true;v.tree.add(foliage);
+  // Six harvest units, each shown as a generous cluster rather than one isolated dot.
+  for(let k=0;k<6;k++){const a=k*2.399,fruit=new THREE.Group(),center=lobes[k];fruit.position.set(center.x+Math.cos(a)*.38,center.y-.36*tall,center.z+Math.sin(a)*.38);
+    const count=cherry?12:5,skins=new THREE.InstancedMesh(orchardFruitG,orchardFruitM[type],count),stems=new THREE.InstancedMesh(orchardTwigG,orchardTwigM,count);
+    for(let q=0;q<count;q++){const aa=q*2.399,rr=q===0?0:cherry?.2:.32,x=Math.cos(aa)*rr,z=Math.sin(aa)*rr,y=(q%3)*.16-.2,sz=cherry?.52:1;
+      M.compose(V.set(x,y,z),Q.setFromEuler(E.set(.08*Math.sin(q),aa,0)),S3.set(F.shape[0]*sz,F.shape[2]*sz,F.shape[1]*sz));skins.setMatrixAt(q,M);
+      M.compose(V.set(x,y+.15*sz,z),Q.setFromEuler(E.set(0,aa,-.2)),S3.set(.28,.14,.28));stems.setMatrixAt(q,M);}
+    fruit.add(skins,stems);v.tree.add(fruit);v.fruits.push(fruit);}
+  v.tree.traverse(o=>{if(o.isMesh)o.castShadow=true;});v.tree.scale.setScalar(.15);
 }
 const orchardFruitG=new THREE.SphereGeometry(.145,14,10);
 const orchardFruitM=Object.fromEntries(Object.entries(FRUITS).map(([k,f])=>[k,smt(f.c,{roughness:k==='peach'?.82:.42})]));
 const RIPE_MS=30000, WATER_MS=20000;
 function plotState(i){ const o=J.orchard[i]; if(!o) return {empty:1}; const now=Date.now(); return {o,ripe:o.s>=3?Math.max(0,Math.min(6,Math.floor((now-o.p)/RIPE_MS))):0,canWater:o.s<3&&now-o.w>WATER_MS}; }
+// Establish a fruiting orchard in unused beds, preserving trees already planted.
+['cherry','apple','peach','cherry','orange','apple'].forEach((t,i)=>{
+  if(!J.orchard[i])J.orchard[i]={t,s:3,w:0,p:Date.now()-RIPE_MS*6};
+});
+persist();
 function updatePlots(){ PLOTS.forEach((p,i)=>{ const v=plotVis[i],o=J.orchard[i],type=o?o.t:null; if(v.type!==type) buildTree(v,type); if(!o) return;
   v.target=[.34,.55,.78,1][Math.min(3,o.s)]; const st=plotState(i); v.fruits.forEach((f,k)=>f.visible=k<st.ripe); v.soil.material.color.set(Date.now()-o.w<WATER_MS?0x2a1e14:0x4a3626); }); }
 function updatePlotAnim(dt){ plotVis.forEach(v=>{ if(!v.type) return; const s=v.tree.scale.x; v.tree.scale.setScalar(s+(v.target-s)*Math.min(1,dt*2.5)); }); }
