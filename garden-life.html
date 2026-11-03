@@ -157,6 +157,7 @@ textarea:focus-visible,input:focus-visible{outline:2px solid var(--ember)}
       <button id="bSay">Say something</button>
       <button id="bEmo" aria-label="Show how you feel">Feelings</button>
       <button id="bSky">Weather</button>
+      <button id="bLights" aria-label="Lantern lights">Lights: on</button>
       <button id="bJournal" hidden>Journal</button>
       <button id="bNotes" hidden>Read</button>
       <button id="bGuest" hidden>Guestbook</button>
@@ -1129,7 +1130,7 @@ function updateSky(dt,t){
   hemi.intensity=.16+.24*day+.08*dusk; hemi.color.copy(cTop).lerp(tmp.set(0xffffff),.45); hemi.groundColor.set(0x3d4a2a).multiplyScalar(.4+.6*day);
   renderer.toneMappingExposure=.8+night*.38;
   const lights=smooth(.2,-.1,sunE);
-  winMat.emissiveIntensity=.3+lights*1.8; lantern.material.emissiveIntensity=lights*2.5; porchLight.intensity=lights*1.4; roomLight.intensity=.5+lights*.6; extraLights.forEach(L=>L.intensity=(L.userData.base||0)+lights*L.userData.k); extraLanterns.forEach(m=>m.emissiveIntensity=lights*2.5); updateLamps(lights); cloudMat.color.setScalar((1-night*.75)*(1-W.cover*.42)); cloudMat.emissive.copy(cHor).multiplyScalar(.35*(1-night*.6));
+  winMat.emissiveIntensity=.3+lights*1.8; lantern.material.emissiveIntensity=lights*2.5*LV(); porchLight.intensity=lights*1.4*LV(); roomLight.intensity=.5+lights*.6; extraLights.forEach(L=>L.intensity=(L.userData.base||0)+lights*L.userData.k); extraLanterns.forEach(m=>m.emissiveIntensity=lights*2.5*LV()); updateLamps(lights*LV()); cloudMat.color.setScalar((1-night*.75)*(1-W.cover*.42)); cloudMat.emissive.copy(cHor).multiplyScalar(.35*(1-night*.6));
   clouds.forEach(c=>{ c.material.color.copy(cHor).lerp(tmp.set(0xffffff),.5*day).multiplyScalar(.35+.65*(1-night*.8)); c.position.x+=dt*1.5; if(c.position.x>450) c.position.x=-450; });
   rU.uSky.value.copy(cHor).lerp(cTop,.4); rU.uSun.value.set(0xffe0b0).lerp(tmp.set(0xff9a50),dusk*(1-day)); rU.uLight.value=.35+.65*(1-night);
   ffMat.opacity=smooth(.15,-.1,sunE)*(curSeason==="winter"?0:curSeason==="fall"?.35:1)*(1-W.rain);
@@ -2174,9 +2175,9 @@ lampPost.castShadow=true; scene.add(lampPost,lampHead,lampCap);
 const lampGlow=new THREE.Points(new THREE.BufferGeometry().setAttribute("position",new THREE.Float32BufferAttribute(LAMPS.flatMap(l=>[l.x,l.y+1.72,l.z]),3)),new THREE.PointsMaterial({color:0xffc070,size:1.5,map:dotTex,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending}));
 scene.add(lampGlow);
 const lampPool=[0,1,2,3].map(()=>{ const L=new THREE.PointLight(0xffb060,0,11,1.6); scene.add(L); return L; }); let lampPick=0;
-function updateLamps(k){ lampHeadMat.emissiveIntensity=k*2.2; lampGlow.material.opacity=k*.85;
+function updateLamps(k){ lampHeadMat.emissiveIntensity=k*1.8; lampGlow.material.opacity=k*.55; lampGlow.visible=k>.01;
   if((lampPick++)%20===0){ const near=LAMPS.map(l=>[Math.hypot(l.x-P.x,l.z-P.z),l]).sort((a,b)=>a[0]-b[0]).slice(0,lampPool.length); lampPool.forEach((L,i)=>{ const l=near[i]&&near[i][1]; if(l) L.position.set(l.x,l.y+1.75,l.z); }); }
-  lampPool.forEach(L=>L.intensity=k*1.1); }
+  lampPool.forEach(L=>L.intensity=k*.8); }
 
 /* ================= swing ================= */
 const SWG={amp:0,t:0,ang:0};
@@ -2602,6 +2603,12 @@ function updateWeather(dt,t){ const se=seasonOverride||seasonNow(); if(se!==curS
   if(lk!==leafKind){ leafKind=lk; for(let i=0;i<LEAF_N;i++) leafIM.setColorAt(i,col(lk==="spring"?[0xf8c8d8,0xffe0ea,0xf2b0c8][i%3]:[0xd8642a,0xe8a830,0xc83a20,0xe8c040][i%4])); if(leafIM.instanceColor) leafIM.instanceColor.needsUpdate=true; }
   if(leafIM.visible){ const cnt=Math.floor(LEAF_N*Math.min(1,.35+W.wind*.3)); leafIM.count=cnt; for(let i=0;i<cnt;i++){ const l=leafS[i]; l.y-=dt*l.sp; l.x+=dt*W.wind*.9; if(l.y<0){ l.y=8+Math.random()*4; l.x=(Math.random()-.5)*40; l.z=(Math.random()-.5)*40; }
       const x=C.g.position.x+l.x+Math.sin(t*1.3+l.ph)*.6, z=C.g.position.z+l.z; M.compose(V.set(x,H(x,z)+l.y,z),Q.setFromEuler(E.set(t*2+l.ph,t*1.3+l.ph,t*.7)),S3.set(1,1,1)); leafIM.setMatrixAt(i,M); } leafIM.instanceMatrix.needsUpdate=true; } }
+// lantern brightness: on, dim or off (remembered on this device)
+const LIGHT_STEPS=[[1,"on"],[.45,"dim"],[0,"off"]]; let lightIdx=(()=>{ try{ const v=+localStorage.getItem("garden-life-lights"); return v>=0&&v<3?v:0; }catch(e){ return 0; } })();
+const LV=()=>LIGHT_STEPS[lightIdx][0];
+function showLightBtn(){ $("bLights").textContent="Lights: "+LIGHT_STEPS[lightIdx][1]; $("bLights").setAttribute("aria-pressed",lightIdx<2); }
+$("bLights").onclick=()=>{ lightIdx=(lightIdx+1)%3; try{ localStorage.setItem("garden-life-lights",lightIdx); }catch(e){} showLightBtn(); chirp(lightIdx===2?500:900); toast(["The lanterns glow warm and bright.","The lanterns are turned down low.","The lanterns are off. Just the moon, the stars and the fire."][lightIdx],2400); };
+showLightBtn();
 $("bSky").onclick=()=>{ const se=curSeason, wx=curWx;
   openSheet(`<div class="eyebrow">Sky & seasons</div><h2>${esc(SEASON_NAME[se])}, ${esc(WX[wx].n.toLowerCase())}</h2>
     <p>Seasons follow the real calendar. The weather changes every few hours, the same for everyone in the valley.</p>
