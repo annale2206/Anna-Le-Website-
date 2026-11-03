@@ -1357,10 +1357,13 @@ function updateSky(dt,t){
   md.copy(sd).negate(); moon.position.copy(camera.position).addScaledVector(md,640); moon.material.opacity=smooth(-.05,-.25,sunE);
   const focus=C.g.position;
   sun.position.copy(focus).addScaledVector(sd,150); sun.target.position.copy(focus);
-  sun.intensity=1.4*smooth(-.04,.25,sunE)*(1-W.cover*.62); sun.color.set(0xffa860).lerp(tmp.set(0xfff3e0),day);
+  sun.intensity=1.12*smooth(-.04,.25,sunE)*(1-W.cover*.62); sun.color.set(0xffa860).lerp(tmp.set(0xfff3e0),day);
   moonLight.position.copy(focus).addScaledVector(md,100); moonLight.intensity=.7*night;
-  hemi.intensity=.2+.24*day+.08*dusk; hemi.color.copy(cTop).lerp(tmp.set(0xffffff),.5); hemi.groundColor.set(0x6a5a3a).lerp(tmp.set(0x4a3a6a),night*.6);
-  renderer.toneMappingExposure=.88+night*.12;
+  hemi.intensity=.2+.18*day+.08*dusk; hemi.color.copy(cTop).lerp(tmp.set(0xffffff),.5); hemi.groundColor.set(0x6a5a3a).lerp(tmp.set(0x4a3a6a),night*.6);
+  // Lower daytime glare and enrich the world colors as the sun rises.
+  renderer.toneMappingExposure=.88+night*.12-.16*day;
+  const worldGrade=`saturate(${(1+.18*day).toFixed(2)})`;
+  if(canvas.style.filter!==worldGrade) canvas.style.filter=worldGrade;
   const lights=smooth(.2,-.1,sunE);
   winMat.emissiveIntensity=.3+lights*1.8; lantern.material.emissiveIntensity=lights*2.5*LV(); porchLight.intensity=lights*1.4*LV(); roomLight.intensity=.5+lights*.6; extraLights.forEach(L=>L.intensity=(L.userData.base||0)+lights*L.userData.k); extraLanterns.forEach(m=>m.emissiveIntensity=lights*2.5*LV()); updateLamps(lights*LV()); cloudMat.color.setScalar((1-night*.75)*(1-W.cover*.42)); cloudMat.emissive.copy(cHor).multiplyScalar(.35*(1-night*.6));
   clouds.forEach(c=>{ c.material.color.copy(cHor).lerp(tmp.set(0xffffff),.5*day).multiplyScalar(.35+.65*(1-night*.8)); c.position.x+=dt*1.5; if(c.position.x>450) c.position.x=-450; });
