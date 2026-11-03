@@ -405,6 +405,27 @@ function cloudTex(){ const c=document.createElement("canvas"); c.width=256; c.he
 const clouds=[]; for(let i=0;i<14;i++){ const s=new THREE.Sprite(new THREE.SpriteMaterial({map:cloudTex(),transparent:true,depthWrite:false,fog:false,opacity:.85}));
   const a=Math.random()*6.283,r=180+Math.random()*260; s.position.set(Math.cos(a)*r,90+Math.random()*60,Math.sin(a)*r); s.scale.set(140+Math.random()*90,55+Math.random()*25,1); scene.add(s); clouds.push(s); }
 const hemi=new THREE.HemisphereLight(0xcfe3ff,0x3d4a2a,.5); scene.add(hemi);
+/* far mountains: soft lavender silhouettes that fade into the haze, like the edge of a storybook valley */
+const farMtnMat=new THREE.MeshBasicMaterial({vertexColors:true,fog:false});
+{ const parts=[]; let s2=91; const r2=()=>{ s2=(s2*16807)%2147483647; return s2/2147483647; };
+  for(let i=0;i<26;i++){ const a=i/26*6.283+r2()*.2, R=250+r2()*60, h=55+r2()*95, w=55+r2()*60; const g=new THREE.ConeGeometry(w,h,5+Math.floor(r2()*3),3); g.translate(Math.cos(a)*R,h/2-12,Math.sin(a)*R);
+    const c=g.attributes.position, cl=[]; const lo=new THREE.Color(0x6a5a9e), hi=new THREE.Color(0xc9b4e6), snow=new THREE.Color(0xf4ecf8);
+    for(let k=0;k<c.count;k++){ const t=Math.max(0,Math.min(1,(c.getY(k)+12)/h)); const cc=lo.clone().lerp(hi,t); if(t>.82&&h>110) cc.lerp(snow,.7); cl.push(cc.r,cc.g,cc.b); }
+    g.setAttribute("color",new THREE.Float32BufferAttribute(cl,3)); parts.push(g.toNonIndexed()); }
+  let n=0; parts.forEach(g=>n+=g.attributes.position.count); const P3=new Float32Array(n*3), C3=new Float32Array(n*3); let o=0;
+  parts.forEach(g=>{ P3.set(g.attributes.position.array,o*3); C3.set(g.attributes.color.array,o*3); o+=g.attributes.position.count; });
+  const mg=new THREE.BufferGeometry(); mg.setAttribute("position",new THREE.BufferAttribute(P3,3)); mg.setAttribute("color",new THREE.BufferAttribute(C3,3));
+  const m=new THREE.Mesh(mg,farMtnMat); m.renderOrder=-1; scene.add(m); }
+/* drifting motes of light: pollen in the day, a little magic in the air */
+const MOTE_N=touch?90:180, moteGeo=new THREE.BufferGeometry(), moteP=new Float32Array(MOTE_N*3), moteSeed=[];
+for(let i=0;i<MOTE_N;i++){ moteSeed.push({x:(Math.random()-.5)*70,z:(Math.random()-.5)*70,y:.6+Math.random()*4,p:Math.random()*6.283}); }
+moteGeo.setAttribute("position",new THREE.BufferAttribute(moteP,3));
+const moteMat=new THREE.PointsMaterial({color:0xfff2d0,size:.13,transparent:true,opacity:.55,depthWrite:false,blending:THREE.AdditiveBlending});
+const motes=new THREE.Points(moteGeo,moteMat); motes.frustumCulled=false; scene.add(motes);
+function updateMotes(t,night){ const cx=camera.position.x, cz=camera.position.z;
+  for(let i=0;i<MOTE_N;i++){ const m=moteSeed[i]; let x=m.x+Math.sin(t*.2+m.p)*2, z=m.z+Math.cos(t*.17+m.p)*2;
+    x=cx+((x-cx)%70+105)%70-35; z=cz+((z-cz)%70+105)%70-35; moteP[i*3]=x; moteP[i*3+1]=H(x,z)+m.y+Math.sin(t*.6+m.p)*.4; moteP[i*3+2]=z; }
+  moteGeo.attributes.position.needsUpdate=true; moteMat.opacity=.5*(1-night*.6); moteMat.color.set(night>.5?0xc8d8ff:0xfff2d0); }
 const sun=new THREE.DirectionalLight(0xffe2b0,1.3); sun.castShadow=true; const SM=touch?1024:2048; sun.shadow.mapSize.set(SM,SM);
 Object.assign(sun.shadow.camera,{left:-40,right:40,top:40,bottom:-40,near:1,far:300}); sun.shadow.bias=-.0005; sun.shadow.normalBias=.02; scene.add(sun,sun.target);
 const moonLight=new THREE.DirectionalLight(0x9db4ff,0); scene.add(moonLight);
@@ -413,15 +434,15 @@ const moonLight=new THREE.DirectionalLight(0x9db4ff,0); scene.add(moonLight);
 const TS=360, TSEG=touch?170:220;
 const tGeo=new THREE.PlaneGeometry(TS,TS,TSEG,TSEG); tGeo.rotateX(-Math.PI/2);
 const tpos=tGeo.attributes.position, tcol=[];
-const cG1=col(0x3d6e1e),cG2=col(0x6f9a26),cG3=col(0x2a5a20),cDirt=col(0x8b6d4c),cSand=col(0xb3a17a),cMud=col(0x5b4a36),cRock=col(0x7f8078),cSoil=col(0x5a4330);
+const cG1=col(0x4f8f2a),cG2=col(0x8ab83a),cG3=col(0x3f7f34),cDirt=col(0xb88550),cSand=col(0xcdb488),cMud=col(0x5b4a36),cRock=col(0x7f8078),cSoil=col(0x5a4330);
 const tGrass=new Float32Array(tpos.count), tUnder=new Uint8Array(tpos.count);
 for(let i=0;i<tpos.count;i++){ const x=tpos.getX(i),z=tpos.getZ(i),h=H(x,z); tpos.setY(i,h); let gw=1;
   tmp.copy(cG1).lerp(cG2,fbm(x*.05,z*.05)).lerp(cG3,smooth(.55,.75,fbm(x*.02+5,z*.02)));
-  const pd=pathD(x,z); if(pd<1.9){ const a=(1-smooth(.9,1.9,pd))*.95; tmp.lerp(cDirt,a); gw*=1-a; }
+  const pd=pathD(x,z); if(pd<2.3){ const a=(1-smooth(1.1,2.3,pd))*.97; tmp.lerp(cDirt,a); gw*=1-a; }
   if(inGBed(x,z)){ tmp.lerp(cSoil,.85); gw*=.15; }
   const d=rDist(x,z); if(d<RW/2+2.6){ const a=1-smooth(RW/2+.6,RW/2+2.6,d); tmp.lerp(cSand,a); gw*=1-a; } if(h<-.1){ const a=smooth(-.1,-.8,h); tmp.lerp(cMud,a); gw*=1-a; tUnder[i]=1; }
   if(h>10){ const a=smooth(10,22,h); tmp.lerp(cRock,a); gw*=1-a*.6; }
-  tGrass[i]=gw; tmp.multiplyScalar(.72); tcol.push(tmp.r,tmp.g,tmp.b); }
+  tGrass[i]=gw; tmp.multiplyScalar(.8); tcol.push(tmp.r,tmp.g,tmp.b); }
 const tBase=Float32Array.from(tcol);
 tGeo.setAttribute("color",new THREE.Float32BufferAttribute(tcol,3)); tGeo.computeVertexNormals();
 const terrain=new THREE.Mesh(tGeo,new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,metalness:0})); terrain.receiveShadow=true; scene.add(terrain);
@@ -534,6 +555,13 @@ broad.forEach((b,i)=>{ const y=H(b.x,b.z)-.1, cp=CANOPY[b.kind]||CANOPY.oak, pal
 scene.add(bCard);
 
 /* ================= grass & flowers ================= */
+// a soft tuft: 7 wide, curved blades fanned out, coloured dark at the root to light at the tip
+function tuftGeo(){ const pos=[],nor=[],colr=[],idx=[]; const a=col(0x3f7a26),b=col(0xc8e070); let o=0;
+  for(let k=0;k<7;k++){ const ang=k/7*6.283+(k%2)*.4, lean=.35+(k%3)*.12, w=.075, h=.42+(k%3)*.1, ca=Math.cos(ang), sa=Math.sin(ang);
+    const P=(u,v)=>{ const bend=v*v*lean; return [u*ca*w*(1-v*.85)+sa*bend*.0, v*h, -u*sa*w*(1-v*.85)+ca*bend]; };
+    const ring=[[-1,0],[1,0],[-1,.5],[1,.5],[0,1]]; ring.forEach(([u,v])=>{ const p=P(u,v); const rx=p[0]*Math.cos(ang)+p[2]*Math.sin(ang), rz=-p[0]*Math.sin(ang)+p[2]*Math.cos(ang); pos.push(rx,p[1],rz); nor.push(0,.85,.5); const c=a.clone().lerp(b,v); colr.push(c.r,c.g,c.b); });
+    idx.push(o,o+1,o+2,o+1,o+3,o+2,o+2,o+3,o+4); o+=5; }
+  const g=new THREE.BufferGeometry(); g.setAttribute("position",new THREE.Float32BufferAttribute(pos,3)); g.setAttribute("normal",new THREE.Float32BufferAttribute(nor,3)); g.setAttribute("color",new THREE.Float32BufferAttribute(colr,3)); g.setIndex(idx); return g; }
 function bladeGeo(w,h,c0,c1){ const g=new THREE.BufferGeometry();
   g.setAttribute("position",new THREE.Float32BufferAttribute([-w,0,0, w,0,0, -w*.6,h*.5,0, w*.6,h*.5,0, 0,h,0],3));
   g.setAttribute("normal",new THREE.Float32BufferAttribute([0,.8,.6, 0,.8,.6, 0,.85,.5, 0,.85,.5, 0,.9,.4],3));
@@ -543,8 +571,9 @@ function scatter(n,geo,mat,place){ const im=new THREE.InstancedMesh(geo,mat,n); 
   while(k<n && tries++<n*30){ const r=place(); if(!r) continue; M.compose(V.set(r.x,r.y,r.z),Q.setFromEuler(E.set(r.rx||0,r.ry||rnd()*6.283,r.rz||0)),S3.set(r.s,r.sy||r.s,r.s)); im.setMatrixAt(k,M); if(r.c) im.setColorAt(k,r.c); k++; }
   im.count=k; scene.add(im); return im; }
 const gc=new THREE.Color();
-const grassIM=scatter(touch?13000:52000,bladeGeo(.028,.3,0x1d6414,0x82d63a),addSway(new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide}),.09),()=>{
+const grassIM=scatter(touch?3200:9000,tuftGeo(),addSway(new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide}),.09),()=>{
   const ang=rnd()*6.283, rr=Math.sqrt(rnd())*85, x=SPAWN.x+Math.cos(ang)*rr*1.1, z=SPAWN.z+Math.sin(ang)*rr; const h=H(x,z);
+  if(fbm(x*.06+3,z*.06+7)<.52) return null;
   if(h<.35||pathD(x,z)<1.1||inGBed(x,z)||nearCabin(x,z,.6)||Math.hypot(x-FIRE.x,z-FIRE.z)<2.6||nearCamp(x,z,2.4)||Math.abs(x-BEDS.x)<5&&Math.abs(z-BEDS.z)<4) return null;
   if(Math.abs(x-SISTERS.x)<5&&Math.abs(z-SISTERS.z)<5) return null;
   const s=.55+rnd()*.7; return {x,y:h-.03,z,s,sy:s*(.7+rnd()*.6),rx:(rnd()-.5)*.35,rz:(rnd()-.5)*.35,c:gc.setScalar(.8+rnd()*.35)}; });
@@ -570,10 +599,10 @@ function flowerField(n,place,headGeo,colors,hmin,hmax){
 const around=(center,radius)=>()=>{ const a=rnd()*6.283,r=Math.sqrt(rnd())*radius,x=center.x+Math.cos(a)*r,z=center.z+Math.sin(a)*r,h=H(x,z);
   if(h<.4||pathD(x,z)<1.2||nearCabin(x,z,.8)||inRiver(x,z,.5)||inGBed(x,z)||nearCamp(x,z,3.4)) return null; return {x,y:h,z}; };
 const inBeds=()=>{ const b=GBEDS[rnd()<.5?0:1]; const x=b.x0+.3+rnd()*(b.x1-b.x0-.6),z=b.z0+.3+rnd()*(b.z1-b.z0-.6); return {x,y:H(x,z),z}; };
-const asterPts=flowerField(touch?350:1300,around(ASTER,16),daisyGeo,[0x9a7ad8,0xb39ae8,0x7f5fc8,0xc4b2f0],.45,.85);
-flowerField(touch?300:1100,around(ASTER,17),plumeGeo,[0xe8c440,0xf0d050,0xd8b030],.55,1.05);
-flowerField(touch?175:700,around(SPAWN,40),daisyGeo,[0xf5f2e8,0xf0e6c8,0xe8a0c0,0x9a7ad8],.25,.6);
-flowerField(touch?125:500,around({x:-24,z:-20},26),plumeGeo,[0xd85a9a,0xe070b0,0xe8c440],.6,1.1);
+const asterPts=flowerField(touch?158:520,around(ASTER,16),daisyGeo,[0x9a7ad8,0xb39ae8,0x7f5fc8,0xc4b2f0],.45,.85);
+flowerField(touch?135:440,around(ASTER,17),plumeGeo,[0xe8c440,0xf0d050,0xd8b030],.55,1.05);
+flowerField(touch?79:280,around(SPAWN,40),daisyGeo,[0xf5f2e8,0xf0e6c8,0xe8a0c0,0x9a7ad8],.25,.6);
+flowerField(touch?56:200,around({x:-24,z:-20},26),plumeGeo,[0xd85a9a,0xe070b0,0xe8c440],.6,1.1);
 // the cabin's flower garden
 const gardenPts=flowerField(touch?130:420,inBeds,tulipGeo,[0xe2566e,0xf2b45a,0xf5f2e8,0xd85a9a,0xe8c440,0xa98be0],.3,.55);
 flowerField(touch?80:260,inBeds,daisyGeo,[0xf5f2e8,0xe8c440,0x9a7ad8,0xf08a6a],.35,.6);
@@ -598,7 +627,7 @@ GBEDS.forEach(b=>{ for(let x=b.x0;x<=b.x1;x+=.55) for(const z of [b.z0,b.z1]){ c
 const CAB_Y=FLATS[0].t, FLOOR_Y=CAB_Y+.55;
 const cabin=new THREE.Group(); cabin.position.set(CABIN.x,CAB_Y,CABIN.z); scene.add(cabin);
 const roofG=new THREE.Group(), frontG=new THREE.Group(); cabin.add(roofG,frontG);
-const logA=std(0x8a5a36),logB=std(0x7a4e2e),darkWood=std(0x4a3222),roofMat=std(0x3f4d3a),stoneM=std(0x8d8a82),plank=std(0x9c6c42);
+const logA=std(0x8a5a36),logB=std(0x7a4e2e),darkWood=std(0x4a3222),roofMat=std(0x8e5a8a,{roughness:.8}),stoneM=std(0x8d8a82),plank=std(0x9c6c42);
 const W_=9,D_=7,LR=.24,ROWS=9,DOOR=.8;
 const logX=(len,m)=>{ const l=new THREE.Mesh(new THREE.CylinderGeometry(LR,LR,len,8),m); l.rotation.z=Math.PI/2; return l; };
 const logZ=(len,m)=>{ const l=new THREE.Mesh(new THREE.CylinderGeometry(LR,LR,len,8),m); l.rotation.x=Math.PI/2; return l; };
@@ -1176,7 +1205,7 @@ applyLookTo(C,lookArr());
 let myBubble=null;
 
 /* ================= real-time day and night ================= */
-let tod=0; const cNT=col(0x050918),cNH=col(0x17213d),cDT=col(0x3a4a80),cDH=col(0xf29a5c),cYT=col(0x3a78cc),cYH=col(0xa9cfe6);
+let tod=0; const cNT=col(0x0c1030),cNH=col(0x3a3266),cDT=col(0x5a4a96),cDH=col(0xf6a07a),cYT=col(0x5d8fd8),cYH=col(0xf3d9c8);
 let night=0,sunE=0;
 // where the viewer probably is, from their time zone (Central time uses Lubbock, Texas)
 const TZ_PLACE={"America/Chicago":[33.58,-101.85],"America/New_York":[40.71,-74.0],"America/Denver":[39.74,-104.99],"America/Phoenix":[33.45,-112.07],"America/Los_Angeles":[34.05,-118.24],"America/Anchorage":[61.2,-149.9],"Pacific/Honolulu":[21.3,-157.86],"America/Toronto":[43.65,-79.38],"America/Mexico_City":[19.43,-99.13],
@@ -1207,22 +1236,23 @@ function updateSky(dt,t){
   cTop.copy(cNT).lerp(cDT,dusk).lerp(cYT,day); cHor.copy(cNH).lerp(cDH,dusk).lerp(cYH,day);
   { const gl=.22+.5*day; tmp.setRGB(gl*.9,gl*.95,gl); cTop.lerp(tmp,W.cover*.55); cHor.lerp(tmp,W.cover*.45); if(curSeason==="winter") cHor.lerp(tmp.setRGB(.85,.88,.92),.15*day); }
   skyU.top.value.copy(cTop); skyU.hor.value.copy(cHor); skyU.sunDir.value.copy(sd); skyU.sunCol.value.set(0xffd59a).multiplyScalar(smooth(-.1,.05,sunE));
-  scene.fog.color.copy(cHor).lerp(cTop,.35).multiplyScalar(.9);
+  scene.fog.color.copy(cHor).lerp(cTop,.35).lerp(tmp.set(0xb8a8e0),.15).multiplyScalar(.92);
   starMat.opacity=night*.95; bigStarMat.opacity=night*(.75+.25*Math.sin(t*1.7)); stars.rotation.y=bigStars.rotation.y=t*.002;
   md.copy(sd).negate(); moon.position.copy(camera.position).addScaledVector(md,640); moon.material.opacity=smooth(-.05,-.25,sunE);
   const focus=C.g.position;
   sun.position.copy(focus).addScaledVector(sd,150); sun.target.position.copy(focus);
   sun.intensity=1.4*smooth(-.04,.25,sunE)*(1-W.cover*.62); sun.color.set(0xffa860).lerp(tmp.set(0xfff3e0),day);
-  moonLight.position.copy(focus).addScaledVector(md,100); moonLight.intensity=.6*night;
-  hemi.intensity=.16+.24*day+.08*dusk; hemi.color.copy(cTop).lerp(tmp.set(0xffffff),.45); hemi.groundColor.set(0x3d4a2a).multiplyScalar(.4+.6*day);
-  renderer.toneMappingExposure=.8+night*.38;
+  moonLight.position.copy(focus).addScaledVector(md,100); moonLight.intensity=.7*night;
+  hemi.intensity=.2+.24*day+.08*dusk; hemi.color.copy(cTop).lerp(tmp.set(0xffffff),.5); hemi.groundColor.set(0x6a5a3a).lerp(tmp.set(0x4a3a6a),night*.6);
+  renderer.toneMappingExposure=.88+night*.12;
   const lights=smooth(.2,-.1,sunE);
   winMat.emissiveIntensity=.3+lights*1.8; lantern.material.emissiveIntensity=lights*2.5*LV(); porchLight.intensity=lights*1.4*LV(); roomLight.intensity=.5+lights*.6; extraLights.forEach(L=>L.intensity=(L.userData.base||0)+lights*L.userData.k); extraLanterns.forEach(m=>m.emissiveIntensity=lights*2.5*LV()); updateLamps(lights*LV()); cloudMat.color.setScalar((1-night*.75)*(1-W.cover*.42)); cloudMat.emissive.copy(cHor).multiplyScalar(.35*(1-night*.6));
   clouds.forEach(c=>{ c.material.color.copy(cHor).lerp(tmp.set(0xffffff),.5*day).multiplyScalar(.35+.65*(1-night*.8)); c.position.x+=dt*1.5; if(c.position.x>450) c.position.x=-450; });
   rU.uSky.value.copy(cHor).lerp(cTop,.4); rU.uSun.value.set(0xffe0b0).lerp(tmp.set(0xff9a50),dusk*(1-day)); rU.uLight.value=.35+.65*(1-night);
   ffMat.opacity=smooth(.15,-.1,sunE)*(curSeason==="winter"?0:curSeason==="fall"?.35:1)*(1-W.rain);
   sunSprite.position.copy(camera.position).addScaledVector(sd,620); sunSprite.material.opacity=smooth(-.08,.06,sunE)*(1-W.cover*.85); sunSprite.material.color.set(0xffb060).lerp(tmp.set(0xfff6e0),day);
-  scene.fog.near=70-45*Math.min(1,W.rain+W.snow*.8); scene.fog.far=290-160*Math.min(1,W.rain+W.snow*.9);
+  farMtnMat.color.setRGB(1-night*.7,1-night*.68,1-night*.55).multiplyScalar(1-W.cover*.25); updateMotes(t,night);
+  scene.fog.near=55-30*Math.min(1,W.rain+W.snow*.8); scene.fog.far=250-120*Math.min(1,W.rain+W.snow*.9);
 }
 
 /* ================= input ================= */
@@ -2236,16 +2266,16 @@ function flowerField2(n,place,stemG,headG,centerG,colors,centerCol,hmin,hmax){
 const thickStem=new THREE.CylinderGeometry(.022,.03,1,5).translate(0,.5,0);
 const bankPlace=(off)=>()=>{ const x=(rnd()-.5)*150, z=BANK(x)-off-rnd()*3.2, h=H(x,z); if(h<.4||pathD(x,z)<1.2||nearCabin(x,z,.8)||inGBed(x,z)) return null; return {x,y:h,z}; };
 // sunflowers by the kitchen
-flowerField2(touch?30:90,around({x:KITCHEN.x-2,z:KITCHEN.z-7.5},5),thickStem,petalHead(16,.13,.045,.12,0,.08).rotateX(Math.PI/2.3).translate(0,1,.03),new THREE.CylinderGeometry(.09,.09,.05,16).rotateX(Math.PI/2.3).translate(0,1,.05),[0xf2c41a,0xf0b010,0xe8a818],0x4a2a10,1.5,2.1);
+flowerField2(touch?20:40,around({x:KITCHEN.x-2,z:KITCHEN.z-7.5},5),thickStem,petalHead(16,.13,.045,.12,0,.08).rotateX(Math.PI/2.3).translate(0,1,.03),new THREE.CylinderGeometry(.09,.09,.05,16).rotateX(Math.PI/2.3).translate(0,1,.05),[0xf2c41a,0xf0b010,0xe8a818],0x4a2a10,1.5,2.1);
 // lavender rows by the music & art cabin
-flowerField2(touch?130:480,around({x:ART.x-8,z:ART.z+5},6),stemGeo,spikeHead(10,.026,.26,.9),null,[0x8a6ad0,0x9a7ae0,0x7a5ac0],0,.42,.62);
+flowerField2(touch?58:192,around({x:ART.x-8,z:ART.z+5},6),stemGeo,spikeHead(10,.026,.26,.9),null,[0x8a6ad0,0x9a7ae0,0x7a5ac0],0,.42,.62);
 // poppies in the meadow
-flowerField2(touch?130:500,around({x:-10,z:12},13),stemGeo,petalHead(4,.085,.075,.6,1,.008),new THREE.SphereGeometry(.024,8,6).translate(0,1.02,0),[0xd82a20,0xe83a2a,0xf05a3a],0x1a1a1a,.4,.7);
+flowerField2(touch?58:200,around({x:-10,z:12},13),stemGeo,petalHead(4,.085,.075,.6,1,.008),new THREE.SphereGeometry(.024,8,6).translate(0,1.02,0),[0xd82a20,0xe83a2a,0xf05a3a],0x1a1a1a,.4,.7);
 // daisies everywhere
-flowerField2(touch?250:1000,around(SPAWN,55),stemGeo,petalHead(14,.065,.02,.12),new THREE.SphereGeometry(.026,8,6).scale(1,.6,1).translate(0,1.012,0),[0xfbfaf4,0xf6f2ea],0xf2c41a,.22,.45);
+flowerField2(touch?112:400,around(SPAWN,55),stemGeo,petalHead(14,.065,.02,.12),new THREE.SphereGeometry(.026,8,6).scale(1,.6,1).translate(0,1.012,0),[0xfbfaf4,0xf6f2ea],0xf2c41a,.22,.45);
 // lupines and forget-me-nots along the riverbank
-flowerField2(touch?130:520,bankPlace(.4),stemGeo,spikeHead(12,.042,.42,.92),null,[0x6a5ad8,0x8a6ae0,0xd86aa8,0xf0e8f0,0x5a7ae0],0,.55,.9);
-flowerField2(touch?130:520,bankPlace(.2),stemGeo,petalHead(5,.03,.028,.25,1,.006),new THREE.SphereGeometry(.012,6,5).translate(0,1.01,0),[0x6aa8f0,0x7ab8f8,0x5a98e8],0xf2d43a,.15,.28);
+flowerField2(touch?58:208,bankPlace(.4),stemGeo,spikeHead(12,.042,.42,.92),null,[0x6a5ad8,0x8a6ae0,0xd86aa8,0xf0e8f0,0x5a7ae0],0,.55,.9);
+flowerField2(touch?58:208,bankPlace(.2),stemGeo,petalHead(5,.03,.028,.25,1,.006),new THREE.SphereGeometry(.012,6,5).translate(0,1.01,0),[0x6aa8f0,0x7ab8f8,0x5a98e8],0xf2d43a,.15,.28);
 
 /* ================= willows by the river ================= */
 { const strandM=new THREE.MeshLambertMaterial({color:0x7aa040}), strandG=new THREE.CylinderGeometry(.03,.012,1,4).translate(0,-.5,0);
@@ -2268,7 +2298,7 @@ flowerField2(touch?130:520,bankPlace(.2),stemGeo,petalHead(5,.03,.028,.25,1,.006
 
 /* ================= mushroom clusters ================= */
 const mushDecor=(()=>{ const capG=new THREE.LatheGeometry([[0,.13],[.03,.128],[.055,.115],[.07,.09],[.075,.075],[.06,.07],[0,.075]].map(q=>new THREE.Vector2(q[0],q[1])),10), stemG=new THREE.CylinderGeometry(.014,.02,.09,6).translate(0,.04,0);
-  const N=touch?350:1300, caps=new THREE.InstancedMesh(capG,smt(0xffffff,{roughness:.55}),N), stems=new THREE.InstancedMesh(stemG,smt(0xeee6d4,{roughness:.85}),N); let n=0;
+  const N=touch?140:500, caps=new THREE.InstancedMesh(capG,smt(0xffffff,{roughness:.55}),N), stems=new THREE.InstancedMesh(stemG,smt(0xeee6d4,{roughness:.85}),N); let n=0;
   const cols=[0xb8642a,0xd8a050,0xf0e0c0,0x9a5a3a,0xc83a2a,0xe8c880,0x8a6a4a];
   const trees=[...broad,...pines].filter(b=>Math.hypot(b.x,b.z)<110);
   for(let tries=0;n<N&&tries<N*3;tries++){ const b=trees[Math.floor(rnd()*trees.length)], a=rnd()*6.283, r=(b.s||1)*.7+.4+rnd()*1.6, cx=b.x+Math.cos(a)*r, cz=b.z+Math.sin(a)*r; if(H(cx,cz)<.5||inRiver(cx,cz,1)||pathD(cx,cz)<1.4||nearCabin(cx,cz,1)) continue;
