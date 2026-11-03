@@ -686,7 +686,7 @@ flowerField(touch?79:280,around(SPAWN,40),daisyGeo,[0xf5f2e8,0xf0e6c8,0xe8a0c0,0
 flowerField(touch?56:200,around({x:-24,z:-20},26),plumeGeo,[0xd85a9a,0xe070b0,0xe8c440],.6,1.1);
 // the cabin's flower garden
 // six raised beds, each planted with a single kind of flower in neat rows (like a storybook farm garden)
-const gridIn=(x0,x1,z0,z1,step)=>{ const pts=[]; for(let z=z0+step*.6;z<=z1-step*.4;z+=step) for(let x=x0+step*.6;x<=x1-step*.4;x+=step) pts.push({x:x+(rnd()-.5)*step*.25,z:z+(rnd()-.5)*step*.25}); let i=0; return ()=>{ const q=pts[i++]; return q?{x:q.x,y:H(q.x,q.z)+.18,z:q.z}:null; }; };
+const gridIn=(x0,x1,z0,z1,step)=>{ const pts=[]; for(let z=z0+step*.6;z<=z1-step*.4;z+=step) for(let x=x0+step*.6;x<=x1-step*.4;x+=step) pts.push({x:x+(rnd()-.5)*step*.25,z:z+(rnd()-.5)*step*.25}); for(let k=pts.length-1;k>0;k--){ const j=Math.floor(rnd()*(k+1)); [pts[k],pts[j]]=[pts[j],pts[k]]; } let i=0; return ()=>{ const q=pts[i++]; return q?{x:q.x,y:H(q.x,q.z)+.18,z:q.z}:null; }; };
 const STRIPS=[]; GBEDS.forEach(b=>{ const w=(b.x1-b.x0)/3; for(let k=0;k<3;k++) STRIPS.push({x0:b.x0+k*w+.12,x1:b.x0+(k+1)*w-.12,z0:b.z0+.12,z1:b.z1-.12}); });
 const sunHead=petalHead(16,.13,.045,.12,0,.08).rotateX(Math.PI/2.3).translate(0,1,.03), sunCenter=new THREE.CylinderGeometry(.09,.09,.05,16).rotateX(Math.PI/2.3).translate(0,1,.05);
 const gStem=new THREE.CylinderGeometry(.02,.028,1,5).translate(0,.5,0);
@@ -699,9 +699,19 @@ const BED_PLAN=[
   [daisyBig,[0xf6f2ea,0xfaf6ee],.4,.52,.24],
   [tulipBig,[0xf28ab0,0xf6a0c0,0xe878a4],.42,.55,.24],
   [daisyBig,[0xf2c83a,0xf6d24a,0xe8b830],.42,.55,.24]];
-const gardenPts=[]; STRIPS.forEach((st,i)=>{ const [head,cols,h0,h1,step,ctr,cc]=BED_PLAN[i], stp=touch?step*1.25:step;
+const gardenPts=[], bedFlowers=[]; STRIPS.forEach((st,i)=>{ const [head,cols,h0,h1,step,ctr,cc]=BED_PLAN[i], stp=touch?step*1.25:step;
   const place=gridIn(st.x0,st.x1,st.z0,st.z1,stp);
-  const pts=ctr?flowerField2(260,place,gStem,head,ctr,cols,cc,h0,h1):flowerField(260,place,head,cols,h0,h1); gardenPts.push(...pts); });
+  const pts=ctr?flowerField2(260,place,gStem,head,ctr,cols,cc,h0,h1):flowerField(260,place,head,cols,h0,h1); gardenPts.push(...pts); bedFlowers.push(...pts.map(q=>Object.assign({big:!!ctr},q))); });
+// leaves on every flower stem, and a carpet of low foliage covering the soil between them
+{ const ls=new THREE.Shape(); ls.moveTo(0,0); ls.quadraticCurveTo(.05,.07,0,.17); ls.quadraticCurveTo(-.05,.07,0,0);
+  const leafG=new THREE.ShapeGeometry(ls,4); const leafM=smt(0x4f8f30,{side:THREE.DoubleSide,roughness:.8});
+  const L=new THREE.InstancedMesh(leafG,leafM,bedFlowers.length*3); let n=0;
+  bedFlowers.forEach(q=>{ const k=q.big?2.2:1; for(let j=0;j<(q.big?3:2);j++){ const a=rnd()*6.283; M.compose(V.set(q.x,q.y+(.1+j*.12)*q.s*(q.big?1:1.4),q.z),Q.setFromEuler(E.set(-1.0-rnd()*.3,a,0,"YXZ")),S3.setScalar(k*(.9+rnd()*.3))); L.setMatrixAt(n,M); L.setColorAt(n++,tmp.set(0x4f8f30).multiplyScalar(.85+rnd()*.3)); } });
+  L.count=n; L.castShadow=true; scene.add(L);
+  const coverG=organic(new THREE.IcosahedronGeometry(.16,1),.18,0x5a7048,0xffffff,6.6), coverM=smt(0x5a9a38,{vertexColors:true,roughness:.9});
+  const cov=[]; STRIPS.forEach(st=>{ for(let z=st.z0+.1;z<st.z1;z+=touch?.3:.22) for(let x=st.x0+.1;x<st.x1;x+=touch?.3:.22) cov.push([x+(rnd()-.5)*.1,z+(rnd()-.5)*.1]); });
+  const CV=new THREE.InstancedMesh(coverG,coverM,cov.length); CV.receiveShadow=true;
+  cov.forEach(([x,z],i)=>{ M.compose(V.set(x,H(x,z)+.19,z),Q.setFromEuler(E.set(0,rnd()*6,0)),S3.set(1,.45+rnd()*.25,1)); CV.setMatrixAt(i,M); CV.setColorAt(i,tmp.set(0x5a9a38).multiplyScalar(.8+rnd()*.35)); }); scene.add(CV); }
 // wooden raised-bed frames and rich dark soil
 { const wood=smt(0x8a5a32,{roughness:.85}), soilM=smt(0x4a3020,{roughness:1}); const planks=[];
   STRIPS.forEach(st=>{ const cx=(st.x0+st.x1)/2, cz=(st.z0+st.z1)/2, w=st.x1-st.x0+.16, d=st.z1-st.z0+.16, y=H(cx,cz);
@@ -2301,6 +2311,11 @@ const fruitBarkG=organicTrunk(2.1,.22,.1);
 const plotVis=PLOTS.map(p=>{ const g=new THREE.Group(); g.position.set(p.x,H(p.x,p.z),p.z); scene.add(g);
   const soil=new THREE.Mesh(new THREE.BoxGeometry(2.1,.2,2.1),std(0x4a3626)); soil.position.y=.06; soil.receiveShadow=true; g.add(soil);
   for(const [x,z,w,d] of [[0,-1.1,2.3,.14],[0,1.1,2.3,.14],[-1.1,0,.14,2.3],[1.1,0,.14,2.3]]){ const pl=new THREE.Mesh(new THREE.BoxGeometry(w,.32,d),smt(0x8a5a32,{roughness:.85})); pl.position.set(x,.12,z); pl.castShadow=true; g.add(pl); }
+  { const cg=new THREE.IcosahedronGeometry(.17,1), cov=[]; for(let z=-.9;z<=.9;z+=.24) for(let x=-.9;x<=.9;x+=.24) if(Math.hypot(x,z)>.32) cov.push([x+(rnd()-.5)*.08,z+(rnd()-.5)*.08]);
+    const CV=new THREE.InstancedMesh(cg,smt(0x5a9a38,{roughness:.9,flatShading:false}),cov.length); cov.forEach(([x,z],i)=>{ M.compose(V.set(x,.17,z),Q.setFromEuler(E.set(0,rnd()*6,0)),S3.set(1,.5+rnd()*.25,1)); CV.setMatrixAt(i,M); CV.setColorAt(i,tmp.set(0x5a9a38).multiplyScalar(.8+rnd()*.35)); }); g.add(CV);
+    const fl=[]; for(let k=0;k<14;k++){ const a=k/14*6.283, r=.82; fl.push([Math.cos(a)*r,Math.sin(a)*r]); } for(let k=0;k<10;k++) fl.push([(rnd()-.5)*1.5,(rnd()-.5)*1.5]);
+    const FL=new THREE.InstancedMesh(petalHead(8,.06,.03,.2,0,.01),smt(0xffffff,{side:THREE.DoubleSide,emissive:0x111111}),fl.length), cols=[0xf6f2ea,0xf2c83a,0xf28ab0,0xa98be0][p.x>ORCHARD.x+1?0:p.x<ORCHARD.x-1?2:1];
+    fl.forEach(([x,z],i)=>{ if(Math.hypot(x,z)<.35){ x*=2; z*=2; } M.compose(V.set(x,.26,z),Q.setFromEuler(E.set(0,rnd()*6,0)),S3.setScalar(1.6)); FL.setMatrixAt(i,M); FL.setColorAt(i,tmp.set(i%3?cols:0xf6f2ea)); }); g.add(FL); }
   const tree=new THREE.Group(); g.add(tree); obstacles.push({x:p.x,z:p.z,r:.55}); return {g,tree,type:null,fruits:[],soil,target:0}; });
 function buildTree(v,type){ while(v.tree.children.length) v.tree.remove(v.tree.children[0]); v.fruits=[]; v.type=type; if(!type) return; const F=FRUITS[type], tall=F.tall;
   const tr=new THREE.Mesh(fruitBarkG,smt(0x5a3e2a,{vertexColors:true,roughness:.95})); tr.scale.set(1,tall,1); v.tree.add(tr);
