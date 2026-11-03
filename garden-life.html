@@ -752,18 +752,20 @@ for(let x=GBEDS[0].x0;x<=GBEDS[1].x1+.01;x+=1) if(Math.abs(x)>.6){ paveAt(x,GBED
 const CAB_Y=FLATS[0].t, FLOOR_Y=CAB_Y+.55;
 const cabin=new THREE.Group(); cabin.position.set(CABIN.x,CAB_Y,CABIN.z); scene.add(cabin);
 const roofG=new THREE.Group(), frontG=new THREE.Group(); cabin.add(roofG,frontG);
-const logA=smt(0x70492e),logB=smt(0x62402a),darkWood=smt(0x38291f),roofMat=smt(0x62442f,{roughness:.95}),stoneM=std(0x8d8a82),plank=std(0x9c6c42);
+const logA=smt(0x70492e),logB=smt(0x62402a),darkWood=smt(0x38291f),roofMat=smt(0x176f96,{roughness:.8}),stoneM=std(0x8d8a82),plank=std(0x9c6c42);
 const W_=9,D_=7,LR=.24,ROWS=9,DOOR=.8;
 const logX=(len,m)=>{ const l=new THREE.Mesh(new THREE.CylinderGeometry(LR,LR,len,8),m); l.rotation.z=Math.PI/2; return l; };
 const logZ=(len,m)=>{ const l=new THREE.Mesh(new THREE.CylinderGeometry(LR,LR,len,8),m); l.rotation.x=Math.PI/2; return l; };
-for(let r=0;r<ROWS;r++){ const y=.5+LR+r*LR*1.95,m=r%2?logA:logB;
-  const back=logX(W_+.6,m); back.position.set(0,y,-D_/2); cabin.add(back);
-  if(r<5){ const segL=(W_+.6)/2-DOOR; for(const s of [-1,1]){ const f=logX(segL,m); f.position.set(s*(DOOR+segL/2),y,D_/2); frontG.add(f); } }
-  else { const f=logX(W_+.6,m); f.position.set(0,y,D_/2); frontG.add(f); }
-  for(const s of [-1,1]){ const sd=logZ(D_+.6,m); sd.position.set(s*W_/2,y+LR*.5,0); cabin.add(sd); } }
+// Storybook plaster shell preserves the original open doorway.
+{ const plaster=smt(0xe9b690,{roughness:.95}),height=ROWS*LR*1.95;
+  const back=new THREE.Mesh(new THREE.BoxGeometry(W_+.12,height,.28),plaster);back.position.set(0,.5+height/2,-D_/2);cabin.add(back);
+  for(const side of [-1,1]){const wall=new THREE.Mesh(new THREE.BoxGeometry(.28,height,D_),plaster);wall.position.set(side*W_/2,.5+height/2,0);cabin.add(wall);const width=W_/2-DOOR,pier=new THREE.Mesh(new THREE.BoxGeometry(width,height,.28),plaster);pier.position.set(side*(DOOR+width/2),.5+height/2,D_/2);frontG.add(pier);}
+  const lintel=new THREE.Mesh(new THREE.BoxGeometry(DOOR*2,height-2.5,.28),plaster);lintel.position.set(0,3+(height-2.5)/2,D_/2);frontG.add(lintel);
+  for(let k=0;k<12;k++){const side=k%2?1:-1,stone=new THREE.Mesh(new THREE.BoxGeometry(.34+(k%3)*.08,.18,.09),smt(0xb29ab1));stone.position.set(side*(W_/2-.22),.9+Math.floor(k/2)*.58,D_/2+.19);stone.rotation.z=side*.09;frontG.add(stone);}
+}
 const wallTop=.5+ROWS*LR*1.95;
 { const tri=new THREE.Shape(); tri.moveTo(-W_/2,0); tri.lineTo(W_/2,0); tri.lineTo(0,3); tri.lineTo(-W_/2,0);
-  const gg=new THREE.ExtrudeGeometry(tri,{depth:.3,bevelEnabled:false}); for(const s of [-1,1]){ const g=new THREE.Mesh(gg,logA); g.position.set(0,wallTop,s*D_/2-(s>0?.3:0)); roofG.add(g); }
+  const gg=new THREE.ExtrudeGeometry(tri,{depth:.3,bevelEnabled:false}); for(const s of [-1,1]){ const g=new THREE.Mesh(gg,smt(0xf0c79e)); g.position.set(0,wallTop,s*D_/2-(s>0?.3:0)); roofG.add(g); }
   const rLen=Math.hypot(W_/2+.9,3.4); for(const s of [-1,1]){ const r=new THREE.Mesh(new THREE.BoxGeometry(rLen,.28,D_+3.4),roofMat); r.position.set(s*(W_/4+.2),wallTop+1.6,.9); r.rotation.z=-s*Math.atan2(3.1,W_/2+.6); roofG.add(r); }
   const pr=new THREE.Mesh(new THREE.BoxGeometry(W_+1.2,.18,3.6),roofMat); pr.position.set(0,3.75,D_/2+1.8); pr.rotation.x=.12; roofG.add(pr);
   const ridge=new THREE.Mesh(new THREE.BoxGeometry(.3,.3,D_+3.6),darkWood); ridge.position.set(0,wallTop+3.05,.9); roofG.add(ridge); }
@@ -789,7 +791,7 @@ for(const x of [-1.3,1.3,3.8]){ const pot=new THREE.Mesh(new THREE.CylinderGeome
 const lantern=new THREE.Mesh(new THREE.BoxGeometry(.22,.32,.22),new THREE.MeshStandardMaterial({color:0x332211,emissive:0xffb35c,emissiveIntensity:0})); lantern.position.set(1.6,3.2,D_/2+3.05); cabin.add(lantern);
 const porchLight=new THREE.PointLight(0xffad55,0,14,1.6); porchLight.position.set(1.6,3,D_/2+2.8); cabin.add(porchLight);
 // Woodland cottage: cedar shingles, timber gables and softly glowing divided windows.
-{ const cedar=[0x735039,0x825c40,0x62432e,0x916746],frame=smt(0x3e291b,{roughness:.95});
+{ const cedar=[0x177fab,0x259dc0,0x16668f,0x318db5],frame=smt(0xd38a20,{roughness:.8});
   const angle=Math.atan2(3.1,W_/2+.6),length=Math.hypot(W_/2+.9,3.4),tiles=[];
   for(const side of [-1,1])for(let row=0;row<12;row++)for(let col=0;col<19;col++){
     const t=-length/2+(row+.5)*length/12,zz=-(D_+3.4)/2+(col+.5)*(D_+3.4)/19;
@@ -809,7 +811,7 @@ const porchLight=new THREE.PointLight(0xffad55,0,14,1.6); porchLight.position.se
   for(const x of [-2.9,2.9]){
     // Wooden window frames and crossbars sit in front of the existing glowing glass.
     for(const [dx,dy,w,h] of [[-.78,0,.11,1.4],[.78,0,.11,1.4],[0,-.66,1.65,.12],[0,.66,1.65,.12],[0,0,.065,1.3],[0,0,1.55,.065]]){const trim=new THREE.Mesh(new THREE.BoxGeometry(w,h,.12),frame);trim.position.set(x+dx,2.2+dy,D_/2+.34);frontG.add(trim);}
-    for(const side of [-1,1]){const shutter=new THREE.Mesh(new THREE.BoxGeometry(.32,1.3,.09),smt(0x4c5c3b));shutter.position.set(x+side*1.02,2.2,D_/2+.25);frontG.add(shutter);}
+    for(const side of [-1,1]){const shutter=new THREE.Mesh(new THREE.BoxGeometry(.32,1.3,.09),smt(0x519278));shutter.position.set(x+side*1.02,2.2,D_/2+.25);frontG.add(shutter);}
   }
   // Corner timbers and braces emphasize the sheltered porch without narrowing its entry.
   for(const x of [-W_/2,W_/2]){beam(cabin,new THREE.Vector3(x,.5,D_/2+.25),new THREE.Vector3(x,wallTop,D_/2+.25),.22);for(const sign of [-1,1]){if(x*sign>0)continue;beam(cabin,new THREE.Vector3(x,2.75,D_/2+3.1),new THREE.Vector3(x+sign*.65,3.55,D_/2+3.1),.12);}}
@@ -817,6 +819,19 @@ const porchLight=new THREE.PointLight(0xffad55,0,14,1.6); porchLight.position.se
   for(const x of [-3.9,3.9]){const post=new THREE.Mesh(new THREE.CylinderGeometry(.055,.07,1.6,8),frame);post.position.set(x,1.3,D_/2+2.85);cabin.add(post);
     const glow=new THREE.Mesh(new THREE.SphereGeometry(.21,14,10),winMat);glow.position.set(x,2.2,D_/2+2.85);cabin.add(glow);
     for(const yy of [1.98,2.41]){const cap=new THREE.Mesh(new THREE.CylinderGeometry(.14,.23,.08,10),smt(0x6a452b,{metalness:.35,roughness:.6}));cap.position.set(x,yy,D_/2+2.85);cabin.add(cap);}}
+}
+// Storybook turret and clock add height and color above the existing footprint.
+{ const gold=smt(0xe6a32c,{roughness:.65}),cream=smt(0xffdda5),blue=smt(0x137da6,{roughness:.8});
+  const tower=new THREE.Mesh(new THREE.CylinderGeometry(1.28,1.45,3.7,16),cream);tower.position.set(-2.1,wallTop+2,-1.1);roofG.add(tower);
+  const cap=new THREE.Mesh(new THREE.ConeGeometry(1.85,2.7,16),blue);cap.position.set(-2.1,wallTop+5.15,-1.1);roofG.add(cap);
+  for(const y of [wallTop+.3,wallTop+3.85]){const rim=new THREE.Mesh(new THREE.TorusGeometry(1.36,.11,6,24),gold);rim.rotation.x=Math.PI/2;rim.position.set(-2.1,y,-1.1);roofG.add(rim);}
+  const glass=new THREE.Mesh(new THREE.PlaneGeometry(.65,1.3),winMat);glass.position.set(-2.1,wallTop+2.2,.22);roofG.add(glass);
+  for(const x of [-2.49,-1.71]){const jamb=new THREE.Mesh(new THREE.BoxGeometry(.12,1.52,.16),gold);jamb.position.set(x,wallTop+2.2,.25);roofG.add(jamb);}
+  for(const y of [wallTop+1.48,wallTop+2.92]){const sill=new THREE.Mesh(new THREE.BoxGeometry(.9,.12,.2),gold);sill.position.set(-2.1,y,.25);roofG.add(sill);}
+  const face=new THREE.Mesh(new THREE.CircleGeometry(.34,24),cream);face.position.set(0,wallTop+1.35,D_/2+.4);roofG.add(face);
+  for(const [len,angle] of [[.23,0],[.17,-Math.PI/2]]){const hand=new THREE.Mesh(new THREE.BoxGeometry(.045,len,.035),smt(0x34465c));hand.position.set(Math.sin(-angle)*len/2,wallTop+1.35+Math.cos(angle)*len/2,D_/2+.44);hand.rotation.z=angle;roofG.add(hand);}
+  for(const side of [-1,1]){const curl=new THREE.Mesh(new THREE.TorusGeometry(.28,.085,6,16,Math.PI*1.35),gold);curl.position.set(side*(W_/2+.25),wallTop+.02,D_/2+.4);curl.rotation.z=side<0?Math.PI:0;roofG.add(curl);}
+  for(const x of [-2.9,2.9]){const box=new THREE.Mesh(new THREE.BoxGeometry(1.7,.28,.42),smt(0xd8a6a0));box.position.set(x,1.43,D_/2+.46);frontG.add(box);for(let k=0;k<7;k++){const bloom=new THREE.Mesh(new THREE.SphereGeometry(.095,7,5),smt([0xe76f8f,0xf4bd3e,0x9b7dcc][k%3]));bloom.position.set(x-.65+k*.21,1.7+(k%2)*.05,D_/2+.49);frontG.add(bloom);}}
 }
 // Tall branching woodland trees frame the cottage from behind, leaving the approach clear.
 { const positions=[[-12,-23],[-8,-27],[-3,-30],[4,-31],[10,-27],[14,-25],[-17,-31],[18,-33],[-12,-37],[0,-39],[10,-38]],trunkGeo=organicTrunk(11,.38,.13),bark=smt(0x514737,{vertexColors:true,roughness:1});
@@ -1411,6 +1426,8 @@ function updateSky(dt,t){
   hemi.intensity=.26+.2*day+.1*dusk; hemi.color.copy(cTop).lerp(tmp.set(0xffffff),.5); hemi.groundColor.set(0x6a5a6a).lerp(tmp.set(0x4a3a6a),night*.6);
   // Lower daytime glare and enrich the world colors as the sun rises.
   renderer.toneMappingExposure=.9+night*.14-.12*day;
+  const storyColor=`saturate(${(1.1+.16*day).toFixed(2)})`;
+  if(canvas.style.filter!==storyColor)canvas.style.filter=storyColor;
   { const g=$("grade"), n=night>.5; if(g.classList.contains("night")!==n) g.classList.toggle("night",n); }
   const lights=smooth(.2,-.1,sunE);
   winMat.emissiveIntensity=.3+lights*1.8; lantern.material.emissiveIntensity=lights*2.5*LV(); porchLight.intensity=lights*1.4*LV(); roomLight.intensity=.5+lights*.6; extraLights.forEach(L=>L.intensity=(L.userData.base||0)+lights*L.userData.k); extraLanterns.forEach(m=>m.emissiveIntensity=lights*2.5*LV()); updateLamps(lights*LV()); cloudMat.color.setScalar((1-night*.75)*(1-W.cover*.42)); cloudMat.emissive.copy(cHor).multiplyScalar(.35*(1-night*.6));
@@ -3152,13 +3169,16 @@ const soundOn=()=>$("bSound").getAttribute("aria-pressed")==="true";
 function noiseBuf(sec,brown){ const b=AC.createBuffer(1,AC.sampleRate*sec,AC.sampleRate),d=b.getChannelData(0); let l=0; for(let i=0;i<d.length;i++){ const w=Math.random()*2-1; if(brown){ l=(l+.02*w)/1.02; d[i]=l*3.5; } else d[i]=w; } return b; }
 function startAudio(){
   try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return; }
-  master=AC.createGain(); master.gain.value=0; master.connect(AC.destination);
-  const wind=AC.createBufferSource(); wind.buffer=noiseBuf(3,true); wind.loop=true; const wl=AC.createBiquadFilter(); wl.type="lowpass"; wl.frequency.value=600; const wg=AC.createGain(); wg.gain.value=.3; windGainNode=wg;
-  const lfo=AC.createOscillator(),lg=AC.createGain(); lfo.frequency.value=.06; lg.gain.value=.18; lfo.connect(lg); lg.connect(wg.gain); lfo.start(); wind.connect(wl); wl.connect(wg); wg.connect(master); wind.start();
-  const rv=AC.createBufferSource(); rv.buffer=noiseBuf(2,false); rv.loop=true; const b1=AC.createBiquadFilter(); b1.type="bandpass"; b1.frequency.value=1100; b1.Q.value=.6;
-  const rl=AC.createOscillator(),rlg=AC.createGain(); rl.frequency.value=3.3; rlg.gain.value=300; rl.connect(rlg); rlg.connect(b1.frequency); rl.start();
+  master=AC.createGain(); master.gain.value=0;
+  const soft=AC.createBiquadFilter();soft.type="lowpass";soft.frequency.value=2800;soft.Q.value=.5;
+  const limiter=AC.createDynamicsCompressor();limiter.threshold.value=-20;limiter.knee.value=24;limiter.ratio.value=3;limiter.attack.value=.015;limiter.release.value=.4;
+  master.connect(soft);soft.connect(limiter);limiter.connect(AC.destination);
+  const wind=AC.createBufferSource(); wind.buffer=noiseBuf(3,true); wind.loop=true; const wl=AC.createBiquadFilter(); wl.type="lowpass"; wl.frequency.value=600; const wg=AC.createGain(); wg.gain.value=.08; windGainNode=wg;
+  const lfo=AC.createOscillator(),lg=AC.createGain(); lfo.frequency.value=.06; lg.gain.value=.025; lfo.connect(lg); lg.connect(wg.gain); lfo.start(); wind.connect(wl); wl.connect(wg); wg.connect(master); wind.start();
+  const rv=AC.createBufferSource(); rv.buffer=noiseBuf(2,false); rv.loop=true; const b1=AC.createBiquadFilter(); b1.type="bandpass"; b1.frequency.value=750; b1.Q.value=.6;
+  const rl=AC.createOscillator(),rlg=AC.createGain(); rl.frequency.value=.45; rlg.gain.value=100; rl.connect(rlg); rlg.connect(b1.frequency); rl.start();
   riverGain=AC.createGain(); riverGain.gain.value=0; rv.connect(b1); b1.connect(riverGain); riverGain.connect(master); rv.start();
-  const co=AC.createOscillator(); co.frequency.value=4300; const am=AC.createGain(); am.gain.value=0; const amO=AC.createOscillator(); amO.type="square"; amO.frequency.value=14; const amG=AC.createGain(); amG.gain.value=.5;
+  const co=AC.createOscillator(); co.frequency.value=2400; const am=AC.createGain(); am.gain.value=0; const amO=AC.createOscillator(); amO.type="sine"; amO.frequency.value=5; const amG=AC.createGain(); amG.gain.value=.5;
   amO.connect(amG); amG.connect(am.gain); cricketGain=AC.createGain(); cricketGain.gain.value=0; co.connect(am); am.connect(cricketGain); cricketGain.connect(master); co.start(); amO.start();
   { const rs=AC.createBufferSource(); rs.buffer=noiseBuf(2,false); rs.loop=true; const hp=AC.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=900; rainGainNode=AC.createGain(); rainGainNode.gain.value=0; rs.connect(hp); hp.connect(rainGainNode); rainGainNode.connect(master); rs.start();
     const ws=AC.createBufferSource(); ws.buffer=noiseBuf(3,false); ws.loop=true; const wb=AC.createBiquadFilter(); wb.type="bandpass"; wb.frequency.value=700; wb.Q.value=.4; fallGain=AC.createGain(); fallGain.gain.value=0; ws.connect(wb); wb.connect(fallGain); fallGain.connect(master); ws.start(); }
@@ -3167,19 +3187,19 @@ function startAudio(){
 function tone(f0,f1,dur,vol,type){ if(!AC||!soundOn()) return; const o=AC.createOscillator(),g=AC.createGain(),n=AC.currentTime; o.type=type||"sine";
   o.frequency.setValueAtTime(f0,n); o.frequency.exponentialRampToValueAtTime(f1,n+dur*.6); g.gain.setValueAtTime(0,n); g.gain.linearRampToValueAtTime(vol,n+.02); g.gain.exponentialRampToValueAtTime(.0001,n+dur);
   o.connect(g); g.connect(master); o.start(n); o.stop(n+dur+.05); }
-const chirp=f=>tone(f,f*1.8,.18,.05);
+const chirp=f=>tone(f,f*1.25,.26,.03);
 const plop=()=>tone(500,120,.22,.12);
 const splash=()=>{ plop(); setTimeout(()=>tone(800,200,.15,.06),80); };
 const chime=()=>[880,1320,1760].forEach((f,i)=>setTimeout(()=>tone(f,f,1.1,.05),i*120));
-const honk=()=>{ tone(330,260,.25,.05,"sawtooth"); setTimeout(()=>tone(320,250,.22,.04,"sawtooth"),260); };
+const honk=()=>{ tone(330,260,.25,.05,"sawtooth"); setTimeout(()=>tone(320,250,.22,.04,"sine"),350); };
 let birdNext=0,crackNext=0;
-function updateAudio(t){ if(!AC) return; const on=soundOn(); master.gain.setTargetAtTime(on?.8:0,AC.currentTime,.4);
-  const cp=C.g.position, dr=rDist(cp.x,cp.z); riverGain.gain.setTargetAtTime((P.inside?.03:.1)*(1-smooth(4,30,dr)),AC.currentTime,.3);
-  cricketGain.gain.setTargetAtTime(.012*night*(curSeason==="winter"?0:1)*(1-W.rain),AC.currentTime,.5);
-  if(rainGainNode) rainGainNode.gain.setTargetAtTime(.14*W.rain*(P.inside?.45:1),AC.currentTime,.5); if(windGainNode) windGainNode.gain.setTargetAtTime(.18+.14*W.wind,AC.currentTime,.8);
-  const df=Math.hypot(cp.x-FIRE.x,cp.z-FIRE.z); fireGain.gain.setTargetAtTime(fireLit()?.25*(1-smooth(2,14,df)):0,AC.currentTime,.3);
-  if(on&&fireLit()&&df<10&&t>crackNext){ crackNext=t+.1+Math.random()*.5; tone(2000+Math.random()*2000,800,.04,.03*(1-df/10),"square"); }
-  if(on&&night<.4&&t>birdNext){ birdNext=t+2+Math.random()*6; const f=1800+Math.random()*1800; chirp(f); setTimeout(()=>chirp(f*1.12),140); } }
+function updateAudio(t){ if(!AC) return; const on=soundOn(); master.gain.setTargetAtTime(on?.28:0,AC.currentTime,1.2);
+  const cp=C.g.position, dr=rDist(cp.x,cp.z); riverGain.gain.setTargetAtTime((P.inside?.015:.055)*(1-smooth(4,30,dr)),AC.currentTime,.3);
+  cricketGain.gain.setTargetAtTime(.005*night*(curSeason==="winter"?0:1)*(1-W.rain),AC.currentTime,.5);
+  if(rainGainNode) rainGainNode.gain.setTargetAtTime(.065*W.rain*(P.inside?.45:1),AC.currentTime,.5); if(windGainNode) windGainNode.gain.setTargetAtTime(.07+.05*W.wind,AC.currentTime,.8);
+  const df=Math.hypot(cp.x-FIRE.x,cp.z-FIRE.z); fireGain.gain.setTargetAtTime(fireLit()?.1*(1-smooth(2,14,df)):0,AC.currentTime,.3);
+  if(on&&fireLit()&&df<10&&t>crackNext){ crackNext=t+1.5+Math.random()*3; tone(600+Math.random()*500,300,.12,.012*(1-df/10),"sine"); }
+  if(on&&night<.4&&t>birdNext){ birdNext=t+9+Math.random()*15; const f=1100+Math.random()*700; tone(f,f*1.25,.32,.025); setTimeout(()=>tone(f*1.1,f,.3,.018),300); } }
 $("bSound").onclick=()=>{ const b=$("bSound"),on=!soundOn(); b.setAttribute("aria-pressed",on); if(on&&!AC) startAudio(); if(AC&&AC.state==="suspended") AC.resume(); };
 
 /* ================= animal behavior ================= */
