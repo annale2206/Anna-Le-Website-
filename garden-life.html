@@ -1725,8 +1725,8 @@ function updateShoot(t){ const btn=$("sWish");
 
 /* ---------- basket ---------- */
 function renderBasket(){ const el=$("basket"); el.innerHTML=""; const ks=Object.keys(J.inv).filter(k=>J.inv[k]>0&&ITEMS[k]);
-  const b=document.createElement("button"); b.textContent=ks.length?"Basket":"Basket (empty)"; b.onclick=openBasket; el.appendChild(b);
-  ks.slice(0,touch?3:7).forEach(k=>{ const c=document.createElement("button"); c.innerHTML=`<span class="dot" style="background:${ITEMS[k].c}"></span>${J.inv[k]} ${esc(ITEMS[k].n)}`; c.onclick=openBasket; el.appendChild(c); }); }
+  const n=ks.reduce((a,k)=>a+J.inv[k],0); const b=document.createElement("button"); b.innerHTML=ks.length?`🧺 Basket <b>${n}</b>`:"🧺 Basket"; b.title=ks.map(k=>J.inv[k]+" "+ITEMS[k].n).join(", "); b.onclick=openBasket; el.appendChild(b); }
+setTimeout(()=>{ const h=$("hint"); if(h) h.hidden=true; },15000);
 function openBasket(){
   const ks=Object.keys(J.inv).filter(k=>J.inv[k]>0&&ITEMS[k]);
   const rows=ks.map(k=>`<div class="item"><div><span class="dot" style="background:${ITEMS[k].c}"></span> <b>${J.inv[k]}</b> ${esc(ITEMS[k].n)}</div>
@@ -2018,7 +2018,10 @@ function updateHeadMenu(){ const el=$("headMenu"), seated=!!P.seat&&!P.seat.sky;
   const show=welcomed&&$("sheet").hidden&&$("notebook").hidden&&!(drag&&drag.moved)&&((P.mode==="walk"&&!P.route&&(P.idle||0)>.3)||seated);
   if(!show){ if(!el.hidden){ el.hidden=true; moreOpen=false; hmKey=""; } return; }
   hmV.copy(C.g.position); hmV.y+=(seated?(P.mode==="lie"?1.3:2.1):2.8)+0; if(seated&&C.label) hmV.y=Math.max(hmV.y,C.g.position.y+2.64); hmV.project(camera); if(hmV.z>1){ el.hidden=true; return; }
-  el.hidden=false; hmList=hmMain(); const key=(seated?P.mode+(P.seat.fire?"f":""):"walk")+moreOpen+hmList.map(h=>h[0]).join(); if(key!==hmKey){ hmKey=key; buildHeadMenu(); }
+  el.hidden=false; { let clear=8; for(const id of ["prompt","hint","basket","talkDock"]){ const b=$(id); if(!b||b.hidden) continue; const r=b.getBoundingClientRect(); if(r.height>0&&r.top<innerHeight) clear=Math.max(clear,innerHeight-r.top+10); }
+    if(touch){ const st=$("stick"); if(st&&!st.hidden){ const r=st.getBoundingClientRect(); clear=Math.max(clear,innerHeight-r.top+10); } }
+    const want=clear+"px"; if(el.style.getPropertyValue("bottom")!==want) el.style.setProperty("bottom",want,"important"); }
+  hmList=hmMain(); const key=(seated?P.mode+(P.seat.fire?"f":""):"walk")+moreOpen+hmList.map(h=>h[0]).join(); if(key!==hmKey){ hmKey=key; buildHeadMenu(); }
   const w=el.offsetWidth||300, x=Math.max(w/2+8,Math.min(innerWidth-w/2-8,(hmV.x*.5+.5)*innerWidth)), topBar=(document.querySelector(".hud .row")||{getBoundingClientRect:()=>({bottom:0})}).getBoundingClientRect().bottom, y=Math.max((el.offsetHeight||60)+topBar+8,(-hmV.y*.5+.5)*innerHeight);
   el.style.left=x+"px"; el.style.top=y+"px"; }
 
