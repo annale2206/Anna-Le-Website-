@@ -336,8 +336,14 @@ const CAMPS=[FIRE2,FIRE3,SWING2,SWING3];
 const nearCamp=(x,z,r)=>CAMPS.some(c=>Math.hypot(x-c.x,z-c.z)<r);
 const BANK=x=>riverZ(x)-RW/2-1.6;
 const RBENCH={x:-6,z:BANK(-6)-.4};
-function B(x,z){ let h=(fbm(x*.016+10,z*.016+10)-.5)*14; const r=Math.hypot(x,z); if(r>100){ const k=r-100; h+=k*k*.012; }
+function B(x,z){ let h=(fbm(x*.016+10,z*.016+10)-.5)*14; const r=Math.hypot(x,z); if(r>88){ const k=r-88; h+=k*k*.016; }
   h+=7*Math.exp(-((x-HILL.x)**2+(z-HILL.z)**2)/260);
+  // the meditation cabin sits on top of its own little hill, looking out over the valley
+  h+=9*Math.exp(-((x-MED.x)**2+(z-(MED.z-2))**2)/420);
+  // rolling foothills that rise around the valley, layer after layer, for depth
+  const ring=smooth(38,80,r); h+=ring*Math.max(0,fbm(x*.022+31,z*.022+17)-.32)*30;
+  // taller ridges and peaks beyond the forest
+  const rim=smooth(80,120,r); h+=rim*(Math.max(0,fbm(x*.014+5,z*.014+44)-.38)*95+Math.max(0,fbm(x*.05+2,z*.05+9)-.5)*24);
   const f=1-smooth(8,30,rDist(x,z)); return h*(1-f)+.9*f; }
 const FLATS=[{c:CABIN,r:21},{c:BEDS,r:9},{c:BERRY,r:13},{c:SISTERS,r:10},{c:ASTER,r:14},{c:GROVE,r:15},{c:MAPLE,r:11},{c:DEERM,r:14},{c:ORCHARD,r:13},{c:KITCHEN,r:12},{c:BEDROOM,r:11},{c:ART,r:12},{c:VEG,r:14},{c:BLUE,r:11},{c:RASP,r:9},{c:MED,r:12},{c:FIRE2,r:10},{c:FIRE3,r:11}].map(f=>Object.assign(f,{t:Math.max(.7,B(f.c.x,f.c.z))}));
 function flat(h,x,z,c,r,t){ const f=1-smooth(r*.55,r,Math.hypot(x-c.x,z-c.z)); return h*(1-f)+t*f; }
@@ -455,6 +461,7 @@ for(let i=0;i<tpos.count;i++){ const x=tpos.getX(i),z=tpos.getZ(i),h=H(x,z); tpo
   const pd=pathD(x,z); if(pd<2.3){ const a=(1-smooth(1.1,2.3,pd))*.97; tmp.lerp(cDirt,a); gw*=1-a; }
   if(inGBed(x,z)){ tmp.lerp(cSoil,.85); gw*=.15; }
   const d=rDist(x,z); if(d<RW/2+2.6){ const a=1-smooth(RW/2+.6,RW/2+2.6,d); tmp.lerp(cSand,a); gw*=1-a; } if(h<-.1){ const a=smooth(-.1,-.8,h); tmp.lerp(cMud,a); gw*=1-a; tUnder[i]=1; }
+  if(h>28){ tmp.lerp(col(0xd8cfe6),smooth(28,48,h)*.85); }
   if(h>10){ const a=smooth(10,22,h); tmp.lerp(cRock,a); gw*=1-a*.6; }
   tGrass[i]=gw; tmp.multiplyScalar(.8); tcol.push(tmp.r,tmp.g,tmp.b); }
 const tBase=Float32Array.from(tcol);
