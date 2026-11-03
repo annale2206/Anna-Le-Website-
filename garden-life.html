@@ -2486,9 +2486,9 @@ flowerField2(touch?58:208,bankPlace(.2),stemGeo,petalHead(5,.03,.028,.25,1,.006)
     g.traverse(o=>{ if(o.isMesh) o.castShadow=true; }); obstacles.push({x,z,r:.6}); canopies.push({x,z,r:3,y0:y+2.2,y1:y+6}); }); }
 
 /* ================= cultivated blueberry and fruit garden ================= */
-{ const wood=smt(0x88613e,{roughness:1}),soil=smt(0x503827,{roughness:1}),path=smt(0xb99b6a,{roughness:1});
+{ const wood=smt(0x88613e,{roughness:1}),soil=smt(0x503827,{roughness:1});
   const ground=new THREE.Group();ground.position.set(BLUE.x,H(BLUE.x,BLUE.z),BLUE.z);scene.add(ground);
-  const base=new THREE.Mesh(new THREE.BoxGeometry(14.8,.05,10.6),path);base.position.y=.025;base.receiveShadow=true;ground.add(base);
+  // Leave the existing green grass terrain visible around the blueberry beds.
   // A central promenade and generous gaps between six square planting beds.
   const sites=[];for(const z of [-2.5,2.5])for(const x of [-3.1,0,3.1])sites.push([x,z]);
   const leafShape=new THREE.Shape();leafShape.moveTo(0,0);leafShape.bezierCurveTo(-.11,.09,-.1,.26,0,.36);leafShape.bezierCurveTo(.1,.26,.11,.09,0,0);
@@ -2706,8 +2706,8 @@ const vegSoilTex=(()=>{ const c=document.createElement('canvas'); c.width=c.heig
   for(let j=0;j<2200;j++){ const x=(j*47.31)%128,y=(j*83.73)%128;ctx.fillStyle=['#69482f','#38281d','#795638','#523923'][j%4];ctx.fillRect(x,y,1+j%3,1+j%2); }
   const tex=new THREE.CanvasTexture(c);tex.encoding=THREE.sRGBEncoding;tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(3,2);return tex; })();
 { const garden=new THREE.Group();garden.position.set(VEG.x,H(VEG.x,VEG.z),VEG.z);scene.add(garden);
-  const pathMat=smt(0xb89563,{roughness:1}),white=smt(0xe7dfc9,{roughness:.9});
-  const ground=new THREE.Mesh(new THREE.BoxGeometry(15.4,.06,9.6),pathMat);ground.position.y=.025;ground.receiveShadow=true;garden.add(ground);
+  const white=smt(0xe7dfc9,{roughness:.9});
+  // Leave the existing green grass terrain visible around the vegetable beds.
   // Picket fence on the back and sides, with an open front for harvesting.
   const posts=[];for(let x=-7.5;x<=7.5;x+=.48)posts.push([x,-4.7]);for(const x of [-7.5,7.5])for(let z=-4.2;z<3.9;z+=.48)posts.push([x,z]);
   const fence=new THREE.InstancedMesh(new THREE.BoxGeometry(.15,.85,.09),white,posts.length);
