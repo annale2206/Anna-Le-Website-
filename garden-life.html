@@ -346,9 +346,10 @@ function B(x,z){ let h=(fbm(x*.016+10,z*.016+10)-.5)*14; const r=Math.hypot(x,z)
   const rim=smooth(80,120,r); h+=rim*(Math.max(0,fbm(x*.014+5,z*.014+44)-.38)*95+Math.max(0,fbm(x*.05+2,z*.05+9)-.5)*24);
   const f=1-smooth(8,30,rDist(x,z)); h=h*(1-f)+.9*f;
   { const fz=riverZ(FALLS.x)+RW/2-.6, dx=Math.abs(x-FALLS.x), dz=z-fz, side=1-smooth(9,18,dx);
-    if(dz>0&&side>0){ let c=FALL_H*smooth(.9,3.4,dz)*side; c+=Math.max(0,dz-6)*.22*side*smooth(6,30,dz); c-=.7*(1-smooth(1.2,2.4,dx))*smooth(2.6,5,dz); h=Math.max(h,.9+c); } }
+    const side2=1-smooth(13,22,dx);
+    if(dz>0&&side2>0){ let c=FALL_H*.55*smooth(.9,2.6,dz)*side2+FALL_H*.45*smooth(4.2,6,dz)*side2; c+=Math.max(0,dz-9)*.2*side2*smooth(9,30,dz); h=Math.max(h,.9+c); } }
   return h; }
-const FALL_H=9;
+const FALL_H=4.6;
 const FLATS=[{c:CABIN,r:21},{c:BEDS,r:9},{c:BERRY,r:13},{c:SISTERS,r:10},{c:ASTER,r:14},{c:GROVE,r:15},{c:MAPLE,r:11},{c:DEERM,r:14},{c:ORCHARD,r:13},{c:KITCHEN,r:12},{c:BEDROOM,r:11},{c:ART,r:12},{c:VEG,r:14},{c:BLUE,r:11},{c:RASP,r:9},{c:MED,r:12},{c:FIRE2,r:10},{c:FIRE3,r:11}].map(f=>Object.assign(f,{t:Math.max(.7,B(f.c.x,f.c.z))}));
 function flat(h,x,z,c,r,t){ const f=1-smooth(r*.55,r,Math.hypot(x-c.x,z-c.z)); return h*(1-f)+t*f; }
 function H(x,z){ let h=B(x,z); for(const f of FLATS) h=flat(h,x,z,f.c,f.r,f.t);
@@ -2496,68 +2497,70 @@ function updateSwing(dt){ let SWG=null;
     scene.add(im); obstacles.push({x,z,r:.55}); patches.push({type:"raspberry",x,z,im,imFull:24,left:8,max:8,asked:false,regrow:0}); }
   leafIM.castShadow=caneIM.castShadow=true; leafIM.customDepthMaterial=new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking,map:LEAF_TEX_S,alphaTest:.45}); scene.add(leafIM,caneIM); }
 
-/* ================= waterfall: a tall cascade pouring off a rocky cliff, with the foothills rising behind ================= */
+/* ================= waterfall: a wide, silky jungle cascade over mossy rocks into a turquoise pool ================= */
 const FALL_Z=riverZ(FALLS.x)+RW/2-.6, FALL_TOP=FALL_H+.9;
 const fallU={uTime:TIME,uLight:{value:1}};
-const fallMat=new THREE.ShaderMaterial({uniforms:fallU,transparent:true,depthWrite:false,side:THREE.DoubleSide,
-  vertexShader:"varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }",
-  fragmentShader:`uniform float uTime,uLight; varying vec2 vUv;
-  float h(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
-  float n(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.-2.*f); return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y); }
+const NOISE=`float h(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+  float n(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.-2.*f); return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y); }`;
+const VS="varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }";
+// silky white veils: soft long-exposure streaks, more see-through at the sides and where the water thins
+const fallMat=new THREE.ShaderMaterial({uniforms:fallU,transparent:true,depthWrite:false,side:THREE.DoubleSide,vertexShader:VS,
+  fragmentShader:`uniform float uTime,uLight; varying vec2 vUv; ${NOISE}
   void main(){ float y=vUv.y;
-    // long vertical streaks falling fast, with slower broad sheets underneath
-    vec2 q=vec2(vUv.x*26.,y*1.6+uTime*3.4); float streak=n(q)*.55+n(q*vec2(2.1,1.3)+7.)*.3+n(vec2(vUv.x*7.,y*.8+uTime*1.6))*.25;
-    vec3 deep=vec3(.24,.46,.52), mid=vec3(.55,.76,.8), white=vec3(.96,.99,1.);
-    vec3 c=mix(deep,mid,smoothstep(.3,.65,streak)); c=mix(c,white,smoothstep(.62,.9,streak));
-    float lip=smoothstep(.9,1.,y); float base=1.-smoothstep(0.,.16,y);
-    c=mix(c,white,lip*.55+base*.8);
-    float edge=smoothstep(0.,.1,vUv.x)*smoothstep(1.,.9,vUv.x);
-    float a=(.62+.35*streak)*edge; a=max(a,base*edge*.9);
-    gl_FragColor=vec4(c*mix(.3,1.,uLight),a); }`});
-const fallFoamMat=new THREE.ShaderMaterial({uniforms:fallU,transparent:true,depthWrite:false,
-  vertexShader:"varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }",
-  fragmentShader:`uniform float uTime,uLight; varying vec2 vUv;
-  float h(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
-  float n(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.-2.*f); return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y); }
-  void main(){ vec2 p=vUv-.5; float r=length(p)*2.; float a=atan(p.y,p.x);
-    float f=n(vec2(a*4.,r*6.-uTime*1.4))*.6+n(vec2(a*9.,r*12.-uTime*2.2))*.4;
-    float alpha=smoothstep(1.,.25,r)*smoothstep(.25,.7,f)*.9;
-    gl_FragColor=vec4(vec3(.97,.99,1.)*mix(.35,1.,uLight),alpha); }`});
+    float s=n(vec2(vUv.x*34.,y*1.2+uTime*2.2))*.5+n(vec2(vUv.x*12.,y*.7+uTime*1.3))*.35+n(vec2(vUv.x*70.,y*2.+uTime*3.))*.15;
+    vec3 c=mix(vec3(.72,.9,.92),vec3(1.),smoothstep(.35,.75,s));
+    float edge=smoothstep(0.,.18,vUv.x)*smoothstep(1.,.82,vUv.x);
+    float thin=smoothstep(.2,.55,s);
+    float a=edge*(.38+.55*thin); a=max(a,(1.-smoothstep(0.,.22,y))*edge*.95);
+    gl_FragColor=vec4(c*mix(.32,1.,uLight),a); }`});
+// the turquoise pool: milky blue-green, brighter and foamy where the water lands
+const poolMat=new THREE.ShaderMaterial({uniforms:fallU,transparent:true,depthWrite:false,vertexShader:VS,
+  fragmentShader:`uniform float uTime,uLight; varying vec2 vUv; ${NOISE}
+  void main(){ vec2 p=vUv; float r=length((p-vec2(.5,.5))*vec2(1.,1.6));
+    float rip=n(vec2(p.x*9.,p.y*9.-uTime*.6))*.6+n(vec2(p.x*23.+uTime*.3,p.y*21.))*.4;
+    vec3 deep=vec3(.12,.62,.64), milk=vec3(.45,.86,.82);
+    vec3 c=mix(milk,deep,smoothstep(.1,.85,1.-p.y+.15*rip));
+    float foam=smoothstep(.62,.95,p.y)*smoothstep(.35,.75,rip+p.y*.5);
+    c=mix(c,vec3(.97,1.,1.),foam*.85);
+    float a=smoothstep(.62,.38,r)*.92;
+    gl_FragColor=vec4(c*mix(.3,1.05,uLight),a); }`});
 { const fg=new THREE.Group(); scene.add(fg);
-  const rockA=smt(0x8a7e72,{roughness:.95}), rockB=smt(0x766c66,{roughness:.95}), rockC=smt(0x9a8c7c,{roughness:.95}), mossM=smt(0x5a8a3a,{roughness:1}), wetM=smt(0x4a4a48,{roughness:.35});
-  const slab=(w,h,d,m,x,y,z,ry)=>{ const g=organic(new THREE.BoxGeometry(w,h,d,5,3,4),.16,0xa89c90,0xffffff,x*1.7+z); const r=new THREE.Mesh(g,m); r.material=m.clone(); r.material.vertexColors=true; r.position.set(x,y,z); r.rotation.set((rnd()-.5)*.12,ry||0,(rnd()-.5)*.14); r.castShadow=r.receiveShadow=true; fg.add(r); return r; };
-  // the cliff face: horizontal layers of stone stepping up, split by the notch the water has carved
-  const layers=7, lh=FALL_TOP/layers;
-  for(let L=0;L<layers;L++){ const y=L*lh+lh/2-.2, back=FALL_Z+1.3+L*.22;
-    for(const side of [-1,1]){ let x=1.7; while(x<15-L*.7){ const w=2.2+rnd()*2.6, d=2.6+rnd()*1.4;
-        const r=slab(w,lh*(1.05+rnd()*.25),d,[rockA,rockB,rockC][(L+Math.floor(x))%3],FALLS.x+side*(x+w/2),y,back+d/2+rnd()*.4,(rnd()-.5)*.18);
-        if(rnd()<.7&&L<layers-1){ const mo=new THREE.Mesh(organic(new THREE.IcosahedronGeometry(.5,2),.2,0xa0b890,0xffffff,x),mossM); mo.scale.set(w*.45,.22,.9); mo.position.set(r.position.x,y+lh*.55,back+.5); fg.add(mo); }
-        x+=w*.92; } } }
-  // dark wet rock behind the water and two big boulders splitting the foam at the bottom
-  slab(3.8,FALL_TOP,1.2,wetM,FALLS.x,FALL_TOP/2-.3,FALL_Z+2.4);
-  for(const [dx,s] of [[-2.4,1.3],[2.1,1.1],[-.6,.8],[3.1,.7]]){ const b=new THREE.Mesh(organic(new THREE.IcosahedronGeometry(s,2),.18,0x9a948c,0xffffff,dx),rockB); b.material=rockB.clone(); b.material.vertexColors=true; b.position.set(FALLS.x+dx,s*.35-.2,FALL_Z+.6+Math.abs(dx)*.15); b.scale.y=.7; b.castShadow=true; fg.add(b); }
-  // the falling water: a broad curtain that leaves the lip, arcs out and drops into the pool
-  const curtain=(W0,W1,out,off,ro)=>{ const pos=[],uv=[],idx=[], R=24, C=8;
-    for(let k=0;k<=R;k++){ const t=k/R, z=FALL_Z+1.75-Math.sin(t*1.25)*out+off, y=FALL_TOP*(1-t)-.1*t*t; const w=W0+(W1-W0)*t;
-      for(let j=0;j<=C;j++){ const u=j/C; pos.push(FALLS.x-w/2+u*w,y,z+Math.sin(u*Math.PI)*.12); uv.push(u,1-t); } }
+  const rockM=smt(0xb0a084,{roughness:.9,vertexColors:true}), darkM=smt(0x8a7c64,{roughness:.55,vertexColors:true}), mossM=smt(0x6a9a3a,{roughness:1,vertexColors:true}), leafM=smt(0x4f8a34,{roughness:.9,vertexColors:true});
+  const rockG=organic(new THREE.IcosahedronGeometry(1,3),.16,0x8a8478,0xffffff,7.7), mossG=organic(new THREE.IcosahedronGeometry(1,2),.22,0x9ab878,0xffffff,3.1), leafG=organic(new THREE.IcosahedronGeometry(1,3),.14,0x707a66,0xffffff,9.2);
+  const add=(g,m,x,y,z,sx,sy,sz,ry)=>{ const o=new THREE.Mesh(g,m); o.position.set(x,y,z); o.scale.set(sx,sy,sz); o.rotation.y=ry||0; o.castShadow=o.receiveShadow=true; fg.add(o); return o; };
+  const X=FALLS.x, Z0=FALL_Z, top1=FALL_TOP*.55+.2, top2=FALL_TOP;
+  // two rocky steps across the whole width: rounded boulders, darker and wet where the water runs, moss on top
+  for(const [yTop,zBack,n] of [[top1,Z0+1.4,18],[top2,Z0+4.6,16]]){
+    for(let i=0;i<n;i++){ const t=i/(n-1), x=X-12+t*24+(rnd()-.5)*.8, s=.9+rnd()*.9, wet=Math.abs(x-X)<9;
+      add(rockG,wet?darkM:rockM,x,yTop-s*.55,zBack+.9+rnd()*.5,s*1.3,s*.9,s*.8,rnd()*6);
+      add(rockG,wet?darkM:rockM,x+(rnd()-.5)*1.2,yTop-s*1.6,zBack+.8+rnd()*.5,s*1.1,s*.8,s*.75,rnd()*6);
+      if(!wet||rnd()<.35) add(mossG,mossM,x,yTop+.05,zBack+1,s*1.05,.32,s*.75,rnd()*6); } }
+  // lush greenery: jungle bushes on the banks and over the top of the falls
+  for(let i=0;i<26;i++){ const sd=i%2?1:-1, x=X+sd*(8+rnd()*8), z=Z0+1+rnd()*9, s=1.1+rnd()*1.3; add(leafG,leafM,x,H(x,z)+s*.6,z,s*1.2,s,s*1.2,rnd()*6); }
+  for(let i=0;i<14;i++){ const x=X-10+rnd()*20, z=Z0+7+rnd()*5, s=1+rnd()*1.2; add(leafG,leafM,x,H(x,z)+s*.55,z,s*1.3,s,s*1.2,rnd()*6); }
+  // a few rocks peeking out of the pool
+  for(const [dx,dz,s] of [[-5.5,-2.2,.6],[4.8,-2.8,.5],[7.5,-1.2,.7],[-8.2,-.6,.8]]) add(rockG,darkM,X+dx,.05,Z0+dz,s*1.3,s*.5,s,rnd()*6);
+  // the veils of water: many silky curtains of different widths, pouring over both steps
+  const veil=(cx,w0,w1,yTop,yBot,zTop,out,ro)=>{ const pos=[],uv=[],idx=[], R=14, C=6;
+    for(let k=0;k<=R;k++){ const t=k/R, z=zTop-Math.sin(t*1.2)*out, y=yTop+(yBot-yTop)*t; const w=w0+(w1-w0)*t;
+      for(let j=0;j<=C;j++){ const u=j/C; pos.push(cx-w/2+u*w,y,z+Math.sin(u*Math.PI)*.15); uv.push(u,1-t); } }
     for(let k=0;k<R;k++) for(let j=0;j<C;j++){ const a=k*(C+1)+j; idx.push(a,a+C+1,a+1,a+1,a+C+1,a+C+2); }
     const g=new THREE.BufferGeometry(); g.setAttribute("position",new THREE.Float32BufferAttribute(pos,3)); g.setAttribute("uv",new THREE.Float32BufferAttribute(uv,2)); g.setIndex(idx);
-    const m=new THREE.Mesh(g,fallMat); m.renderOrder=ro; fg.add(m); };
-  curtain(3,3.9,1.05,0,5); curtain(2.2,3.2,.8,.18,4); curtain(1.2,1.8,.55,.32,6);
-  // the stream on the plateau that feeds the falls
-  const st=new THREE.Mesh(new THREE.PlaneGeometry(2.6,16,1,1).rotateX(-Math.PI/2),fallMat); st.position.set(FALLS.x,FALL_TOP-.12,FALL_Z+1.9+8); st.renderOrder=4; fg.add(st);
-  // churning foam where it lands
-  const pool=new THREE.Mesh(new THREE.PlaneGeometry(7,5).rotateX(-Math.PI/2),fallFoamMat); pool.position.set(FALLS.x,.06,FALL_Z+.4); pool.renderOrder=5; fg.add(pool);
-  // mist: soft clouds of spray drifting up and out from the base
-  const MN=touch?40:80, mpos=new Float32Array(MN*3), msd=[]; for(let i=0;i<MN;i++) msd.push([rnd(),rnd(),rnd()]);
+    const m=new THREE.Mesh(g,fallMat); m.renderOrder=ro||5; fg.add(m); };
+  // lower step: wide, broken into several falls
+  for(const [dx,w] of [[-7,2.2],[-4.3,2.6],[-1.4,3],[1.7,2.8],[4.6,2.4],[7.1,1.8]]) veil(X+dx,w,w*1.25,top1+.25,.05,Z0+.35,.45+rnd()*.3,5);
+  // upper step: fewer, slimmer falls feeding the lower ones
+  for(const [dx,w] of [[-5.2,1.8],[-1.6,2.6],[2.2,2.2],[5.6,1.6]]) veil(X+dx,w,w*1.2,top2+.25,top1+.1,Z0+3.5,.5,6);
+  // a stream across the top
+  const st=new THREE.Mesh(new THREE.PlaneGeometry(14,8,1,1).rotateX(-Math.PI/2),fallMat); st.position.set(X,top2-.1,Z0+9); st.renderOrder=4; fg.add(st);
+  // the turquoise pool spread over the river at the foot of the falls
+  const pool=new THREE.Mesh(new THREE.PlaneGeometry(30,FALL_Z-riverZ(X)+RW/2+2.5).rotateX(-Math.PI/2),poolMat); pool.position.set(X,.04,(riverZ(X)-RW/2+FALL_Z+1.5)/2); pool.renderOrder=3; fg.add(pool);
+  // mist rising off the pool
+  const MN=touch?50:100, mpos=new Float32Array(MN*3), msd=[]; for(let i=0;i<MN;i++) msd.push([rnd(),rnd(),rnd()]);
   const mgeo=new THREE.BufferGeometry(); mgeo.setAttribute("position",new THREE.BufferAttribute(mpos,3));
-  const mist=new THREE.Points(mgeo,new THREE.PointsMaterial({color:0xffffff,size:2.6,map:dotTex,transparent:true,opacity:.28,depthWrite:false})); mist.frustumCulled=false; mist.renderOrder=7; fg.add(mist);
-  const FN=90, fpos=new Float32Array(FN*3), fsd=[]; for(let i=0;i<FN;i++) fsd.push([rnd(),rnd(),rnd()]);
-  const fgeo=new THREE.BufferGeometry(); fgeo.setAttribute("position",new THREE.BufferAttribute(fpos,3));
-  const spray=new THREE.Points(fgeo,new THREE.PointsMaterial({color:0xffffff,size:.35,map:dotTex,transparent:true,opacity:.85,depthWrite:false})); spray.frustumCulled=false; fg.add(spray);
-  window.__fallUpd=(t)=>{ for(let i=0;i<MN;i++){ const [a,b,c]=msd[i], ph=(t*.12+a)%1; mpos[i*3]=FALLS.x+(b-.5)*7*(.4+ph); mpos[i*3+1]=.4+ph*4.5*(.5+c); mpos[i*3+2]=FALL_Z+.3-(c)*3*ph; } mgeo.attributes.position.needsUpdate=true; mist.material.opacity=.22+.06*Math.sin(t*.7);
-    for(let i=0;i<FN;i++){ const [a,b,c]=fsd[i], ph=(t*.9+a)%1; fpos[i*3]=FALLS.x+(b-.5)*3.6*(.6+ph); fpos[i*3+1]=.15+Math.sin(ph*Math.PI)*(.5+c*1.2); fpos[i*3+2]=FALL_Z+.5-(c-.3)*1.8*ph; } fgeo.attributes.position.needsUpdate=true; };
-  obstacles.push({x:FALLS.x,z:FALL_Z+1.5,r:2.6}); }
+  const mist=new THREE.Points(mgeo,new THREE.PointsMaterial({color:0xffffff,size:2.8,map:dotTex,transparent:true,opacity:.24,depthWrite:false})); mist.frustumCulled=false; mist.renderOrder=7; fg.add(mist);
+  window.__fallUpd=(t)=>{ for(let i=0;i<MN;i++){ const [a,b,c]=msd[i], ph=(t*.1+a)%1; mpos[i*3]=X+(b-.5)*18; mpos[i*3+1]=.3+ph*3*(.5+c); mpos[i*3+2]=Z0+.8-c*3*ph; } mgeo.attributes.position.needsUpdate=true; mist.material.opacity=.2+.05*Math.sin(t*.6); };
+  obstacles.push({x:X-6,z:Z0+1.2,r:2.4},{x:X,z:Z0+1.2,r:2.4},{x:X+6,z:Z0+1.2,r:2.4}); }
 function updateFalls(t){ window.__fallUpd&&window.__fallUpd(t); fallU.uLight.value=rU.uLight.value; if(fallGain&&AC){ const d=Math.hypot(P.x-FALLS.x,P.z-FALL_Z); fallGain.gain.setTargetAtTime(Math.max(0,.32*(1-d/45))*(P.inside?.3:1),AC.currentTime,.4); } }
 
 /* ================= veggie garden ================= */
