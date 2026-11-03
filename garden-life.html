@@ -656,7 +656,7 @@ const grassIM=scatter(touch?4200:12000,tuftGeo(),addSway(new THREE.MeshLambertMa
   const ang=rnd()*6.283, rr=Math.sqrt(rnd())*85, x=SPAWN.x+Math.cos(ang)*rr*1.1, z=SPAWN.z+Math.sin(ang)*rr; const h=H(x,z);
   if(fbm(x*.06+3,z*.06+7)<.45) return null;
   if(h<.35||pathD(x,z)<1.1||inGBed(x,z)||nearCabin(x,z,.6)||Math.hypot(x-FIRE.x,z-FIRE.z)<2.6||nearCamp(x,z,2.4)||Math.abs(x-BEDS.x)<5&&Math.abs(z-BEDS.z)<4) return null;
-  if(Math.abs(x-SISTERS.x)<5&&Math.abs(z-SISTERS.z)<5) return null;
+  if(Math.abs(x-SISTERS.x)<5&&Math.abs(z-SISTERS.z)<5||Math.abs(x-VEG.x)<7.7&&Math.abs(z-VEG.z)<4.8) return null;
   const s=.7+rnd()*.3; return {x,y:h-.03,z,s,sy:s*(.85+rnd()*.25),ry:(rnd()-.5)*.5,rx:0,rz:0,c:gc.setScalar(.88+rnd()*.18)}; });
 const stemGeo=new THREE.CylinderGeometry(.012,.016,1,4).translate(0,.5,0);
 function mergeGeos(list){ let n=0; const parts=list.map(g=>{ g=g.index?g.toNonIndexed():g; if(!g.attributes.normal) g.computeVertexNormals(); n+=g.attributes.position.count; return g; });
@@ -982,7 +982,7 @@ const djLights=[], djDeck={plates:[],ball:null};
   for(let k=0;k<6;k++){ const b=new THREE.Mesh(new THREE.CylinderGeometry(.02,.02,.03,8),new THREE.MeshStandardMaterial({color:0x111111,emissive:[0xe2566e,0x6fa8e8,0xe8c440][k%3],emissiveIntensity:.8})); b.position.set(-.08+(k%3)*.08,.98,-.08+Math.floor(k/3)*.16); booth.add(b); }
   for(const x of [-1.15,.75]){ const sp=new THREE.Mesh(new THREE.BoxGeometry(.38,.75,.35),smt(0x1b1a20)); sp.position.set(x+ (x>0?.0:0),.38,0); booth.add(sp);
     for(const y of [.2,.52]){ const cone=new THREE.Mesh(new THREE.CircleGeometry(y<.3?.13:.08,16),smt(0x3a3a40)); cone.position.set(x,y,.18); booth.add(cone); } }
-  const ball=new THREE.Mesh(new THREE.IcosahedronGeometry(.22,1),new THREE.MeshStandardMaterial({color:0xdddddd,metalness:.9,roughness:.15,flatShading:true,emissive:0x222222})); ball.position.set(0,2.55,0); I.add(ball); djDeck.ball=ball;
+  const ball=new THREE.Mesh(new THREE.SphereGeometry(.19,9,7),new THREE.MeshStandardMaterial({color:0xdddddd,metalness:.9,roughness:.15,flatShading:true,emissive:0x222222})); ball.position.set(0,2.55,0); I.add(ball); djDeck.ball=ball;
   for(const [x,c] of [[-1.5,0xe2566e],[1.5,0x6fa8e8]]){ const L=new THREE.PointLight(c,0,9,1.5); L.position.set(x,2.2,0); I.add(L); djLights.push(L); }
   const xy=new THREE.Group(); xy.position.set(-1.7,0,1.7); xy.rotation.y=.4; I.add(xy);
   const fr=new THREE.Mesh(new THREE.BoxGeometry(1.1,.06,.5),darkWood); fr.position.y=.62; xy.add(fr);
@@ -2669,28 +2669,65 @@ const VEG_MS=30000, vegBeds=[];
 const MELON_TEX=(()=>{ const c=document.createElement("canvas"); c.width=128; c.height=32; const g=c.getContext("2d"); g.fillStyle="#2f6a2a"; g.fillRect(0,0,128,32); g.fillStyle="#8cc06a"; for(let i=0;i<10;i++){ g.beginPath(); const x=i*12.8; g.moveTo(x,0); for(let y=0;y<=32;y+=4) g.lineTo(x+3+Math.sin(y*.5+i)*1.5,y); for(let y=32;y>=0;y-=4) g.lineTo(x+6+Math.sin(y*.5+i)*1.5,y); g.fill(); } const t=new THREE.CanvasTexture(c); t.encoding=THREE.sRGBEncoding; return t; })();
 const VEG_KINDS=["tomato","carrot","watermelon","lettuce","pumpkin","pepper","cabbage","eggplant","cucumber","radish","onion","broccoli"];
 const vegStraw=new THREE.Group(); scene.add(vegStraw);
-{ const wood=smt(0x7a5a3a), soil=std(0x4a3426), leafG=std(0x3f7a2e), leafL=std(0x8cc84a), stakeM=smt(0xa8885a);
+// A kitchen garden with textured beds, leafy crops and a white cottage fence.
+const vegLeafShape=new THREE.Shape(); vegLeafShape.moveTo(0,0); vegLeafShape.bezierCurveTo(-.18,.12,-.2,.4,0,.62); vegLeafShape.bezierCurveTo(.2,.4,.18,.12,0,0);
+const vegLeafGeo=new THREE.ShapeGeometry(vegLeafShape,5); vegLeafGeo.rotateX(-Math.PI/2);
+const vegLeafMat=smt(0xffffff,{side:THREE.DoubleSide,roughness:.86});
+function gardenLeaves(parent,n,r,h,scale,seed){ const im=new THREE.InstancedMesh(vegLeafGeo,vegLeafMat,n);
+  for(let j=0;j<n;j++){ const a=j*2.399+seed, t=(j+.5)/n, radius=r*Math.sqrt(t);
+    M.compose(V.set(Math.cos(a)*radius,h*(.25+.75*(1-t)),Math.sin(a)*radius),Q.setFromEuler(E.set(-.18-(j%4)*.18,a,.16*Math.sin(j))),S3.set(scale*(.8+(j%3)*.15),scale,scale)); im.setMatrixAt(j,M); im.setColorAt(j,tmp.set([0x36732c,0x538e35,0x6d9f44,0x438032][j%4])); }
+  im.castShadow=im.receiveShadow=true; parent.add(im); }
+const vegSoilTex=(()=>{ const c=document.createElement('canvas'); c.width=c.height=128; const ctx=c.getContext('2d'); ctx.fillStyle='#483022';ctx.fillRect(0,0,128,128);
+  for(let j=0;j<2200;j++){ const x=(j*47.31)%128,y=(j*83.73)%128;ctx.fillStyle=['#69482f','#38281d','#795638','#523923'][j%4];ctx.fillRect(x,y,1+j%3,1+j%2); }
+  const tex=new THREE.CanvasTexture(c);tex.encoding=THREE.sRGBEncoding;tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(3,2);return tex; })();
+{ const garden=new THREE.Group();garden.position.set(VEG.x,H(VEG.x,VEG.z),VEG.z);scene.add(garden);
+  const pathMat=smt(0xb89563,{roughness:1}),white=smt(0xe7dfc9,{roughness:.9});
+  const ground=new THREE.Mesh(new THREE.BoxGeometry(15.4,.06,9.6),pathMat);ground.position.y=.025;ground.receiveShadow=true;garden.add(ground);
+  // Picket fence on the back and sides, with an open front for harvesting.
+  const posts=[];for(let x=-7.5;x<=7.5;x+=.48)posts.push([x,-4.7]);for(const x of [-7.5,7.5])for(let z=-4.2;z<3.9;z+=.48)posts.push([x,z]);
+  const fence=new THREE.InstancedMesh(new THREE.BoxGeometry(.15,.85,.09),white,posts.length);
+  posts.forEach(([x,z],i)=>{M.compose(V.set(x,.49,z),Q.identity(),S3.set(1,1+(i%3)*.025,1));fence.setMatrixAt(i,M);});fence.castShadow=true;garden.add(fence);
+  for(const y of [.3,.66])for(const [x,z,w,d] of [[0,-4.7,15.2,.08],[-7.5,-.4,.08,8.6],[7.5,-.4,.08,8.6]]){const rail=new THREE.Mesh(new THREE.BoxGeometry(w,.09,d),white);rail.position.set(x,y,z);garden.add(rail);}
+  const flowers=new THREE.InstancedMesh(petalHead(9,.085,.033,.15,0,.016),smt(0xffffff,{side:THREE.DoubleSide}),72);
+  const foliage=new THREE.InstancedMesh(new THREE.SphereGeometry(.16,7,5),smt(0x54863a),72);
+  for(let j=0;j<72;j++){const x=-7.1+(j%36)*.405,z=j<36?-4.35:4.35;M.compose(V.set(x,.18,z),Q.identity(),S3.set(1,.65,1));foliage.setMatrixAt(j,M);M.compose(V.set(x,.31+(j%3)*.025,z),Q.setFromEuler(E.set(0,j,0)),S3.setScalar(1));flowers.setMatrixAt(j,M);flowers.setColorAt(j,tmp.set([0xf5bf45,0xf0dbe0,0xe28385,0xa795c7][j%4]));}garden.add(flowers,foliage);
+  // Two timber produce crates beside the entrance, outside the walking lanes.
+  for(let q=0;q<2;q++){const crate=new THREE.Group();crate.position.set(6.3-q*1.05,.12,4.05);garden.add(crate);for(let k=0;k<3;k++)for(const z of [-.3,.3]){const slat=new THREE.Mesh(new THREE.BoxGeometry(.84,.09,.05),smt(0x9c7145));slat.position.set(0,.07+k*.11,z);crate.add(slat);}for(const x of [-.42,.42]){const end=new THREE.Mesh(new THREE.BoxGeometry(.06,.35,.65),smt(0x86603b));end.position.set(x,.17,0);crate.add(end);}for(let k=0;k<6;k++){const fruit=new THREE.Mesh(new THREE.SphereGeometry(.105,10,8),smt(q?0xeab345:0xc7412b,{roughness:.45}));fruit.position.set((k%3-1)*.22,.22,Math.floor(k/3)*.24-.12);crate.add(fruit);}}
+}
+
+{ const wood=smt(0x7a5a3a), soil=smt(0xffffff,{map:vegSoilTex,roughness:1}), leafG=smt(0x3f7a2e), leafL=smt(0x78ad42), stakeM=smt(0xa8885a);
   VEG_KINDS.forEach((kind,i)=>{ const bx=VEG.x+(i%4-1.5)*3.7, bz=VEG.z+(Math.floor(i/4)-1)*3.1, y=H(bx,bz); const g=new THREE.Group(), base=new THREE.Group(); base.position.set(bx,y,bz); g.position.set(bx,y,bz); scene.add(base,g);
-    const box=new THREE.Mesh(new THREE.BoxGeometry(2.9,.34,1.5),wood); box.position.y=.17; box.castShadow=box.receiveShadow=true; base.add(box);
-    const dirt=new THREE.Mesh(new THREE.BoxGeometry(2.7,.04,1.3),soil); dirt.position.y=.35; base.add(dirt);
+    for(const [x,z,w,d] of [[0,-.78,3.05,.1],[0,.78,3.05,.1],[-1.48,0,.1,1.6],[1.48,0,.1,1.6]]){
+      for(let row=0;row<2;row++){const plank=new THREE.Mesh(new THREE.BoxGeometry(w,.145,d),wood);plank.position.set(x,.09+row*.15,z);plank.castShadow=plank.receiveShadow=true;base.add(plank);}
+    }
+    const dirt=new THREE.Mesh(new THREE.BoxGeometry(2.86,.09,1.46),soil); dirt.position.y=.27;dirt.receiveShadow=true;base.add(dirt);
+    const clods=new THREE.InstancedMesh(new THREE.SphereGeometry(.035,5,4),smt(0x755035,{roughness:1}),60);
+    for(let j=0;j<60;j++){M.compose(V.set((rnd()-.5)*2.7,.32,(rnd()-.5)*1.32),Q.identity(),S3.set(1,.45,1));clods.setMatrixAt(j,M);}base.add(clods);
     const straw=new THREE.Mesh(new THREE.BoxGeometry(2.7,.08,1.3),std(0xd8c48a)); straw.position.set(bx,y+.38,bz); vegStraw.add(straw);
     const spots=kind==="pumpkin"||kind==="watermelon"?[[-.85,0],[0,.1],[.85,-.05]]:[[-.9,-.32],[0,-.32],[.9,-.32],[-.9,.32],[0,.32],[.9,.32]], items=[];
     spots.forEach(([lx,lz],k)=>{ const pl=new THREE.Group(); pl.position.set(lx,.36,lz); g.add(pl); const it=new THREE.Group(); pl.add(it); items.push(it);
+      const leafy=['tomato','pepper','eggplant','cucumber'].includes(kind),vine=kind==='pumpkin'||kind==='watermelon';
+      if(leafy){gardenLeaves(pl,touch?20:34,.25,kind==='tomato'?1.12:.65,kind==='tomato'?.65:.5,k+i);
+        const main=new THREE.Mesh(new THREE.CylinderGeometry(.012,.023,kind==='tomato'?1.25:.7,6),leafG);main.position.y=kind==='tomato'?.62:.35;pl.add(main);}
+      if(vine)gardenLeaves(pl,16,.38,.18,.62,k);
+      if(['lettuce','cabbage','broccoli'].includes(kind))gardenLeaves(it,12,.13,.13,.42,k);
+      if(['carrot','radish','onion'].includes(kind))gardenLeaves(it,9,.07,.28,kind==='carrot'?.44:.32,k);
+
       if(kind==="tomato"){ const st=new THREE.Mesh(new THREE.CylinderGeometry(.02,.02,1.1,5),stakeM); st.position.y=.55; pl.add(st);
-        for(let q=0;q<4;q++){ const b=new THREE.Mesh(jitterGeo(new THREE.IcosahedronGeometry(.2,0),.06),leafG); b.position.set(Math.cos(q*1.7)*.12,.3+q*.2,Math.sin(q*1.7)*.12); pl.add(b); }
-        for(let q=0;q<3;q++){ const f=new THREE.Mesh(new THREE.SphereGeometry(.075,10,8),smt(q===2?0xe8742a:0xd8382a,{roughness:.3})); f.position.set(Math.cos(q*2.1+.5)*.2,.35+q*.17,Math.sin(q*2.1+.5)*.2); it.add(f); } }
+        for(let q=0;q<4;q++){ const b=new THREE.Mesh(jitterGeo(new THREE.SphereGeometry(.16,8,6),.06),leafG); b.position.set(Math.cos(q*1.7)*.12,.3+q*.2,Math.sin(q*1.7)*.12); pl.add(b); }
+        for(let q=0;q<7;q++){ const f=new THREE.Mesh(new THREE.SphereGeometry(.085,12,10),smt(q===2?0xe8742a:0xd8382a,{roughness:.3})); f.position.set(Math.cos(q*2.1+.5)*.29,.28+q*.12,Math.sin(q*2.1+.5)*.29); it.add(f); } }
       else if(kind==="carrot"){ for(let q=0;q<5;q++){ const f=new THREE.Mesh(new THREE.ConeGeometry(.04,.36,4),leafL); f.position.set(Math.cos(q*1.3)*.05,.18,Math.sin(q*1.3)*.05); f.rotation.set(Math.cos(q*1.3)*.4,0,Math.sin(q*1.3)*.4); it.add(f); }
         const r=new THREE.Mesh(new THREE.ConeGeometry(.06,.18,8),smt(0xee7a1e)); r.rotation.x=Math.PI; r.position.y=.02; it.add(r); }
       else if(kind==="lettuce"){ for(let q=0;q<7;q++){ const lf=new THREE.Mesh(new THREE.SphereGeometry(.13,8,6,0,6.283,0,1.6),std(q<3?0x6aa83a:0x9ad458,{side:THREE.DoubleSide})); lf.scale.set(1,.7,1); lf.position.set(Math.cos(q*.9)*.06*(q%3),.04+q*.012,Math.sin(q*.9)*.06*(q%3)); lf.rotation.set((q%3)*.3,q,0); it.add(lf); } }
       else if(kind==="pumpkin"){ for(let q=0;q<4;q++){ const lf=new THREE.Mesh(new THREE.CircleGeometry(.2,6),std(0x3f7a2e,{side:THREE.DoubleSide})); lf.rotation.x=-1.3; lf.position.set(Math.cos(q*1.6)*.35,.1,Math.sin(q*1.6)*.35); pl.add(lf); }
         const pts=[]; for(let q=0;q<=10;q++){ const a=q/10*Math.PI; pts.push(new THREE.Vector2(Math.sin(a)*.26,-Math.cos(a)*.18+.18)); } const pg=new THREE.LatheGeometry(pts,16), pa=pg.attributes.position; for(let v=0;v<pa.count;v++){ const ang=Math.atan2(pa.getZ(v),pa.getX(v)), f=1+.08*Math.cos(ang*8); pa.setX(v,pa.getX(v)*f); pa.setZ(v,pa.getZ(v)*f); } pg.computeVertexNormals();
         const pk=new THREE.Mesh(pg,smt(0xe8841e,{roughness:.55})); pk.scale.setScalar(.9+rnd()*.3); it.add(pk); const stem=new THREE.Mesh(new THREE.CylinderGeometry(.025,.035,.1,5),smt(0x5a6a2a)); stem.position.y=.38; it.add(stem); }
-      else if(kind==="pepper"){ const b=new THREE.Mesh(jitterGeo(new THREE.IcosahedronGeometry(.22,1),.05),leafG); b.position.y=.28; b.scale.y=1.2; pl.add(b);
+      else if(kind==="pepper"){ const b=new THREE.Mesh(jitterGeo(new THREE.SphereGeometry(.19,9,7),.05),leafG); b.position.y=.28; b.scale.y=1.2; pl.add(b);
         for(let q=0;q<2;q++){ const f=new THREE.Mesh(new THREE.CylinderGeometry(.05,.035,.16,8),smt([0xc8261e,0xe8b81e][(k+q)%2],{roughness:.25})); f.position.set(q?.17:-.16,.22,q?.06:-.05); it.add(f); } }
       else if(kind==="watermelon"){ for(let q=0;q<4;q++){ const lf=new THREE.Mesh(new THREE.CircleGeometry(.17,6),std(0x3f7a2e,{side:THREE.DoubleSide})); lf.rotation.x=-1.35; lf.position.set(Math.cos(q*1.6)*.36,.08,Math.sin(q*1.6)*.36); pl.add(lf); }
         const wm=new THREE.Mesh(new THREE.SphereGeometry(.2,20,14),new THREE.MeshStandardMaterial({map:MELON_TEX,roughness:.45})); wm.scale.set(1,.8,1.35); wm.rotation.y=rnd()*6; wm.position.y=.15; it.add(wm); }
       else if(kind==="cabbage"){ for(let q=0;q<6;q++){ const lf=new THREE.Mesh(new THREE.SphereGeometry(.15-q*.012,10,8,0,6.283,0,1.7),std(q<2?0x6a9a6a:0xa8d0a0,{side:THREE.DoubleSide})); lf.scale.y=.75; lf.position.y=.06+q*.015; lf.rotation.set(q*.25,q,0); it.add(lf); } }
-      else if(kind==="eggplant"){ const b=new THREE.Mesh(jitterGeo(new THREE.IcosahedronGeometry(.22,1),.05),leafG); b.position.y=.32; pl.add(b);
+      else if(kind==="eggplant"){ const b=new THREE.Mesh(jitterGeo(new THREE.SphereGeometry(.19,9,7),.05),leafG); b.position.y=.32; pl.add(b);
         for(let q=0;q<2;q++){ const f=new THREE.Mesh(new THREE.SphereGeometry(.06,12,10),smt(0x4a2a5a,{roughness:.2})); f.scale.set(1,1.9,1); f.position.set(q?.16:-.15,.2,q?.05:-.06); it.add(f); const c=new THREE.Mesh(new THREE.ConeGeometry(.04,.05,6),smt(0x4a7a2a)); c.position.set(f.position.x,.32,f.position.z); it.add(c); } }
       else if(kind==="cucumber"){ const st=new THREE.Mesh(new THREE.CylinderGeometry(.015,.015,.8,5),stakeM); st.position.y=.4; pl.add(st); for(let q=0;q<4;q++){ const lf=new THREE.Mesh(new THREE.CircleGeometry(.1,6),std(0x4a8a34,{side:THREE.DoubleSide})); lf.position.set(Math.cos(q*1.6)*.1,.2+q*.14,Math.sin(q*1.6)*.1); lf.rotation.y=q*1.6; pl.add(lf); }
         for(let q=0;q<2;q++){ const f=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,.2,8),smt(0x3a7a2a,{roughness:.4})); f.position.set(q?.09:-.09,.3+q*.12,.06); f.rotation.z=q?.2:-.2; it.add(f); } }
