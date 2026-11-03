@@ -1709,7 +1709,7 @@ function openEmo(){ openSheet(`<div class="eyebrow">Feelings</div><h2>How do you
   $("emX").onclick=closeSheet; $("card").querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>emote(b.dataset.e)); }
 $("bEmo").onclick=openEmo;
 function sendPresence(force){ if(!room) return; const st={x:+P.x.toFixed(2),z:+P.z.toFixed(2),y:+C.g.position.y.toFixed(2),f:+P.face.toFixed(2),m:P.mode,mv:+(C.speed||0).toFixed(2),
-    cb:P.insideC?CABS.indexOf(P.insideC):-1,lk:lookArr(),nm:J.name||"",b:Math.min(10,have("strawberry")),in:P.inside?1:0,say:sayText,sayAt,id:myId||null};
+    cb:P.insideC?CABS.indexOf(P.insideC):-1,lk:lookArr(),nm:J.name||"",b:Math.min(10,have("strawberry")),in:P.inside?1:0,say:sayText,sayAt,id:myId||null,gid:GID};
   const s=JSON.stringify(st); if(!force&&s===lastSent) return; lastSent=s; room.presence(st).catch(()=>{}); }
 async function resolveNames(ids){ if(!user||!ids.length) return; try{ const ps=await user.profiles(ids); for(const id of ids){ const n=(ps[id]&&ps[id].name)||""; if(names[id]!==n){ names[id]=n; const o=[...others.values()].find(o=>o.by===id); if(o&&!o.nm) setLabel(o,n); } } }catch(e){} }
 function setLabel(o,name){ if(o.label) o.c.g.remove(o.label); o.label=textSprite(name||"A guest",{size:30}); o.label.position.y=1.98; o.label.scale.multiplyScalar(.85); o.c.g.add(o.label); }
@@ -1720,7 +1720,7 @@ function updateOthers(dt,t){
     o.cb=Number.isInteger(pr.cb)?pr.cb:-1;
     const nm=typeof pr.nm==="string"?clean(pr.nm,24):""; if(nm&&nm!==o.nm){ o.nm=nm; setLabel(o,nm); }
     const lk=Array.isArray(pr.lk)?pr.lk.map(n=>Math.max(0,Math.min(5,n|0))):[0,0,1]; const lkKey=lk.join(","); if(o.lk!==lkKey){ o.lk=lkKey; applyLookTo(o.c,lk); }
-    const k=Math.min(1,dt*8); o.x+=(Math.max(-150,Math.min(150,pr.x))-o.x)*k; o.z+=(Math.max(-150,Math.min(150,+pr.z||0))-o.z)*k; o.y+=((+pr.y||0)-o.y)*k; o.face=lerpAng(o.face,+pr.f||0,k);
+    const k=Math.min(1,dt*(p.slow?3:8)); o.x+=(Math.max(-150,Math.min(150,pr.x))-o.x)*k; o.z+=(Math.max(-150,Math.min(150,+pr.z||0))-o.z)*k; o.y+=((+pr.y||0)-o.y)*k; o.face=lerpAng(o.face,+pr.f||0,k);
     o.c.g.position.set(o.x,o.y,o.z);
     const mode=["walk","sit","read","tea","lie","fish"].includes(pr.m)?pr.m:"walk";
     poseChar(o.c,{mode,moving:Math.min(1.6,Math.max(0,+pr.mv||0)),face:o.face,berries:Math.max(0,Math.min(10,pr.b|0))},dt,t);
@@ -2851,7 +2851,34 @@ function welcome(){
 }
 welcome();
 $("whoHere").textContent="";
-(async()=>{ if(!window.claude||!window.claude.use){ try{ const r=window.__p2p?await window.__p2p:null; if(r){ room=r; sendPresence(true); } }catch(e){} return; }
+/* ===== shared valley through the website's own server =====
+   Direct peer-to-peer links fail between many networks (phone carriers, other countries),
+   so every guest ALSO checks in with /api/garden (Upstash Redis) a little more than once a second.
+   Peer-to-peer guests stay silky-smooth; everyone else still appears through the server. */
+let GID=""; try{ GID=sessionStorage.getItem("gl-gid")||""; }catch(e){}
+if(!GID){ GID=Math.random().toString(36).slice(2,12)+Math.random().toString(36).slice(2,8); try{ sessionStorage.setItem("gl-gid",GID); }catch(e){} }
+function valleyRoom(p2p){
+  let mine=null, srv=new Map(), busy=false, alone=true, next=0, fails=0;
+  async function tick(){ if(busy||!mine||Date.now()<next) return; busy=true; next=Date.now()+(alone?4000:800);
+    try{ const r=await fetch("/api/garden",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({id:GID,st:mine})});
+      const j=await r.json(); const m=new Map();
+      for(const [id,v] of Object.entries((j&&j.players)||{})){ if(id===GID||!v||!v.st||typeof v.st.x!=="number") continue; m.set(id,{peer:"s:"+id,kind:"viewer",presence:v.st,slow:true}); }
+      srv=m; alone=m.size===0; fails=0; }
+    catch(e){ fails++; next=Date.now()+Math.min(30000,fails*3000); }
+    busy=false; }
+  setInterval(tick,200);
+  addEventListener("pagehide",()=>{ try{ navigator.sendBeacon("/api/garden",JSON.stringify({id:GID,leave:1})); }catch(e){} });
+  return {
+    presence(st){ mine=st; if(p2p){ try{ p2p.presence(st); }catch(e){} } return Promise.resolve(); },
+    peers(){ const out=[], seen=new Set();
+      if(p2p){ for(const p of p2p.peers()){ const g=p.presence&&p.presence.gid; if(g){ if(seen.has(g)) continue; seen.add(g); } out.push(p); } }
+      for(const [id,p] of srv) if(!seen.has(id)) out.push(p);
+      return out; },
+    onPeers(){} };
+}
+(async()=>{ if(!window.claude||!window.claude.use){ let p2p=null;
+    try{ p2p=window.__p2p?await Promise.race([window.__p2p,new Promise(r=>setTimeout(()=>r(null),4000))]):null; }catch(e){}
+    room=valleyRoom(p2p); sendPresence(true); return; }
   try{ const [u,d,r]=await Promise.all([claude.use("user"),claude.use("db"),claude.use("room")]); user=u; db=d; room=r;
     if(user){ profile=await user.me(); myId=profile.id; const ni=$("nameIn"); if(ni&&!ni.value&&profile.name) ni.value=clean(profile.name,20); }
     if(room){ sendPresence(true); room.onPeers(()=>{},()=>{ room=null; }); }
