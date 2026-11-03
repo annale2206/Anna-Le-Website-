@@ -656,7 +656,7 @@ const grassIM=scatter(touch?4200:12000,tuftGeo(),addSway(new THREE.MeshLambertMa
   const ang=rnd()*6.283, rr=Math.sqrt(rnd())*85, x=SPAWN.x+Math.cos(ang)*rr*1.1, z=SPAWN.z+Math.sin(ang)*rr; const h=H(x,z);
   if(fbm(x*.06+3,z*.06+7)<.45) return null;
   if(h<.35||pathD(x,z)<1.1||inGBed(x,z)||nearCabin(x,z,.6)||Math.hypot(x-FIRE.x,z-FIRE.z)<2.6||nearCamp(x,z,2.4)||Math.abs(x-BEDS.x)<5&&Math.abs(z-BEDS.z)<4) return null;
-  if(Math.abs(x-SISTERS.x)<5&&Math.abs(z-SISTERS.z)<5||Math.abs(x-VEG.x)<7.7&&Math.abs(z-VEG.z)<4.8) return null;
+  if(Math.abs(x-SISTERS.x)<5&&Math.abs(z-SISTERS.z)<5||Math.abs(x-VEG.x)<7.7&&Math.abs(z-VEG.z)<4.8||Math.abs(x-BLUE.x)<7.5&&Math.abs(z-BLUE.z)<5.4) return null;
   const s=.7+rnd()*.3; return {x,y:h-.03,z,s,sy:s*(.85+rnd()*.25),ry:(rnd()-.5)*.5,rx:0,rz:0,c:gc.setScalar(.88+rnd()*.18)}; });
 const stemGeo=new THREE.CylinderGeometry(.012,.016,1,4).translate(0,.5,0);
 function mergeGeos(list){ let n=0; const parts=list.map(g=>{ g=g.index?g.toNonIndexed():g; if(!g.attributes.normal) g.computeVertexNormals(); n+=g.attributes.position.count; return g; });
@@ -2485,16 +2485,41 @@ flowerField2(touch?58:208,bankPlace(.2),stemGeo,petalHead(5,.03,.028,.25,1,.006)
     else { for(let k=0;k<3;k++){ const a=k*2.1+i, r=1+k*.5, ap=new THREE.Mesh(appleG,appleM); ap.position.set(Math.cos(a)*r,H(x+Math.cos(a)*r,z+Math.sin(a)*r)-y+.11,Math.sin(a)*r); g.add(ap); } }
     g.traverse(o=>{ if(o.isMesh) o.castShadow=true; }); obstacles.push({x,z,r:.6}); canopies.push({x,z,r:3,y0:y+2.2,y1:y+6}); }); }
 
-/* ================= blueberry bushes ================= */
-{ const bushParts=[]; const bushM=new THREE.InstancedMesh(jitterGeo(new THREE.IcosahedronGeometry(.36,1),.12),std(0xffffff),9*7); let bi=0, bci=0;
-  const bCards=new THREE.InstancedMesh(cardGeo,addSway(new THREE.MeshLambertMaterial({map:LEAF_TEX_S,alphaTest:.45,side:THREE.DoubleSide}),.04),9*46); bCards.castShadow=true; bCards.customDepthMaterial=new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking,map:LEAF_TEX_S,alphaTest:.45});
-  const berryGeo=new THREE.SphereGeometry(.05,7,5), berryMat=smt(0x3a4a9a,{roughness:.35});
-  for(let i=0;i<9;i++){ const a=i/9*6.283+rnd()*.5, r=2+rnd()*4.2, x=BLUE.x+Math.cos(a)*r, z=BLUE.z+Math.sin(a)*r, y=H(x,z);
-    for(let k=0;k<7;k++){ const aa=rnd()*6.283, rr=rnd()*.42, ss=.8+rnd()*.5; M.compose(V.set(x+Math.cos(aa)*rr,y+.32+rnd()*.38,z+Math.sin(aa)*rr),Q.setFromEuler(E.set(rnd(),rnd(),rnd())),S3.set(ss*.7,ss*.6,ss*.7)); bushM.setMatrixAt(bi,M); bushM.setColorAt(bi++,col([0x2a5226,0x2f5a2a,0x264a22][k%3])); }
-    for(let k=0;k<46;k++){ let dx,dy,dz,l; do{ dx=rnd()*2-1; dy=rnd()*2-1; dz=rnd()*2-1; l=dx*dx+dy*dy+dz*dz; }while(l>1||l<.35); const cs=.36+rnd()*.2; M.compose(V.set(x+dx*.62,y+.5+dy*.4,z+dz*.62),Q.setFromEuler(E.set((rnd()-.5)*1.6,Math.atan2(dx,dz)+(rnd()-.5),(rnd()-.5)*1.4)),S3.set(cs,cs,cs)); bCards.setMatrixAt(bci,M); bCards.setColorAt(bci++,col(tmp.set([0x4a8a3e,0x5a9a44,0x3f7a38][k%3]).multiplyScalar(.85+(dy+1)*.18).getHex())); }
-    const im=new THREE.InstancedMesh(berryGeo,berryMat,24); for(let k=0;k<24;k++){ const cl=Math.floor(k/4), aa=cl*1.05+rnd()*.35, el=(cl%3)*.35-.1+rnd()*.15, rr=.66+rnd()*.06; M.compose(V.set(x+Math.cos(aa)*rr*Math.cos(el),y+.48+Math.sin(el)*.42-(k%4)*.04,z+Math.sin(aa)*rr*Math.cos(el)),Q.identity(),S3.set(1,1,1)); im.setMatrixAt(k,M); im.setColorAt(k,col([0x3a4a9a,0x2e3a80,0x4a5ab0,0x5a4a8a][k%4])); }
-    scene.add(im); obstacles.push({x,z,r:.55}); patches.push({type:"blueberry",x,z,im,imFull:24,left:8,max:8,asked:false,regrow:0}); }
-  bushM.castShadow=true; scene.add(bushM,bCards); }
+/* ================= cultivated blueberry and fruit garden ================= */
+{ const wood=smt(0x88613e,{roughness:1}),soil=smt(0x503827,{roughness:1}),path=smt(0xb99b6a,{roughness:1});
+  const ground=new THREE.Group();ground.position.set(BLUE.x,H(BLUE.x,BLUE.z),BLUE.z);scene.add(ground);
+  const base=new THREE.Mesh(new THREE.BoxGeometry(14.8,.05,10.6),path);base.position.y=.025;base.receiveShadow=true;ground.add(base);
+  // A central promenade and generous gaps between six square planting beds.
+  const sites=[];for(const z of [-2.5,2.5])for(const x of [-3.1,0,3.1])sites.push([x,z]);
+  const leafShape=new THREE.Shape();leafShape.moveTo(0,0);leafShape.bezierCurveTo(-.11,.09,-.1,.26,0,.36);leafShape.bezierCurveTo(.1,.26,.11,.09,0,0);
+  const leafGeo=new THREE.ShapeGeometry(leafShape,4);leafGeo.rotateX(-Math.PI/2);
+  const leafMat=smt(0xffffff,{side:THREE.DoubleSide,roughness:.85}),twigMat=smt(0x76513b,{roughness:1}),twigGeo=new THREE.CylinderGeometry(.012,.028,1,5);
+  const berryGeo=new THREE.SphereGeometry(.071,10,8),bc=[];
+  for(let j=0;j<berryGeo.attributes.position.count;j++){const yy=berryGeo.attributes.position.getY(j),c=new THREE.Color(yy>.055?0x777caa:0xc6cee3);bc.push(c.r,c.g,c.b);}
+  berryGeo.setAttribute('color',new THREE.Float32BufferAttribute(bc,3));
+  const berryMat=smt(0xffffff,{vertexColors:true,roughness:.73});
+  sites.forEach(([dx,dz],i)=>{const x=BLUE.x+dx,z=BLUE.z+dz,y=H(x,z),g=new THREE.Group();g.position.set(x,y,z);scene.add(g);
+    const bed=new THREE.Mesh(new THREE.BoxGeometry(2.55,.12,2.55),soil);bed.position.y=.08;bed.receiveShadow=true;g.add(bed);
+    for(const [xx,zz,w,d] of [[0,-1.3,2.72,.09],[0,1.3,2.72,.09],[-1.3,0,.09,2.72],[1.3,0,.09,2.72]]){const edge=new THREE.Mesh(new THREE.BoxGeometry(w,.15,d),wood);edge.position.set(xx,.12,zz);g.add(edge);}
+    const mulch=new THREE.InstancedMesh(new THREE.BoxGeometry(.1,.018,.025),smt(0x97704b),touch?50:90);
+    for(let k=0;k<mulch.count;k++){M.compose(V.set((rnd()-.5)*2.4,.15,(rnd()-.5)*2.4),Q.setFromEuler(E.set(0,k*2.4,0)),S3.set(.7+rnd(),1,1));mulch.setMatrixAt(k,M);}g.add(mulch);
+    // Arching woody stems with a dense oval-leaf crown, rather than spiky cards.
+    const count=touch?200:340,leaves=new THREE.InstancedMesh(leafGeo,leafMat,count);
+    for(let k=0;k<count;k++){const a=k*2.399+i,h=1-2*(k+.5)/count,r=Math.sqrt(1-h*h)*(.82+.15*Math.sin(k*11.3));
+      M.compose(V.set(Math.cos(a)*r,.86+h*.59,Math.sin(a)*r),Q.setFromEuler(E.set(-.3+(k%5)*.17,a,.3*Math.sin(k))),S3.setScalar(.8+(k%4)*.13));leaves.setMatrixAt(k,M);leaves.setColorAt(k,tmp.set([0x416f30,0x5e8f39,0x789e4b,0x3b692e][k%4]).multiplyScalar(.93+(h+1)*.09));}
+    leaves.castShadow=leaves.receiveShadow=true;g.add(leaves);
+    for(let k=0;k<9;k++){const a=k*2.4,from=new THREE.Vector3(Math.cos(a)*.14,.16,Math.sin(a)*.14),to=new THREE.Vector3(Math.cos(a)*.64,1.05+(k%3)*.12,Math.sin(a)*.64),d=to.clone().sub(from),stem=new THREE.Mesh(twigGeo,twigMat);stem.position.copy(from).addScaledVector(d,.5);stem.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.clone().normalize());stem.scale.y=d.length();g.add(stem);}
+    const im=new THREE.InstancedMesh(berryGeo,berryMat,24);
+    for(let k=0;k<24;k++){const cl=Math.floor(k/3),a=cl*2.399+i,el=(cl%3)*.32-.3,r=.89,local=k%3;
+      M.compose(V.set(x+Math.cos(a)*r+Math.cos(local*2.1)*.07,y+.86+el-local*.065,z+Math.sin(a)*r+Math.sin(local*2.1)*.07),Q.setFromEuler(E.set(.3*local,a,0)),S3.setScalar(.9+(cl%3)*.1));im.setMatrixAt(k,M);im.setColorAt(k,tmp.set([0x526ba2,0x394f88,0x6b78a8][cl%3]));}
+    im.castShadow=true;scene.add(im);obstacles.push({x,z,r:.65});patches.push({type:'blueberry',x,z,im,imFull:24,left:8,max:8,asked:false,regrow:0});
+  });
+  // Low split rails frame the rear without closing off the approach paths.
+  for(let k=0;k<9;k++){const x=-6.8+k*1.7,post=new THREE.Mesh(new THREE.BoxGeometry(.12,.95,.12),wood);post.position.set(x,.5,-5);ground.add(post);}
+  for(const y of [.38,.73]){const rail=new THREE.Mesh(new THREE.BoxGeometry(13.8,.09,.08),wood);rail.position.set(0,y,-5);ground.add(rail);}
+  const flowers=new THREE.InstancedMesh(petalHead(8,.065,.025,.13,0,.012),smt(0xffffff,{side:THREE.DoubleSide}),40);
+  for(let k=0;k<40;k++){M.compose(V.set(-6.6+k*.34,.23,-4.65),Q.setFromEuler(E.set(0,k,0)),S3.setScalar(1));flowers.setMatrixAt(k,M);flowers.setColorAt(k,tmp.set(k%3?0xf3ddae:0xc0a4d2));}ground.add(flowers);
+}
 
 /* ================= mushroom clusters ================= */
 const mushDecor=(()=>{ const capG=new THREE.LatheGeometry([[0,.13],[.03,.128],[.055,.115],[.07,.09],[.075,.075],[.06,.07],[0,.075]].map(q=>new THREE.Vector2(q[0],q[1])),10), stemG=new THREE.CylinderGeometry(.014,.02,.09,6).translate(0,.04,0);
@@ -2769,6 +2794,13 @@ const wildTrees=[]; const WILD_MS=40000, wildCardM=[], wildCardCols=[];
     wildTrees.push({x,z,t,fruits,p:Date.now()-WILD_MS*6}); } }
 const wCardD=new THREE.InstancedMesh(cardGeo,addSway(new THREE.MeshLambertMaterial({map:LEAF_TEX_S,alphaTest:.45,side:THREE.DoubleSide}),.04),wildCardM.length); wCardD.castShadow=true; wCardD.customDepthMaterial=new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking,map:LEAF_TEX_S,alphaTest:.45});
 wildCardM.forEach((m,k)=>{ wCardD.setMatrixAt(k,m); wCardD.setColorAt(k,col(wildCardCols[k])); }); scene.add(wCardD);
+// Apple and peach trees anchor the two sides of the blueberry garden.
+[['apple',-5.9],['peach',5.9]].forEach(([t,dx])=>{
+  const x=BLUE.x+dx,z=BLUE.z+1.1,g=new THREE.Group();g.position.set(x,H(x,z),z);scene.add(g);
+  const v={tree:new THREE.Group(),fruits:[]};g.add(v.tree);buildTree(v,t);v.tree.scale.setScalar(1.15);
+  const ring=new THREE.Mesh(new THREE.CylinderGeometry(1.25,1.25,.07,28),smt(0x60412a,{roughness:1}));ring.position.y=.09;g.add(ring);
+  obstacles.push({x,z,r:.6});wildTrees.push({x,z,t,fruits:v.fruits,p:Date.now()-WILD_MS*6});
+});
 const wildRipe=o=>Math.max(0,Math.min(6,Math.floor((Date.now()-o.p)/WILD_MS)));
 function updateWild(){ wildTrees.forEach(o=>{ const r=wildRipe(o); o.fruits.forEach((f,k)=>f.visible=k<r); }); }
 function pickWild(o){ if(wildRipe(o)<=0) return; const F=FRUITS[o.t]; P.face=Math.atan2(o.x-P.x,o.z-P.z); crouch(F.c,true); o.p=Math.max(o.p,Date.now()-WILD_MS*6)+WILD_MS; add(o.t); J.got.fruit=(J.got.fruit||0)+1; persist(); updateWild();
