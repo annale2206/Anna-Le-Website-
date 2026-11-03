@@ -518,6 +518,8 @@
           transform="rotate(-4 869 -12)" style="font-size:17px; animation-delay:3.75s">sculptures</text>
     <text class="label" x="985" y="2" fill="var(--teal)" text-anchor="middle"
           transform="rotate(6 985 2)" style="font-size:17px; animation-delay:3.8s">collaboration</text>
+    <text class="label" x="1046" y="122" fill="var(--green)" text-anchor="middle"
+          transform="rotate(4 1046 122)" style="font-size:17px; animation-delay:3.85s">garden life</text>
 
     <!-- figure, seated on the grass beside the trunk — swaps per season -->
     <image id="tree-figure" href="spring.webp" x="700" y="440" width="260" height="360" preserveAspectRatio="xMidYMax meet"/>
@@ -560,7 +562,8 @@
   <a href="identity-machine.html">identity machine</a> ·
   <a href="filtered-humanity.html">the perfect face</a><br>
   <span>art practice:</span> <a href="interactive.html">interactive</a> · <a href="sculptures.html">sculptures</a> ·
-  <a href="collaboration.html">collaboration</a>
+  <a href="collaboration.html">collaboration</a><br>
+  <span>game:</span> <a href="garden-life.html">garden life</a>
 </nav>
 
 
@@ -692,7 +695,7 @@
     const projects = [270,160], research = [600,140], practice = [930,160];
     [[170,90],[240,40],[330,30],[390,80],[90,110],[60,58]].forEach((p,i)=> twig(projects, p, (i%2? 10:-10), 1.2 + i*0.06));
     [[500,60],[560,20],[665,25],[725,118]].forEach((p,i)=> twig(research, p, (i%2? 9:-9), 1.25 + i*0.06));
-    [[810,80],[870,30],[960,40]].forEach((p,i)=> twig(practice, p, (i%2? 10:-10), 1.3 + i*0.06));
+    [[810,80],[870,30],[960,40],[1040,95]].forEach((p,i)=> twig(practice, p, (i%2? 10:-10), 1.3 + i*0.06));
 
     // a few small side shoots so the tree feels alive
     [[[330,423],[300,380],[285,350]], [[880,423],[905,380],[920,352]],
@@ -1044,6 +1047,7 @@
     { x:793, y:63, size:32, color:'#ff3d9a', href:'interactive.html' },
     { x:853, y:13, size:32, color:'#ffd23f', href:'sculptures.html' },
     { x:943, y:23, size:32, color:'#43e0c9', href:'collaboration.html' },
+    { x:1024,y:79, size:32, color:'#9dff9e', href:'garden-life.html' },
   ];
   const ALL_FLOWERS = MAIN_FLOWERS.concat(SUB_FLOWERS).map(f=>({
     ...f, cx:f.x+f.size/2, cy:f.y+f.size/2
@@ -1070,6 +1074,7 @@
     'interactive.html':      { title:'interactive',         sub:'interactive works', img:yt('LZSsrpJ-nw8') },
     'sculptures.html':       { title:'sculptures',          sub:'crochet-mapping projection', img:'thumbs/sculptures.jpg' },
     'collaboration.html':    { title:'collaboration',       sub:'collaborative works', img:yt('1ntDb_3LuYQ') },
+    'garden-life.html':      { title:'garden life',         sub:'a cozy 3D forest game · play', img:'thumbs/garden-life.jpg' },
   };
   // warm the browser cache so previews pop in instantly
   Object.values(PREVIEWS).forEach(p=>{ if(p.img){ const i=new Image(); i.src=p.img; } });
