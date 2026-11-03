@@ -17,6 +17,7 @@
 
 import { Redis } from '@upstash/redis';
 import garden from './_garden.js';
+import gifts from './_gifts.js';
 
 const redis = new Redis({
   url: process.env.KV_REST_API_URL,
@@ -27,6 +28,8 @@ export default async function handler(req, res) {
   // Garden Life's shared valley rides along here (POST /api/stats?valley=1) so the site
   // stays within the Vercel Hobby limit of 12 serverless functions.
   if (req.method === 'POST' && req.query && req.query.valley !== undefined) return garden(req, res);
+  // ...and so do gifts left on friends' porches (POST /api/stats?gifts=1).
+  if (req.method === 'POST' && req.query && req.query.gifts !== undefined) return gifts(req, res);
 
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Use GET' });

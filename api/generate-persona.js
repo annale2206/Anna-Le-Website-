@@ -31,8 +31,9 @@ const MODEL = 'google/nano-banana-2';
 //   ASPECT_RATIO: '4:3' matches the kiosk screen; '16:9' matches the video
 const RESOLUTION = '2K';
 const ASPECT_RATIO = '4:3';
-// the two-person machine asks for '3:4' (tall) so two portraits sit side by side
-const ALLOWED_ASPECTS = ['4:3', '3:4'];
+// the two-person machine asks for '3:4' (tall) so two portraits sit side by side,
+// or '16:9' (wide) when the projectors are open
+const ALLOWED_ASPECTS = ['4:3', '3:4', '16:9'];
 
 // Wraps the style prompt so the model edits THIS person rather than
 // inventing a stranger.

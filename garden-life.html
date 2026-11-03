@@ -178,12 +178,24 @@ textarea:focus-visible,input:focus-visible{outline:2px solid var(--ember)}
 .sheet.center{align-items:center;justify-content:center;background:rgba(6,10,8,.38);pointer-events:auto;padding-bottom:16px}
 .sheet.center .card{max-width:520px;padding:20px 22px;max-height:min(86vh,720px)}
 .sheet.center .card h2{font-size:24px}
+.hearts{display:flex;gap:4px;margin:4px 0 8px}.hearts i{width:14px;height:13px;background:rgba(255,255,255,.16);clip-path:path("M7 13 L1.2 6.8 A3.3 3.3 0 0 1 7 2.6 A3.3 3.3 0 0 1 12.8 6.8 Z")}.hearts i.on{background:#ff8fb0}
+.gtabs button small{opacity:.65;font-size:11px;margin-left:2px}
+.guide{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:10px}
+.gt{display:flex;flex-direction:column;align-items:flex-start;gap:3px;border:1px solid var(--line);border-radius:12px;padding:9px 10px;min-width:0}
+.gt b{font-weight:600;font-size:13.5px;line-height:1.25;text-transform:capitalize}.gt small{font-size:11.5px;color:var(--sage);line-height:1.3}
+.gt .gd{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.25)}
+.gt.unk{border-style:dashed;opacity:.7}.gt.unk b{text-transform:none;color:var(--sage)}.gt.unk .gd{background:rgba(255,255,255,.08)}
+h2 .done{font:600 11px var(--body);letter-spacing:.08em;text-transform:uppercase;background:var(--ember);color:#2a1c08;border-radius:999px;padding:3px 8px;vertical-align:middle;margin-left:6px}
+.gpick{display:flex;flex-direction:column;gap:6px;max-height:34vh;overflow:auto}
+.gp{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:12px;padding:6px 8px}.gp.on{border-color:var(--ember)}
+.gp > span:nth-child(2){flex:1;min-width:0;font-size:13.5px}.gp small{color:var(--sage)}.gp b{min-width:16px;text-align:center}
+.gp button{width:30px;height:30px;padding:0;border-radius:50%;font-size:16px;line-height:1}
 @media (prefers-reduced-motion: reduce){ .bite{animation:none} }
 /* phone: tools fold into one Menu button so they never cover the choices above your head */
 #bMenu{display:inline-block}
 .tools{gap:6px}
 .tools > button:not(#bMenu):not(#bSound){display:none}
-.tools.open > button:not(#bMenu):not([hidden]){display:inline-block}
+.tools.open > button:not(#bMenu):not(#bSound):not([hidden]){display:inline-block}
 .tools.open{background:rgba(24,22,38,.5);border-radius:16px;padding:6px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 .tools{flex-direction:row-reverse;flex-wrap:wrap;align-items:flex-start}
 .tools.open{flex-direction:column;align-items:flex-end}
@@ -231,6 +243,8 @@ textarea:focus-visible,input:focus-visible{outline:2px solid var(--ember)}
       <button id="bMenu" aria-expanded="false">Menu</button>
       <button id="bSay">Say something</button>
       <button id="bEmo" aria-label="Show how you feel">Feelings</button>
+      <button id="bGuide">Field guide</button>
+      <button id="bGift">Send a gift</button>
       <button id="bSky">Weather</button>
       <button id="bLights" aria-label="Lantern lights">Lights: on</button>
       <button id="bJournal" hidden>Journal</button>
@@ -292,7 +306,7 @@ async function flush(){ if(!db||!myId||!canWriteDb||saving||!dirty) return; savi
   try{ await db.collection("data/users/"+myId).doc("journal").set(JSON.parse(JSON.stringify(J))); }catch(e){ canWriteDb=false; }
   saving=false; if(dirty) flush(); }
 const have=k=>J.inv[k]||0;
-function add(k,n=1){ J.inv[k]=Math.max(0,(J.inv[k]||0)+n); if(!J.inv[k]) delete J.inv[k]; }
+function add(k,n=1){ if(n>0&&J.seen) J.seen[k]=1; J.inv[k]=Math.max(0,(J.inv[k]||0)+n); if(!J.inv[k]) delete J.inv[k]; }
 
 const TASKS=[
  {id:"berries",t:"Pick 5 heart berries into your basket",n:5},
@@ -1622,7 +1636,8 @@ function nearest(){
   for(const p of patches){ const r=p.type==="pecan"?3.4:p.type==="maple"?1.9:1.8; cand(p,r,patchLabel(p),()=>usePatch(p)); }
   for(const m of mounds) cand(m,1.9,moundLabel(m),()=>useMound(m));
   bedSpots.forEach((b,i)=>cand(b,2,bedLabel(i),()=>useBed(i)));
-  cand(fox,3.5,"Greet the fox",greetFox);
+  cand(fox,3.5,foxLabel(),greetFox);
+  if(porchGifts.length){ const w=parcelWorld(); cand(w,2.2,`Open the gift from ${porchGifts[0].from||"a friend"}`,openParcel); }
   rabbits.forEach(r=>cand(r,2.6,"Say hello to the rabbit",()=>greetRabbit(r)));
   if(hunt&&hunt.deer) cand(hunt.deer,4.5,"Ask the deer for permission",askDeer);
   PLOTS.forEach((pl,i)=>cand(pl,1.9,plotLabel(i),()=>usePlot(i)));
@@ -1703,7 +1718,7 @@ function useBed(i){ crouch(bedStage(i)===3?0xd9374f:null); const st=bedStage(i);
     add("strawberry",-1); J.beds[i]=Date.now(); J.gave.planted++; persist(); task("plant"); updateBeds(); toast("You press the berry's seeds into the soil. In about six minutes of real time, there will be strawberries here."); chime(); return; }
   if(st===3){ add("strawberry",5); J.got.grown+=5; J.got.berries+=5; J.beds[i]=0; persist(); task("berries",5); updateBeds(); pop("+5 heart berries"); sparkle(bedSpots[i].x,H(bedSpots[i].x,bedSpots[i].z)+.8,bedSpots[i].z,0xff8aa0); toast("Five ripe heart berries from your own bed, into your basket."); chirp(1500); } }
 function greet(k){ if(!J.kin[k.id]){ J.kin[k.id]=1; persist(); } toast(k.line,6500); }
-function greetFox(){ fox.wait=6; fox.face=Math.atan2(P.x-fox.x,P.z-fox.z); greet({id:"Fox",line:"The fox sits and looks at you with amber eyes, tail curled around ki's feet. Then ki trots off toward the meadow."}); task("fox"); }
+function greetFox_old(){ fox.wait=6; fox.face=Math.atan2(P.x-fox.x,P.z-fox.z); greet({id:"Fox",line:"The fox sits and looks at you with amber eyes, tail curled around ki's feet. Then ki trots off toward the meadow."}); task("fox"); }
 function greetRabbit(r){ greet({id:"Rabbit",line:"The rabbit freezes, nose twitching, and decides you're all right."}); r.wait=4; task("rabbit"); }
 function lookAtFlowers(){
   openSheet(`<div class="eyebrow">The meadow</div><h2>Purple and gold</h2>
@@ -2026,7 +2041,7 @@ function updateOthers(dt,t){
   for(const p of ps){ if(p.sameTab||p.kind!=="viewer") continue; const pr=p.presence||{}; if(typeof pr.x!=="number") continue; seen.add(p.peer);
     let o=others.get(p.peer); if(!o){ o={c:makeChar(),by:p.by||pr.id||null,x:pr.x,z:pr.z,y:pr.y||0,face:pr.f||0,bubble:null,lastSay:pr.sayAt||0,seenAt:performance.now()}; scene.add(o.c.g); others.set(p.peer,o); setLabel(o,o.by?names[o.by]:""); if(o.by&&!(o.by in names)) needNames.push(o.by); }
     o.cb=Number.isInteger(pr.cb)?pr.cb:-1;
-    const nm=typeof pr.nm==="string"?clean(pr.nm,24):""; if(nm&&nm!==o.nm){ o.nm=nm; setLabel(o,nm); }
+    const nm=typeof pr.nm==="string"?clean(pr.nm,24):""; if(nm&&nm!==o.nm){ o.nm=nm; setLabel(o,nm); noteFriend(nm); }
     const lk=Array.isArray(pr.lk)?pr.lk.map(n=>Math.max(0,Math.min(5,n|0))):[0,0,1]; const lkKey=lk.join(","); if(o.lk!==lkKey){ o.lk=lkKey; applyLookTo(o.c,lk); }
     const k=Math.min(1,dt*(p.slow?3:8)); o.x+=(Math.max(-150,Math.min(150,pr.x))-o.x)*k; o.z+=(Math.max(-150,Math.min(150,+pr.z||0))-o.z)*k; o.y+=((+pr.y||0)-o.y)*k; o.face=lerpAng(o.face,+pr.f||0,k);
     o.c.g.position.set(o.x,o.y,o.z);
@@ -3301,7 +3316,7 @@ function animQuad(a,moving,dt,t,rate){ a.phase=(a.phase||0)+dt*rate*Math.max(mov
   if(a.torso&&a.baseY==null) a.baseY=a.torso.position.y; if(a.torso) a.torso.position.y=a.baseY+Math.abs(Math.sin(a.phase))*.025*m*(a.legs[0].hip.position.y); }
 function updateAnimals(dt,t){
   // fox
-  { const wp=FOX_WP[fox.target], dx=wp.x-fox.x, dz=wp.z-fox.z, d=Math.hypot(dx,dz);
+  if(!foxSeek(dt,t)) { const wp=FOX_WP[fox.target], dx=wp.x-fox.x, dz=wp.z-fox.z, d=Math.hypot(dx,dz);
     if(fox.wait>0){ fox.wait-=dt; animQuad(fox,0,dt,t,10); if(fox.tl) fox.tl.rotation.y=Math.sin(t*1.5)*.3; }
     else if(d<1){ fox.wait=4+Math.random()*6; fox.target=(fox.target+1+Math.floor(Math.random()*3))%FOX_WP.length; }
     else { fox.face=lerpAng(fox.face,Math.atan2(dx,dz),Math.min(1,dt*3)); const sp=1.8*dt; let nx=fox.x+Math.sin(fox.face)*sp,nz=fox.z+Math.cos(fox.face)*sp;
@@ -3325,7 +3340,7 @@ function updateAnimals(dt,t){
     const x=b.h.x+Math.sin(k)*b.r+Math.sin(k*2.3)*.8, z=b.h.z+Math.cos(k*.8)*b.r*.8+Math.cos(k*1.7)*.6, y=Math.max(H(x,z),0)+.6+Math.sin(k*3)*.35;
     let bx=x,by=y,bz=z; const pd=Math.hypot(P.x-x,P.z-z); if(pd<2.2){ const k=(2.2-pd)*1.4; bx+=(x-P.x)/(pd||1)*k; bz+=(z-P.z)/(pd||1)*k; by+=k*.4; }
     b.g.position.set(bx,by,bz); b.g.rotation.y=Math.atan2(Math.cos(k)*b.r,-Math.sin(k*.8)*b.r*.8); const f=Math.sin(t*16+b.ph)*.9; b.pl.rotation.z=f; b.pr.rotation.z=-f;
-    if(Math.hypot(P.x-x,P.z-z)<1.6&&!b.seen){ b.seen=true; task("butterfly"); toast("A butterfly drifts right past your shoulder.",2600); } }
+    if(Math.hypot(P.x-x,P.z-z)<1.6&&!b.seen){ b.seen=true; if(!J.kin.Butterfly){ J.kin.Butterfly=1; persist(); } task("butterfly"); toast("A butterfly drifts right past your shoulder.",2600); } }
   // songbirds
   for(const fl of flocks){ fl.birds.forEach((b,i)=>{ const a=t*fl.sp+b.ph; b.g.position.set(fl.c.x+Math.cos(a)*fl.c.r,fl.c.y+Math.sin(t*.7+b.dy)*1.5+i*.4,fl.c.z+Math.sin(a)*fl.c.r); b.g.rotation.y=-a;
     const f=Math.sin(t*14+i)*.8; b.pl.rotation.z=f; b.pr.rotation.z=-f; b.g.visible=night<.5; }); }
@@ -3334,6 +3349,156 @@ function updateAnimals(dt,t){
   for(const s of swimmers){ s.x+=s.sp*dt*s.dir; if(s.x>110) s.x=-110; if(s.x<-110) s.x=110; const z=riverZ(s.x)+s.off+Math.sin(t*.6+s.ph)*.4;
     s.f.position.set(s.x,-.45+Math.sin(t+s.ph)*.08,z); s.f.rotation.y=s.dir>0?Math.PI/2:-Math.PI/2; s.f.userData.tail.rotation.y=Math.sin(t*8+s.ph)*.4; }
 }
+
+/* ================= the fox who learns to trust you ================= */
+// Trust grows a little each visit (at most 3 a day), so the fox warms up over days, not minutes.
+// 0-2 wild: greets, then trots off · 3-5 curious: comes closer when you're near · 6-9 friend: seeks you out and sits by you
+// 10+ companion: walks beside you around the valley (you can ask ki to roam again).
+if(!J.fox||typeof J.fox!=="object") J.fox={t:0,day:"",today:0,said:"",fed:"",follow:true};
+const FOX_MAX=12, FOX_FOODS=[["strawberry","a heart berry"],["blueberry","a blueberry"],["fish","a fish"],["egg","an egg"]];
+const foxStage=()=>J.fox.t>=10?3:J.fox.t>=6?2:J.fox.t>=3?1:0;
+const FOX_STAGE_NAME=["Wild","Curious","Friend","Companion"];
+function foxDay(){ if(J.fox.day!==dayKey()){ J.fox.day=dayKey(); J.fox.today=0; } }
+function foxTrust(n,why){ foxDay(); const room=Math.max(0,3-J.fox.today), add_=Math.min(n,room), before=foxStage();
+  if(add_<=0||J.fox.t>=FOX_MAX){ return false; } J.fox.t=Math.min(FOX_MAX,J.fox.t+add_); J.fox.today+=add_; persist();
+  sparkle(fox.x,H(fox.x,fox.z)+.7,fox.z,0xff9ab8); chime();
+  const st=foxStage(); if(st>before){ const msg=["","The fox is curious about you now. Ki will come a little closer when you're near.","The fox counts you as a friend. Ki will come find you and sit by your side.","The fox trusts you completely. Ki will walk with you wherever you go in the valley."][st];
+    setTimeout(()=>toast(msg,7000),900); }
+  return true; }
+function foxHearts(){ const n=Math.min(10,J.fox.t); return `<div class="hearts" aria-label="Trust ${n} of 10">${Array.from({length:10},(_,i)=>`<i class="${i<n?"on":""}"></i>`).join("")}</div>`; }
+const FOX_LINES=[
+  ["The fox stops at the edge of the grass and watches you, ready to run.","Ki's ears flick toward you. Then ki looks away, pretending not to care."],
+  ["The fox comes a few steps closer and sniffs the air near your hand.","Ki sits, tail wrapped around ki's feet, and tilts ki's head at you."],
+  ["The fox trots up and bumps ki's head against your knee.","Ki flops down beside you in the grass, one eye half closed."],
+  ["The fox looks up at you as if to ask: where are we going today?","Ki leans against your leg, warm and quiet. Ki knows your footsteps now."]];
+function greetFox(){ fox.wait=Math.max(fox.wait,8); fox.face=Math.atan2(P.x-fox.x,P.z-fox.z); foxDay(); if(!J.kin.Fox){ J.kin.Fox=1; persist(); } task("fox");
+  const st=foxStage(), line=FOX_LINES[st][(hashStr(dayKey())+J.fox.t)%2];
+  const foods=FOX_FOODS.filter(([k])=>have(k)>0), fedToday=J.fox.fed===dayKey(), saidToday=J.fox.said===dayKey();
+  const nextHint=J.fox.t>=FOX_MAX?"":(J.fox.today>=3?"Ki has had enough attention for today. Come back tomorrow.":(!saidToday?"Saying hello each day helps ki trust you.":(!fedToday?"Sharing a little food helps too.":"")));
+  openSheet(`<div class="eyebrow">The fox · ${FOX_STAGE_NAME[st]}</div><h2>${esc(line)}</h2>${foxHearts()}
+    <p class="meta">${esc(nextHint)}</p>
+    <div class="chips">${!saidToday?`<button data-fx="hello">Say hello softly</button>`:""}${!fedToday?foods.map(([k,n])=>`<button data-fx="food" data-k="${k}">Offer ${esc(n)}</button>`).join(""):""}
+    ${st===3?`<button data-fx="follow">${J.fox.follow?"Let ki roam free":"Ask ki to walk with you"}</button>`:""}</div>
+    <div class="actions"><button class="primary" id="fxX">Close</button></div>`,{low:true});
+  $("fxX").onclick=closeSheet;
+  $("card").querySelectorAll("[data-fx]").forEach(b=>b.onclick=()=>{ const a=b.dataset.fx;
+    if(a==="hello"){ J.fox.said=dayKey(); const ok=foxTrust(1); persist(); closeSheet(); toast(ok?"You crouch down and say hello. The fox's ears soften.":"The fox listens, then yawns."); crouch(); fox.wait=10; }
+    else if(a==="food"){ const k=b.dataset.k; if(have(k)<1) return; add(k,-1); J.fox.fed=dayKey(); J.gave.offerings++; const ok=foxTrust(2); persist(); closeSheet(); crouch(ITEMS[k]?parseInt(ITEMS[k].c.slice(1),16):null);
+      toast(ok?"The fox takes it gently from your fingers and eats it in the grass beside you.":"The fox takes it gently and trots a little way off to eat."); fox.wait=10; }
+    else if(a==="follow"){ J.fox.follow=!J.fox.follow; persist(); closeSheet(); toast(J.fox.follow?"The fox falls into step beside you.":"The fox bounds off toward the meadow. Ki will find you again."); if(!J.fox.follow){ fox.wait=0; fox.nextSeek=performance.now()/1000+60; } } }); }
+function foxLabel(){ const st=foxStage(); return st===0?"Greet the fox":st===3?"Kneel by the fox":"Say hello to the fox"; }
+// returns true if it handled the fox this frame
+function foxSeek(dt,t){ const st=foxStage(); if(st===0||P.inside||P.mode==="fish"&&st<3) return false;
+  const now=t, pd=Math.hypot(P.x-fox.x,P.z-fox.z);
+  const companion=st===3&&J.fox.follow, radius=st===1?10:st===2?20:1e9;
+  if(!companion){ if(pd>radius||now<(fox.nextSeek||0)) { fox.sitting=false; return false; } if(fox.sitT>(st===1?8:18)){ fox.sitT=0; fox.sitting=false; fox.nextSeek=now+(st===1?50:30); fox.wait=0; return false; } }
+  // where to be: a little behind and beside you
+  const side=(hashStr(String(Math.floor(now/20)))%2?1:-1), stay=companion?2.1:2.6;
+  const tx=P.x-Math.sin(P.face)*1.4+Math.cos(P.face)*side*1.1, tz=P.z-Math.cos(P.face)*1.4-Math.sin(P.face)*side*1.1;
+  const dx=tx-fox.x, dz=tz-fox.z, d=Math.hypot(dx,dz);
+  if(companion&&pd>34){ // got left far behind: slip back in from out of sight
+    for(let k=0;k<12;k++){ const a=P.face+Math.PI+(k-6)*.25, x=P.x+Math.sin(a)*9, z=P.z+Math.cos(a)*9; if(H(x,z)>0&&!blocked(x,z)&&gridFree(x,z)&&!inGBed(x,z)){ fox.x=x; fox.z=z; break; } } }
+  if(pd<stay&&C.speed<.3||d<.6){ fox.sitting=true; fox.sitT=(fox.sitT||0)+dt; fox.face=lerpAng(fox.face,Math.atan2(P.x-fox.x,P.z-fox.z),Math.min(1,dt*4)); animQuad(fox,0,dt,t,10); if(fox.tl) fox.tl.rotation.y=Math.sin(t*2.2)*.35; }
+  else { fox.sitting=false; const sp=(d>6?4.6:d>2.5?3.2:1.8)*dt; let want=Math.atan2(dx,dz), moved=false;
+    for(const off of [0,.5,-.5,1,-1,1.6,-1.6]){ const f=want+off, nx=fox.x+Math.sin(f)*sp, nz=fox.z+Math.cos(f)*sp;
+      if(H(nx,nz)>=0&&!inGBed(nx,nz)&&!blocked(nx,nz)&&(gridFree(nx,nz)||companion)){ fox.face=lerpAng(fox.face,f,Math.min(1,dt*6)); fox.x=nx; fox.z=nz; moved=true; break; } }
+    animQuad(fox,moved?(d>6?1.6:1):0,dt,t,moved&&d>6?14:10); if(fox.tl) fox.tl.rotation.y=Math.sin(t*5)*.15; }
+  fox.g.position.set(fox.x,H(fox.x,fox.z),fox.z); fox.g.rotation.y=fox.face; fox.hd.rotation.y=fox.sitting?Math.sin(t*.8)*.4:0;
+  return true; }
+
+/* ================= field guide: pages that fill in as you discover the valley ================= */
+if(!J.seen||typeof J.seen!=="object"){ J.seen={}; for(const k in J.inv) if(J.inv[k]>0) J.seen[k]=1; }
+if(!J.sky||typeof J.sky!=="object") J.sky={};
+const KIN_PAGE=[["Fox","Ki wanders between the meadows."],["Rabbit","Listen for a twitch in the meadow grass."],["Deer","Grazing where the forest opens up."],["Frog","On the riverbank, very still."],["Hedgehog","Snuffling under the hedges."],["Ducks","Paddling on the river."],["Cat","Napping somewhere near the cabins."],["Chickens","Clucking by their coop."],["Butterfly","Drifting over the flowers on warm days."]];
+const SKY_PAGE=[["Sunrise","Be here when the sun comes up."],["Sunset","Watch the sun go down."],["Stars","Stay out after dark."],["Shooting star","Lie on the hill at night and wait."],["Rain","Some days the valley gets rain."],["Snow","Winter brings snow."],["Wind","On windy days the grass bends low."]];
+const BUILTIN=Object.keys(ITEMS).filter(k=>!(J.dishes&&J.dishes[k]));
+const GUIDE_PAGES=[
+  {id:"river",n:"River",items:()=>SPECIES.map(s=>({k:"f:"+s.n,n:s.n,c:"#"+s.belly.toString(16).padStart(6,"0"),got:!!J.catches[s.n],cnt:J.catches[s.n]||0,hint:"Cast a line in the river."}))},
+  {id:"kin",n:"Kin",items:()=>KIN_PAGE.map(([id,h])=>({k:"k:"+id,n:id,c:"#c8622a",got:!!J.kin[id],hint:h}))},
+  {id:"mush",n:"Mushrooms",items:()=>MUSH.map(m=>({k:"m:"+m.n,n:m.n[0].toUpperCase()+m.n.slice(1),c:"#"+m.cap.toString(16).padStart(6,"0"),got:!!J.kin["m:"+m.n],hint:"Look under the trees."}))},
+  {id:"gather",n:"Gathered",items:()=>BUILTIN.filter(k=>!ITEMS[k].meal).map(k=>({k:"g:"+k,n:ITEMS[k].n,c:ITEMS[k].c,got:!!J.seen[k],hint:"Somewhere in the valley."}))},
+  {id:"kitchen",n:"Kitchen",items:()=>BUILTIN.filter(k=>ITEMS[k].meal).map(k=>({k:"g:"+k,n:ITEMS[k].n,c:ITEMS[k].c,got:!!J.seen[k],hint:"Cook it at the fire or the stove."}))},
+  {id:"sky",n:"Sky",items:()=>SKY_PAGE.map(([id,h])=>({k:"s:"+id,n:id,c:"#a98be0",got:!!J.sky[id]||id==="Shooting star"&&J.wishes>0,hint:h}))}];
+let guidePage="river";
+function guideCount(){ let a=0,b=0; for(const p of GUIDE_PAGES){ const it=p.items(); a+=it.filter(x=>x.got).length; b+=it.length; } return [a,b]; }
+function openGuide(){ const page=GUIDE_PAGES.find(p=>p.id===guidePage)||GUIDE_PAGES[0], items=page.items(), got=items.filter(x=>x.got).length, [ta,tb]=guideCount();
+  openSheet(`<div class="eyebrow">Field guide · ${ta} of ${tb} found</div><h2>${esc(page.n)}${got===items.length?' <span class="done">Page complete</span>':""}</h2>
+    <div class="chips gtabs">${GUIDE_PAGES.map(p=>{ const it=p.items(), g=it.filter(x=>x.got).length; return `<button data-gp="${p.id}" aria-pressed="${p.id===page.id}">${esc(p.n)} <small>${g}/${it.length}</small></button>`; }).join("")}</div>
+    <div class="balance"><i style="width:${Math.round(got/items.length*100)}%"></i></div>
+    <div class="guide">${items.map(x=>x.got?`<div class="gt"><span class="gd" style="background:${esc(x.c)}"></span><b>${esc(x.n)}</b>${x.cnt?`<small>caught ×${x.cnt}</small>`:""}</div>`
+      :`<div class="gt unk"><span class="gd">?</span><b>Not yet found</b><small>${esc(x.hint)}</small></div>`).join("")}</div>
+    <div class="actions"><button class="primary" id="gdX">Close</button></div>`,{center:true});
+  $("gdX").onclick=closeSheet; $("card").querySelectorAll("[data-gp]").forEach(b=>b.onclick=()=>{ guidePage=b.dataset.gp; openGuide(); }); }
+let guideQ=[];
+function guideTick(){ // notice new discoveries, record sky moments
+  if(!P.inside){ if(night>.7) J.sky.Stars=J.sky.Stars||1; const ph=phaseLabel(new Date().getHours()+new Date().getMinutes()/60); if(ph==="Sunrise"||ph==="Sunset") J.sky[ph]=J.sky[ph]||1;
+    if(W.rain>.6) J.sky.Rain=J.sky.Rain||1; if(W.snow>.6) J.sky.Snow=J.sky.Snow||1; if(W.wind>2) J.sky.Wind=J.sky.Wind||1; }
+  const all=[]; for(const p of GUIDE_PAGES) for(const x of p.items()) if(x.got) all.push([p,x]);
+  if(!J.guideSeen||typeof J.guideSeen!=="object"){ J.guideSeen={}; for(const [,x] of all) J.guideSeen[x.k]=1; persist(); return; }
+  let changed=false; for(const [p,x] of all) if(!J.guideSeen[x.k]){ J.guideSeen[x.k]=1; changed=true; guideQ.push([p,x]); }
+  if(changed) persist();
+  if(guideQ.length&&!guideQ.busy){ const [p,x]=guideQ.shift(); guideQ.busy=true; const it=p.items(), done=it.every(y=>y.got);
+    toast(done?`Field guide: the ${p.n} page is complete!`:`New in your field guide: ${x.n} (${p.n} ${it.filter(y=>y.got).length}/${it.length})`,4200); chime();
+    setTimeout(()=>guideQ.busy=false,4600); } }
+
+/* ================= gifts on the porch: leave something for a friend, even when they're away ================= */
+if(!J.friends||typeof J.friends!=="object") J.friends={};
+function noteFriend(nm){ if(!nm||nm===J.name) return; if(!J.friends[nm]){ J.friends[nm]=Date.now(); const ks=Object.keys(J.friends); if(ks.length>24){ ks.sort((a,b)=>J.friends[a]-J.friends[b]); delete J.friends[ks[0]]; } persist(); } else J.friends[nm]=Date.now(); }
+const GIFT_API="/api/stats?gifts=1", giftsOnline=location.protocol.startsWith("http");
+async function giftCall(body){ const r=await fetch(GIFT_API,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)}); const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.error||"unavailable"); return j; }
+let porchGifts=[], giftsToasted=new Set();
+// a little parcel wrapped in leaves and tied with sweetgrass, waiting on your porch
+const parcel=new THREE.Group(); { const box=new THREE.Mesh(new THREE.BoxGeometry(.5,.36,.42),std(0x7a9a5a)); box.position.y=.18; parcel.add(box);
+  const r1=new THREE.Mesh(new THREE.BoxGeometry(.52,.38,.07),std(0xe8d07a)); r1.position.y=.18; parcel.add(r1); const r2=new THREE.Mesh(new THREE.BoxGeometry(.07,.38,.44),std(0xe8d07a)); r2.position.y=.18; parcel.add(r2);
+  for(const s of [-1,1]){ const bow=new THREE.Mesh(new THREE.TorusGeometry(.08,.025,6,12),std(0xe8d07a)); bow.position.set(s*.07,.4,0); bow.rotation.y=Math.PI/2; parcel.add(bow); }
+  const fl=new THREE.Mesh(new THREE.SphereGeometry(.06,8,6),std(0xe2566e,{emissive:0x501020})); fl.position.set(.12,.39,.12); parcel.add(fl); }
+parcel.position.set(-1.9,.5,D_/2+2.3); parcel.visible=false; cabin.add(parcel);
+const parcelWorld=()=>{ const v=new THREE.Vector3(); parcel.getWorldPosition(v); return {x:v.x,z:v.z,y:v.y}; };
+const parcelGlow=new THREE.PointLight(0xffd8a0,0,4,2); parcelGlow.position.set(0,.6,0); parcel.add(parcelGlow);
+function updateParcel(t){ parcel.visible=porchGifts.length>0; if(!parcel.visible) return; parcel.rotation.y=Math.sin(t*.6)*.08; parcel.scale.setScalar(1+.04*Math.sin(t*2.4)); parcelGlow.intensity=.6+.3*Math.sin(t*2.4); }
+async function pollGifts(){ if(!giftsOnline||!J.name) return; try{ const j=await giftCall({op:"peek",name:J.name}); porchGifts=Array.isArray(j.gifts)?j.gifts:[];
+    const fresh=porchGifts.filter(g=>!giftsToasted.has(g.id)); fresh.forEach(g=>giftsToasted.add(g.id));
+    if(fresh.length) toast(fresh.length===1?`${fresh[0].from||"A friend"} left a gift on your cabin porch.`:`${fresh.length} gifts are waiting on your cabin porch.`,6000); }catch(e){} }
+const itemLine=items=>Object.entries(items||{}).filter(([k,n])=>ITEMS[k]&&n>0).map(([k,n])=>`${n} ${ITEMS[k].n}`).join(", ");
+async function openParcel(){ const g=porchGifts[0]; if(!g) return; try{ const j=await giftCall({op:"claim",name:J.name,id:g.id}); porchGifts=porchGifts.filter(x=>x.id!==g.id);
+    if(!j.ok){ toast("Someone already opened that one."); return; }
+    const items={}; for(const [k,n] of Object.entries(g.items||{})) if(ITEMS[k]&&!(J.dishes&&J.dishes[k])){ const c=Math.max(0,Math.min(10,n|0)); if(c){ add(k,c); items[k]=c; } }
+    J.got.giftsIn=(J.got.giftsIn||0)+1; persist(); crouch(0x7a9a5a); const w=parcelWorld(); sparkle(w.x,w.y+.5,w.z,0xffd8a0); chime();
+    openSheet(`<div class="eyebrow">A gift on your porch</div><h2>From ${esc(g.from||"a friend")}</h2>
+      ${g.note?`<p class="q">${esc(g.note)}</p>`:""}<p>${itemLine(items)?`Inside, wrapped in leaves: <b>${esc(itemLine(items))}</b>. They're in your basket now.`:"Inside is just the thought, and that's plenty."}</p>
+      <p class="meta">A gift asks for nothing back, but you could leave one on ${esc(g.from||"their")}'s porch too.</p>
+      <div class="actions">${g.from?`<button id="gfBack">Send one back</button>`:""}<button class="primary" id="gfX">Close</button></div>`,{center:true});
+    $("gfX").onclick=closeSheet; if($("gfBack")) $("gfBack").onclick=()=>openGift(g.from); }catch(e){ toast("The gift is tied tight. Try again in a moment."); } }
+function openGift(to){ if(!J.name){ toast("Choose a name first so your friend knows who it's from."); return; }
+  if(!giftsOnline){ toast("Gifts travel between porches on annale22.com. Open the game there to send one."); return; }
+  const pick={}; const friends=Object.keys(J.friends).sort((a,b)=>J.friends[b]-J.friends[a]).slice(0,8);
+  const draw=()=>{ const inv=BASKET_ALL().filter(k=>have(k)>0), kinds=Object.keys(pick).length;
+    openSheet(`<div class="eyebrow">Leave a gift</div><h2>Wrap something for a friend</h2>
+      <p class="meta">It waits on their cabin porch until they visit, even if they're on the other side of the world.</p>
+      <h3>For</h3>${friends.length?`<div class="chips">${friends.map(f=>`<button data-to="${esc(f)}" aria-pressed="${f===to}">${esc(f)}</button>`).join("")}</div>`:""}
+      <input type="text" id="gfTo" maxlength="24" placeholder="Their name in the valley" value="${esc(to||"")}" autocomplete="off">
+      <h3>From your basket <span class="meta">(up to 5 kinds)</span></h3>
+      ${inv.length?`<div class="gpick">${inv.map(k=>{ const n=pick[k]||0; return `<div class="gp${n?" on":""}"><span class="dot" style="background:${esc(ITEMS[k].c)}"></span><span>${esc(ITEMS[k].n)}<small> · you have ${have(k)}</small></span>
+        <button data-m="${k}" aria-label="One less" ${n?"":"disabled"}>&minus;</button><b>${n}</b><button data-p="${k}" aria-label="One more" ${n>=Math.min(10,have(k))||!n&&kinds>=5?"disabled":""}>+</button></div>`; }).join("")}</div>`
+        :`<p class="meta">Your basket is empty. A note on its own is a lovely gift too.</p>`}
+      <h3>A note</h3><textarea id="gfNote" maxlength="200" placeholder="Thinking of you by the river.">${esc(pick.__note||"")}</textarea>
+      <div class="actions"><button id="gfC">Cancel</button><button class="primary" id="gfS">Wrap and send</button></div>`,{center:true});
+    const keep=()=>{ to=$("gfTo").value; pick.__note=$("gfNote").value; };
+    $("card").querySelectorAll("[data-to]").forEach(b=>b.onclick=()=>{ keep(); to=b.dataset.to; draw(); });
+    $("card").querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>{ keep(); const k=b.dataset.p; pick[k]=(pick[k]||0)+1; draw(); });
+    $("card").querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{ keep(); const k=b.dataset.m; pick[k]=(pick[k]||0)-1; if(pick[k]<=0) delete pick[k]; draw(); });
+    $("gfC").onclick=closeSheet;
+    $("gfS").onclick=async()=>{ keep(); const dest=clean(to,24), note=clean(pick.__note,200), items={}; for(const [k,n] of Object.entries(pick)) if(k!=="__note"&&n>0&&have(k)>=n) items[k]=n;
+      if(!dest){ toast("Who is it for? Type their name in the valley."); return; } if(dest.toLowerCase()===J.name.toLowerCase()){ toast("That's your own porch. Pick a friend."); return; }
+      if(!note&&!Object.keys(items).length){ toast("Add something from your basket or write a note."); return; }
+      $("gfS").disabled=true; $("gfS").textContent="Wrapping…";
+      try{ await giftCall({op:"send",to:dest,from:J.name,items,note}); for(const [k,n] of Object.entries(items)) add(k,-n); J.gave.gifts++; noteFriend(dest); persist(); closeSheet(); chime();
+        toast(`Wrapped in leaves and tied with sweetgrass. It's waiting on ${dest}'s porch.`,6000); }
+      catch(e){ $("gfS").disabled=false; $("gfS").textContent="Wrap and send"; toast(String(e.message)==="porch full"?`${dest}'s porch is full of gifts already. Try again after they visit.`:"The path to their porch is muddy right now. Try again in a moment."); } }; };
+  draw(); }
+const BASKET_ALL=()=>{ const ks=BUILTIN.filter(k=>have(k)>0); return [...BASKET_ORDER.filter(k=>ks.includes(k)),...ks.filter(k=>!BASKET_ORDER.includes(k))]; };
+$("bGuide").onclick=openGuide; $("bGift").onclick=()=>openGift();
+setInterval(guideTick,2000); setTimeout(pollGifts,4000); setInterval(pollGifts,45000);
 
 /* ================= loop ================= */
 const clock=new THREE.Clock(); let promptT=0,presT=0,lastPlotSec=-1;
@@ -3355,7 +3520,7 @@ function loop(){
     goose.forEach(g=>{ const f=Math.sin(t*5+g.ph)*.5; g.pl.rotation.z=f; g.pr.rotation.z=-f; }); if(geeseT>2&&Math.random()<.004) honk();
     if(geeseT>38){ geese.visible=false; nextGeese=t+90+Math.random()*90; } }
   if((promptT+=dt)>.12){ promptT=0; updatePrompt(); if(Math.floor(t)%5===0) updateBeds(); if(Math.floor(t)!==lastPlotSec){ lastPlotSec=Math.floor(t); updatePlots(); updateWild(); updateVeg(); } }
-  updateBubbles(); autoQuality(dt); renderer.render(scene,camera); requestAnimationFrame(loop);
+  updateParcel(t); updateBubbles(); autoQuality(dt); renderer.render(scene,camera); requestAnimationFrame(loop);
 }
 let aqT=0,aqN=0,aqSum=0;
 function autoQuality(dt){ if(!touch||document.hidden||dt>.5) return; aqSum+=dt; aqN++; if((aqT+=dt)<3) return;
