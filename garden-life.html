@@ -471,7 +471,23 @@ for(let i=0;i<tpos.count;i++){ const x=tpos.getX(i),z=tpos.getZ(i),h=H(x,z); tpo
   tGrass[i]=gw; tmp.multiplyScalar(.8); tcol.push(tmp.r,tmp.g,tmp.b); }
 const tBase=Float32Array.from(tcol);
 tGeo.setAttribute("color",new THREE.Float32BufferAttribute(tcol,3)); tGeo.computeVertexNormals();
-const terrain=new THREE.Mesh(tGeo,new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,metalness:0})); terrain.receiveShadow=true; scene.add(terrain);
+const GRASS_TEX=(()=>{ const N=256, c=document.createElement("canvas"); c.width=c.height=N; const g=c.getContext("2d");
+  g.fillStyle="#3c4a30"; g.fillRect(0,0,N,N);
+  let sd=7; const r=()=>{ sd=(sd*16807)%2147483647; return sd/2147483647; };
+  const blade=(x,y,len,w,lean,shade)=>{ for(const ox of [-N,0,N]) for(const oy of [-N,0,N]){ const bx=x+ox, by=y+oy;
+      const tx=bx+lean*len, ty=by-len, gr=g.createLinearGradient(bx,by,tx,ty);
+      gr.addColorStop(0,`hsl(95,${30+shade*10}%,${16+shade*10}%)`); gr.addColorStop(.55,`hsl(88,${38+shade*12}%,${34+shade*14}%)`); gr.addColorStop(1,`hsl(78,${50+shade*10}%,${52+shade*16}%)`);
+      g.fillStyle=gr; g.beginPath(); g.moveTo(bx-w,by); g.quadraticCurveTo(bx-w*.6+lean*len*.45,by-len*.55,tx,ty); g.quadraticCurveTo(bx+w*.9+lean*len*.5,by-len*.45,bx+w,by); g.closePath(); g.fill();
+      g.strokeStyle=`rgba(20,40,10,${.18+shade*.1})`; g.lineWidth=.7; g.beginPath(); g.moveTo(bx,by); g.quadraticCurveTo(bx+lean*len*.5,by-len*.5,tx,ty); g.stroke(); } };
+  for(let i=0;i<1100;i++){ const t=i/1100; blade(r()*N,r()*N,20+r()*18,3+r()*2.2,.42+r()*.22,t*.6+r()*.4); }
+  const tx=new THREE.CanvasTexture(c); tx.wrapS=tx.wrapT=THREE.RepeatWrapping; tx.anisotropy=renderer.capabilities.getMaxAnisotropy(); return tx; })();
+tGeo.setAttribute("aGrass",new THREE.Float32BufferAttribute(tGrass,1));
+const terrainMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,metalness:0});
+terrainMat.onBeforeCompile=sh=>{ sh.uniforms.uGrass={value:GRASS_TEX};
+  sh.vertexShader=sh.vertexShader.replace("#include <common>","#include <common>\nattribute float aGrass; varying float vGrass; varying vec2 vGUv;").replace("#include <begin_vertex>","#include <begin_vertex>\nvGrass=aGrass; vGUv=position.xz/3.2;");
+  sh.fragmentShader=sh.fragmentShader.replace("#include <common>","#include <common>\nuniform sampler2D uGrass; varying float vGrass; varying vec2 vGUv;")
+    .replace("#include <color_fragment>","#include <color_fragment>\n{ vec3 gt=texture2D(uGrass,vGUv).rgb; float gl=dot(gt,vec3(.3,.59,.11)); vec3 tint=gt/max(gl,.05); diffuseColor.rgb*=mix(vec3(1.),mix(vec3(gl*2.1),gt*2.2,.55),smoothstep(.2,.8,vGrass)); }"); };
+const terrain=new THREE.Mesh(tGeo,terrainMat); terrain.receiveShadow=true; scene.add(terrain);
 
 /* ================= river ================= */
 const rU=THREE.UniformsUtils.merge([THREE.UniformsLib.fog,{uTime:{value:0},uSky:{value:col(0x9fc0d0)},uDeep:{value:col(0x1f4a52)},uShallow:{value:col(0x4d8a86)},uSun:{value:col(0xffe0b0)},uLight:{value:1}}]);
@@ -621,8 +637,8 @@ scene.add(bCard);
 
 /* ================= grass & flowers ================= */
 // a soft tuft: 7 wide, curved blades fanned out, coloured dark at the root to light at the tip
-function tuftGeo(){ const pos=[],nor=[],colr=[],idx=[]; const a=col(0x3f7a26),b=col(0xc8e070); let o=0;
-  for(let k=0;k<7;k++){ const ang=k/7*6.283+(k%2)*.4, lean=.35+(k%3)*.12, w=.075, h=.42+(k%3)*.1, ca=Math.cos(ang), sa=Math.sin(ang);
+function tuftGeo(){ const pos=[],nor=[],colr=[],idx=[]; const a=col(0x2c5e1c),b=col(0xa8d050); let o=0;
+  for(let k=0;k<7;k++){ const ang=-.55+(k-3)*.13, lean=.42+(k%3)*.05, w=.075, h=.42+(k%3)*.1, ca=Math.cos(ang), sa=Math.sin(ang);
     const P=(u,v)=>{ const bend=v*v*lean; return [u*ca*w*(1-v*.85)+sa*bend*.0, v*h, -u*sa*w*(1-v*.85)+ca*bend]; };
     const ring=[[-1,0],[1,0],[-1,.5],[1,.5],[0,1]]; ring.forEach(([u,v])=>{ const p=P(u,v); const rx=p[0]*Math.cos(ang)+p[2]*Math.sin(ang), rz=-p[0]*Math.sin(ang)+p[2]*Math.cos(ang); pos.push(rx,p[1],rz); nor.push(0,.85,.5); const c=a.clone().lerp(b,v); colr.push(c.r,c.g,c.b); });
     idx.push(o,o+1,o+2,o+1,o+3,o+2,o+2,o+3,o+4); o+=5; }
@@ -636,12 +652,12 @@ function scatter(n,geo,mat,place){ const im=new THREE.InstancedMesh(geo,mat,n); 
   while(k<n && tries++<n*30){ const r=place(); if(!r) continue; M.compose(V.set(r.x,r.y,r.z),Q.setFromEuler(E.set(r.rx||0,r.ry||rnd()*6.283,r.rz||0)),S3.set(r.s,r.sy||r.s,r.s)); im.setMatrixAt(k,M); if(r.c) im.setColorAt(k,r.c); k++; }
   im.count=k; scene.add(im); return im; }
 const gc=new THREE.Color();
-const grassIM=scatter(touch?3200:9000,tuftGeo(),addSway(new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide}),.09),()=>{
+const grassIM=scatter(touch?4200:12000,tuftGeo(),addSway(new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide}),.09),()=>{
   const ang=rnd()*6.283, rr=Math.sqrt(rnd())*85, x=SPAWN.x+Math.cos(ang)*rr*1.1, z=SPAWN.z+Math.sin(ang)*rr; const h=H(x,z);
-  if(fbm(x*.06+3,z*.06+7)<.52) return null;
+  if(fbm(x*.06+3,z*.06+7)<.45) return null;
   if(h<.35||pathD(x,z)<1.1||inGBed(x,z)||nearCabin(x,z,.6)||Math.hypot(x-FIRE.x,z-FIRE.z)<2.6||nearCamp(x,z,2.4)||Math.abs(x-BEDS.x)<5&&Math.abs(z-BEDS.z)<4) return null;
   if(Math.abs(x-SISTERS.x)<5&&Math.abs(z-SISTERS.z)<5) return null;
-  const s=.55+rnd()*.7; return {x,y:h-.03,z,s,sy:s*(.7+rnd()*.6),rx:(rnd()-.5)*.35,rz:(rnd()-.5)*.35,c:gc.setScalar(.8+rnd()*.35)}; });
+  const s=.7+rnd()*.3; return {x,y:h-.03,z,s,sy:s*(.85+rnd()*.25),ry:(rnd()-.5)*.5,rx:0,rz:0,c:gc.setScalar(.88+rnd()*.18)}; });
 const stemGeo=new THREE.CylinderGeometry(.012,.016,1,4).translate(0,.5,0);
 function mergeGeos(list){ let n=0; const parts=list.map(g=>{ g=g.index?g.toNonIndexed():g; if(!g.attributes.normal) g.computeVertexNormals(); n+=g.attributes.position.count; return g; });
   const pos=new Float32Array(n*3), nor=new Float32Array(n*3); let o=0; parts.forEach(g=>{ pos.set(g.attributes.position.array,o*3); nor.set(g.attributes.normal.array,o*3); o+=g.attributes.position.count; });
