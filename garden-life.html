@@ -211,6 +211,29 @@ h2 .done{font:600 11px var(--body);letter-spacing:.08em;text-transform:uppercase
   .tools.open{background:rgba(20,30,24,.55);border-radius:16px;padding:6px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 }
 @media (max-width:640px){ .tools button{padding:7px 10px;font-size:13px} .card{padding:18px} .card h2{font-size:22px} .cols{grid-template-columns:1fr} .basket{max-width:55vw} .tasks{max-width:220px} .tasks li{font-size:12px} }
+
+/* Keep the activity picker inside the screen, above the action rows. */
+.headmenu .more{
+  position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
+  box-sizing:border-box;width:min(760px,calc(100vw - 32px));max-width:none;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  max-height:min(52vh,calc(100vh - 210px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)));
+  max-height:min(52dvh,calc(100dvh - 210px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)));
+  overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y;
+  -webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-gutter:stable;
+  background:rgba(26,26,40,.94)
+}
+.headmenu .more button{min-width:0;min-height:44px;padding:8px 10px;font-size:13px;line-height:1.25;white-space:normal;overflow-wrap:anywhere}
+@media(max-width:699px){.headmenu .more{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:479px){.headmenu .more{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px),(pointer:coarse){.headmenu .more{
+  max-height:min(48vh,calc(100vh - 300px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)));
+  max-height:min(48dvh,calc(100dvh - 300px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)))
+}}
+@media(max-height:480px){
+  .headmenu{bottom:calc(64px + env(safe-area-inset-bottom,0px))!important}
+  .headmenu .more{max-height:calc(100vh - 180px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));max-height:calc(100dvh - 180px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))}
+}
 </style>
 
 <canvas id="world" tabindex="0" aria-label="A river valley with a log cabin facing the river, a flower garden, strawberry beds, meadows, animals and a hill for stargazing"></canvas>
