@@ -3437,7 +3437,7 @@ function updateAnimals(dt,t){
     else if(d<1){ fox.wait=4+Math.random()*6; fox.target=(fox.target+1+Math.floor(Math.random()*3))%FOX_WP.length; }
     else { fox.face=lerpAng(fox.face,Math.atan2(dx,dz),Math.min(1,dt*3)); const sp=1.8*dt; let nx=fox.x+Math.sin(fox.face)*sp,nz=fox.z+Math.cos(fox.face)*sp;
       if(H(nx,nz)<0||inGBed(nx,nz)||blocked(nx,nz)||!gridFree(nx,nz)){ fox.face+=1.2; fox.target=(fox.target+1)%FOX_WP.length; } else { fox.x=nx; fox.z=nz; } animQuad(fox,1,dt,t,10); if(fox.tl) fox.tl.rotation.y=Math.sin(t*5)*.15; }
-    fox.g.position.set(fox.x,H(fox.x,fox.z),fox.z); fox.g.rotation.y=fox.face; fox.hd.rotation.y=fox.wait>0?Math.sin(t*.8)*.5:0; }
+    fox.g.position.set(fox.x,groundY(fox.x,fox.z),fox.z); fox.g.rotation.y=fox.face; fox.hd.rotation.y=fox.wait>0?Math.sin(t*.8)*.5:0; }
   // rabbits
   for(const r of rabbits){ const pd=Math.hypot(P.x-r.x,P.z-r.z);
     if(!r.to && (r.wait-=dt)<=0 || (!r.to && pd<2.2 && C.speed>.5)){ let a=Math.random()*6.283; if(pd<4){ a=Math.atan2(r.x-P.x,r.z-P.z)+(Math.random()-.5); }
@@ -3519,7 +3519,7 @@ function foxSeek(dt,t){ const st=foxStage(); if(st===0||P.inside||P.mode==="fish
     for(const off of [0,.5,-.5,1,-1,1.6,-1.6]){ const f=want+off, nx=fox.x+Math.sin(f)*sp, nz=fox.z+Math.cos(f)*sp;
       if(H(nx,nz)>=0&&!inGBed(nx,nz)&&!blocked(nx,nz)&&(gridFree(nx,nz)||companion)){ fox.face=lerpAng(fox.face,f,Math.min(1,dt*6)); fox.x=nx; fox.z=nz; moved=true; break; } }
     animQuad(fox,moved?(d>6?1.6:1):0,dt,t,moved&&d>6?14:10); if(fox.tl) fox.tl.rotation.y=Math.sin(t*5)*.15; }
-  fox.g.position.set(fox.x,H(fox.x,fox.z),fox.z); fox.g.rotation.y=fox.face; fox.hd.rotation.y=fox.sitting?Math.sin(t*.8)*.4:0;
+  fox.g.position.set(fox.x,groundY(fox.x,fox.z),fox.z); fox.g.rotation.y=fox.face; fox.hd.rotation.y=fox.sitting?Math.sin(t*.8)*.4:0;
   return true; }
 
 /* ================= field guide: pages that fill in as you discover the valley ================= */
