@@ -1534,7 +1534,7 @@ function poseChar(c,st,dt,t){
   c.basketFish.visible=!!st.fishIn;
 }
 const C=makeChar(); scene.add(C.g);
-function setMyLabel(){ if(C.label) C.g.remove(C.label); C.label=textSprite(J.name||"You",{size:30,bg:"rgba(242,180,90,.94)",fg:"#2a1c08"}); C.label.position.y=1.98; C.label.scale.multiplyScalar(.85); C.g.add(C.label); }
+function setMyLabel(){if(legacyTestName(J.name)){J.name='';J.legacyTestNameCleared=true;persist();} if(C.label) C.g.remove(C.label); C.label=textSprite(J.name||"You",{size:30,bg:"rgba(242,180,90,.94)",fg:"#2a1c08"}); C.label.position.y=1.98; C.label.scale.multiplyScalar(.85); C.g.add(C.label); }
 const lookArr=()=>[J.look.shirt,J.look.hair,J.look.skin,J.look.pants||0,J.look.g||0,chosenCharacter()?.variant??-1];
 applyLookTo(C,lookArr());
 let myBubble=null;
@@ -1696,7 +1696,7 @@ function updatePlayer(dt,t){
       moving=mag*(run?1.6:1); walked+=step; if(!hintGone&&walked>12){ hintGone=true; $("hint").hidden=true; }
     } else if(P.route&&performance.now()>P.crouchUntil){ moving=steerRoute(dt); }
   }
-  P.idle=moving>.05?0:(P.idle||0)+dt;
+  if(moving>.05)arrivalGraceUntil=0;P.idle=moving>.05?0:(P.idle||0)+dt;
   P.crouch+=((performance.now()<P.crouchUntil?1:0)-P.crouch)*Math.min(1,dt*10);
   const cur=P.seat?(P.seat.cabin||(P.seat.indoor?CABS[0]:null)):cabinAt(P.x,P.z);
   syncCabinInterior(cur);
@@ -2189,7 +2189,7 @@ function updateOthers(dt,t){
   for(const p of ps){ if(p.sameTab||p.kind!=="viewer") continue; const pr=p.presence||{}; if(typeof pr.x!=="number") continue; seen.add(p.peer);
     let o=others.get(p.peer); if(!o){ o={c:makeChar(),by:p.by||pr.id||null,x:pr.x,z:pr.z,y:pr.y||0,face:pr.f||0,bubble:null,lastSay:pr.sayAt||0,seenAt:performance.now()}; scene.add(o.c.g); others.set(p.peer,o); setLabel(o,o.by?names[o.by]:""); if(o.by&&!(o.by in names)) needNames.push(o.by); }
     o.cb=Number.isInteger(pr.cb)?pr.cb:-1;
-    const nm=typeof pr.nm==="string"?clean(pr.nm,24):""; if(nm&&nm!==o.nm){ o.nm=nm; setLabel(o,nm); noteFriend(nm); }
+    const nm=typeof pr.nm==="string"&&!legacyTestName(pr.nm)?clean(pr.nm,24):""; if(nm&&nm!==o.nm){ o.nm=nm; setLabel(o,nm); noteFriend(nm); }
     const lk=Array.isArray(pr.lk)?pr.lk.map((n,i)=>Math.max(i===5?-1:0,Math.min([LOOK.shirt.length-1,LOOK.hair.length-1,LOOK.skin.length-1,LOOK.pants.length-1,1,5][i]??0,n|0))):[0,0,1]; const lkKey=lk.join(","); if(o.lk!==lkKey){ o.lk=lkKey; applyLookTo(o.c,lk); }
     const k=Math.min(1,dt*(p.slow?3:8)); o.x+=(Math.max(-150,Math.min(150,pr.x))-o.x)*k; o.z+=(Math.max(-150,Math.min(150,+pr.z||0))-o.z)*k; o.y+=((+pr.y||0)-o.y)*k; o.face=lerpAng(o.face,+pr.f||0,k);
     o.c.g.position.set(o.x,o.y,o.z);
@@ -2199,7 +2199,7 @@ function updateOthers(dt,t){
     if(typeof pr.say==="string"&&pr.say&&pr.sayAt!==o.lastSay){ o.lastSay=pr.sayAt; dropBubble(o.bubble); const said=pr.say.slice(0,120); o.bubble=isEmote(said)?emoteSprite(said):bubbleFor(said,o.nm||""); logChat(o.nm||"A guest",said); }
     if(o.bubble){ o.bubble.position.set(o.c.g.position.x,o.c.g.position.y+2.64,o.c.g.position.z); if(performance.now()>o.bubble.userData.until){ dropBubble(o.bubble); o.bubble=null; } } }
   for(const [peer,o] of others) if(!seen.has(peer)){ scene.remove(o.c.g); dropBubble(o.bubble); others.delete(peer); }
-  if(needNames.length) resolveNames(needNames);
+  settleArrivalOverlap();if(needNames.length) resolveNames(needNames);
   const n=others.size; const txt=n===0?"You're the only guest in the valley right now":n===1?"1 other guest is in the valley":`${n} other guests are in the valley`;
   const shown=n?txt+" · find them":txt; if($("whoHere").textContent!==shown){ $("whoHere").textContent=shown; $("whoHere").classList.toggle("some",n>0); }
 }
@@ -3177,7 +3177,7 @@ const cat=Object.assign(makeQuad(CAT_SPEC),{x:2,z:-3,face:0,to:null,wait:2,state
 { const tl=new THREE.Group(); tl.position.set(0,.02,-.24); cat.torso.add(tl); for(let k=0;k<8;k++){ const t=k/7, sp=new THREE.Mesh(new THREE.SphereGeometry(.028,8,6),smt(k%2?0xc07028:0xd8883a)); sp.position.set(0,.02+t*.32,-.05-Math.sin(t*1.7)*.16); tl.add(sp); } cat.tl=tl;
   for(let k=0;k<4;k++){ const st=new THREE.Mesh(new THREE.TorusGeometry(.1,.012,4,12,2),smt(0xb06020)); st.rotation.set(0,Math.PI/2,-1); st.position.set(0,.12,-.12+k*.1); cat.torso.add(st); } }
 scene.add(cat.g);
-function updateCat(dt,t){ const pd=Math.hypot(P.x-cat.x,P.z-cat.z), now=performance.now();
+function updateCat(dt,t){if(holdFeedingPet(cat,dt,t))return; const pd=Math.hypot(P.x-cat.x,P.z-cat.z), now=performance.now();
   if(cat.state!=="walk"&&now>cat.until) cat.state="walk";
   if(cat.state==="walk"){ if(!cat.to){ cat.wait-=dt; if(cat.wait<=0){ let tx,tz; if(pd<12&&Math.random()<.5){ tx=P.x+(Math.random()-.5)*3; tz=P.z+(Math.random()-.5)*3; } else { const c=CABS[Math.floor(Math.random()*CABS.length)]; tx=c.x+(Math.random()-.5)*c.W; tz=c.z+c.D/2+1+Math.random()*4; }
         if(gridFree(tx,tz)&&H(tx,tz)>.3){ cat.to={x:tx,z:tz}; } else cat.wait=.5; if(Math.random()<.25){ cat.state=Math.random()<.5?"sit":"sleep"; cat.until=now+5000+Math.random()*9000; cat.to=null; } } } }
@@ -3734,11 +3734,11 @@ function collectFarmEggs(){if(Date.now()<J.farm.eggReadyAt){toast(`Fresh eggs re
 function feedCow(){const food=['corn','carrot','lettuce','sweetgrass'].find(k=>have(k));if(food)add(food,-1);J.farm.cowFed=true;J.kin.Cow=1;cow.wait=5;cow.face=Math.atan2(P.x-cow.x,P.z-cow.z);persist();crouch(0x8da955);toast(food?`The cow munches the ${ITEMS[food].n}.`:'You offer hay from the trough. The cow munches happily.');}
 function collectMilk(){if(Date.now()<J.farm.milkReadyAt){toast(`Milk is ready again in ${farmRemaining(J.farm.milkReadyAt)} seconds.`);return false;}if(!J.farm.cowFed){toast('Feed the cow before collecting milk.');return false;}add('milk');J.got.milk=(J.got.milk||0)+1;J.farm.milkReadyAt=Date.now()+RESOURCE_RETURN_MS;J.farm.cowFed=false;persist();crouch(0xf4e8c7);pop('+1 bottle of milk');toast('Fresh milk in your basket. More is ready in 30 seconds.');return true;}
 function drinkFarmMilk(){if(!have('milk'))return false;add('milk',-1);J.meals++;P.mode=P.seat?'tea':P.mode;persist();toast('You enjoy a fresh cup of milk.');return true;}
-function feedDog(){if(have('fish'))add('fish',-1);J.farm.dogFedAt=Date.now();J.kin.Dog=1;dog.wait=5;dog.face=Math.atan2(P.x-dog.x,P.z-dog.z);persist();crouch();toast('You offer a little food. The dog wags its tail and stays nearby.');}
-function feedFarmCat(){const k=have('milk')?'milk':have('fish')?'fish':null;if(k)add(k,-1);J.farm.catFedAt=Date.now();J.kin.Cat=1;cat.state='sit';cat.until=performance.now()+8000;cat.to=null;persist();crouch();toast(k==='milk'?'The cat laps a little milk from the bowl.':'The cat enjoys the food and settles nearby.');}
+function feedDog(){if(!placePetInFront(dog))return false;showPetFood(dog);if(have('fish'))add('fish',-1);J.farm.dogFedAt=Date.now();J.kin.Dog=1;dog.wait=5;dog.face=Math.atan2(P.x-dog.x,P.z-dog.z);persist();crouch();toast('You offer a little food. The dog wags its tail and stays nearby.');}
+function feedFarmCat(){if(!placePetInFront(cat))return false;const k=have('milk')?'milk':have('fish')?'fish':null;showPetFood(cat,k==='milk');if(k)add(k,-1);J.farm.catFedAt=Date.now();J.kin.Cat=1;cat.state='sit';cat.until=performance.now()+8000;cat.to=null;persist();crouch();toast(k==='milk'?'The cat laps a little milk from the bowl.':'The cat enjoys the food and settles nearby.');}
 function openFarmPanel(){const draw=()=>{openSheet(`<div class="eyebrow">Animal meadow</div><h2>Feed, gather and say hello</h2><p>Eggs and milk return 30 seconds after collection.</p><div class="actions"><button id="farmHens">Feed hens</button><button id="farmEggs" ${farmRemaining(J.farm.eggReadyAt)||!J.farm.hensFed?'disabled':''}>Collect 3 eggs${farmRemaining(J.farm.eggReadyAt)?' · '+farmRemaining(J.farm.eggReadyAt)+'s':''}</button><button id="farmCow">Feed cow</button><button id="farmMilk" ${farmRemaining(J.farm.milkReadyAt)||!J.farm.cowFed?'disabled':''}>Collect milk${farmRemaining(J.farm.milkReadyAt)?' · '+farmRemaining(J.farm.milkReadyAt)+'s':''}</button><button id="farmDog">Feed dog</button><button id="farmX">Close</button></div>`,{low:true});$('farmHens').onclick=()=>{feedFarmChickens();draw();};$('farmEggs').onclick=()=>{collectFarmEggs();draw();};$('farmCow').onclick=()=>{feedCow();draw();};$('farmMilk').onclick=()=>{collectMilk();draw();};$('farmDog').onclick=()=>{feedDog();draw();};$('farmX').onclick=closeSheet;};draw();}
-function openCatPanel(){petCat();openSheet(`<div class="eyebrow">Your woodland cat</div><h2>A little company</h2><div class="actions"><button id="catFeed">Feed the cat${have('milk')?' some milk':have('fish')?' a fish':' from its bowl'}</button><button id="catX">Close</button></div>`,{low:true});$('catFeed').onclick=()=>{feedFarmCat();closeSheet();};$('catX').onclick=closeSheet;}
-function openDogPanel(){markFarmKin('Dog');openSheet('<div class="eyebrow">Your woodland dog</div><h2>A friendly wag</h2><div class="actions"><button id="dogPet">Pet the dog</button><button id="dogFeed">Feed the dog</button><button id="dogX">Close</button></div>',{low:true});$('dogPet').onclick=()=>{dog.wait=6;dog.face=Math.atan2(P.x-dog.x,P.z-dog.z);crouch();toast('The dog leans into your hand, tail wagging.');};$('dogFeed').onclick=feedDog;$('dogX').onclick=closeSheet;}
+function openCatPanel(){if(!placePetInFront(cat))return;petCat();openSheet(`<div class="eyebrow">Your woodland cat</div><h2>A little company</h2><div class="actions"><button id="catFeed">Feed the cat${have('milk')?' some milk':have('fish')?' a fish':' from its bowl'}</button><button id="catX">Close</button></div>`,{low:true});$('catFeed').onclick=()=>{feedFarmCat();closeSheet();};$('catX').onclick=closeSheet;}
+function openDogPanel(){if(!placePetInFront(dog))return;markFarmKin('Dog');openSheet('<div class="eyebrow">Your woodland dog</div><h2>A friendly wag</h2><div class="actions"><button id="dogPet">Pet the dog</button><button id="dogFeed">Feed the dog</button><button id="dogX">Close</button></div>',{low:true});$('dogPet').onclick=()=>{dog.wait=6;dog.face=Math.atan2(P.x-dog.x,P.z-dog.z);crouch();toast('The dog leans into your hand, tail wagging.');};$('dogFeed').onclick=feedDog;$('dogX').onclick=closeSheet;}
 
 // Low split-rail paddocks with open gates; boundaries participate in navigation.
 {const W=WoodlandKit,posts=[],seen=new Set(),runs=[];const add=(ax,az,bx,bz)=>{runs.push([ax,az,bx,bz]);FENCE_RUNS.push([ax,az,bx,bz]);const d=Math.hypot(bx-ax,bz-az),n=Math.ceil(d/1.4);for(let i=0;i<=n;i++){const x=ax+(bx-ax)*i/n,z=az+(bz-az)*i/n,key=x.toFixed(2)+','+z.toFixed(2);if(!seen.has(key)){seen.add(key);posts.push([x,z]);}}};const l=COOP.x-10,r=COOP.x+4.5,b=COOP.z-2,f=COOP.z+7,gate=COOP.x+1;
@@ -3762,7 +3762,7 @@ spots.push({...FARM.milkStand,r:1.7,label:()=>farmRemaining(J.farm.milkReadyAt)?
 
 function updateFarmPanelStatus(){for(const [id,time,fed,label]of [['farmEggs',J.farm.eggReadyAt,J.farm.hensFed,'Collect 3 eggs'],['farmMilk',J.farm.milkReadyAt,J.farm.cowFed,'Collect milk']]){const b=$(id);if(!b)continue;const remaining=farmRemaining(time),text=label+(remaining?' · '+remaining+'s':'');b.disabled=!!remaining||!fed;if(b.textContent!==text)b.textContent=text;}}
 function updateFarmLife(dt,t){refreshFastHarvests();updateFarmPanelStatus();farmEggs.visible=Date.now()>=J.farm.eggReadyAt;farmMilkBottle.visible=Date.now()>=J.farm.milkReadyAt;
- for(const a of [cow,dog]){const isCow=a===cow,home=isCow?FARM.cowHome:FARM.dogHome;if((a.wait-=dt)<=0&&!a.to){let x,z;if(!isCow&&!P.inside&&Math.hypot(P.x-a.x,P.z-a.z)<9){x=P.x+Math.sin(t)*1.8;z=P.z+Math.cos(t)*1.8;}else{x=home.x+(Math.sin(t*(isCow?.13:.29)))*(isCow?1.1:2);z=home.z+Math.cos(t*(isCow?.16:.23))*(isCow?.8:2);}if(!blocked(x,z,true)&&H(x,z)>.3&&(isCow||gridFree(x,z)))a.to={x,z};a.wait=2;}
+ for(const a of [cow,dog]){if(a===dog&&holdFeedingPet(dog,dt,t))continue;const isCow=a===cow,home=isCow?FARM.cowHome:FARM.dogHome;if((a.wait-=dt)<=0&&!a.to){let x,z;if(!isCow&&!P.inside&&Math.hypot(P.x-a.x,P.z-a.z)<9){x=P.x+Math.sin(t)*1.8;z=P.z+Math.cos(t)*1.8;}else{x=home.x+(Math.sin(t*(isCow?.13:.29)))*(isCow?1.1:2);z=home.z+Math.cos(t*(isCow?.16:.23))*(isCow?.8:2);}if(!blocked(x,z,true)&&H(x,z)>.3&&(isCow||gridFree(x,z)))a.to={x,z};a.wait=2;}
  let moving=0;if(a.to){const dx=a.to.x-a.x,dz=a.to.z-a.z,d=Math.hypot(dx,dz);if(d<.15){a.to=null;a.wait=2;}else{const step=Math.min(d,dt*(isCow?.45:1.45)),nx=a.x+dx/d*step,nz=a.z+dz/d*step;if(!blocked(nx,nz,true)&&(isCow||gridFree(nx,nz))){a.x=nx;a.z=nz;a.face=Math.atan2(dx,dz);moving=1;}else a.to=null;}}animQuad(a,moving,dt,t,isCow?5:10);a.g.position.set(a.x,H(a.x,a.z),a.z);a.g.rotation.y=a.face;if(a.tl)a.tl.rotation.y=Math.sin(t*(isCow?1.5:5))*(isCow?.15:.4);}
  cowObstacle.x=cow.x;cowObstacle.z=cow.z;
 }
@@ -3872,7 +3872,26 @@ const reviewPinkTrees=[];
     g.traverse(o=>{ if(o.isMesh) o.castShadow=true; }); obstacles.push({x,z,r:.6}); canopies.push({x,z,r:3,y0:y+2.2,y1:y+6}); }); }
 
 
-buildGrid(); updateWild(); updateVeg();
+// New arrivals use clear, spaced positions instead of one shared coordinate.
+const arrivalSpots=[];let arrivalGraceUntil=0,arrivalAnchor=null;
+const legacyTestName=name=>String(name||'').trim().toLowerCase()==='multiplayer check';
+function arrivalPointClear(x,z){return !blocked(x,z)&&!cabinAt(x,z)&&H(x,z)>.3&&gridFree(x,z)&&Math.hypot(x-FIRE.x,z-FIRE.z)>3&&obstacles.every(o=>o.indoor||Math.hypot(x-o.x,z-o.z)>o.r+.6);}
+function buildArrivalSpots(){for(let i=0;i<1800&&arrivalSpots.length<64;i++){const a=i*2.39996323,r=1.2+Math.sqrt(i)*.65,x=SPAWN.x+Math.sin(a)*r,z=SPAWN.z+Math.cos(a)*r;if(!arrivalPointClear(x,z)||arrivalSpots.some(p=>Math.hypot(p.x-x,p.z-z)<1.9))continue;arrivalSpots.push({x,z});}}
+function arrivalGuests(){const out=[...others.values()].map(o=>({x:o.x,z:o.z}));if(room)for(const peer of room.peers()){const p=peer.presence;if(!peer.sameTab&&p&&Number.isFinite(p.x)&&Number.isFinite(p.z))out.push({x:p.x,z:p.z,gid:p.gid||peer.peer});}return out;}
+function chooseArrivalSpot(occupied=arrivalGuests()){const free=arrivalSpots.filter(p=>occupied.every(o=>Math.hypot(p.x-o.x,p.z-o.z)>=1.7));return free.length?free[Math.floor(Math.random()*free.length)]:null;}
+function placeNewArrival(){const p=chooseArrivalSpot();if(!p)return false;P.x=p.x;P.z=p.z;P.route=null;P.seat=null;P.mode='walk';P.face=Math.atan2(CABIN.x-p.x,CABIN.z-p.z);C.g.position.set(p.x,groundY(p.x,p.z),p.z);C.g.rotation.set(0,P.face,0);arrivalAnchor={...p};arrivalGraceUntil=performance.now()+8000;return true;}
+function settleArrivalOverlap(){if(!arrivalAnchor||performance.now()>arrivalGraceUntil||P.seat||P.route||Math.hypot(P.x-arrivalAnchor.x,P.z-arrivalAnchor.z)>.08)return;const near=arrivalGuests().filter(o=>Math.hypot(o.x-P.x,o.z-P.z)<1.4);if(!near.length)return;const peers=near.filter(o=>o.gid);if(peers.length&&peers.every(o=>String(GID)<String(o.gid)))return;if(placeNewArrival())sendPresence(true);}
+
+// A feeding interaction faces both characters toward one another and pauses roaming.
+function petPointClear(x,z,homeCabin){return cabinAt(x,z)===homeCabin&&!blocked(x,z,true)&&spotFree(x,z,homeCabin)&&Math.abs(groundY(x,z)-groundY(P.x,P.z))<.55&&obstacles.every(o=>!!o.indoor!==!!homeCabin||Math.hypot(x-o.x,z-o.z)>o.r+.23);}
+function placePetInFront(pet){if(P.seat)standUp();P.route=null;const homeCabin=cabinAt(P.x,P.z),toward=Math.atan2(pet.x-P.x,pet.z-P.z),angles=[P.face,toward,P.face+.52,P.face-.52,P.face+1.05,P.face-1.05,P.face+1.57,P.face-1.57,P.face+Math.PI];let target=null;
+ for(const angle of angles){for(const distance of [1.15,1.4,.95]){const x=P.x+Math.sin(angle)*distance,z=P.z+Math.cos(angle)*distance;if(petPointClear(x,z,homeCabin)&&arrivalGuests().every(o=>Math.hypot(o.x-x,o.z-z)>.8)){target={x,z,angle};break;}}if(target)break;}
+ if(!target){toast('A little more room, please. Step into a clear spot to feed your friend.');return false;}
+ if(P.seat)standUp();P.route=null;P.face=target.angle;C.g.rotation.y=P.face;pet.x=target.x;pet.z=target.z;pet.face=Math.atan2(P.x-pet.x,P.z-pet.z);pet.to=null;pet.wait=5.5;pet.feedUntil=performance.now()+5500;pet.state=pet===cat?'sit':pet.state;pet.until=pet.feedUntil;pet.g.position.set(pet.x,groundY(pet.x,pet.z),pet.z);pet.g.rotation.y=pet.face;pet.g.traverse(o=>o.layers.enable(1));return true;}
+function showPetFood(pet,milk=false){if(!pet.feedBowl){const group=new THREE.Group(),bowl=new THREE.Mesh(new THREE.CylinderGeometry(.16,.115,.07,16),smt(0xb99069)),food=new THREE.Mesh(new THREE.CircleGeometry(.135,16),smt(0x845633));bowl.position.y=.035;food.rotation.x=-Math.PI/2;food.position.y=.073;group.add(bowl,food);scene.add(group);pet.feedBowl=group;pet.feedFood=food;}const x=P.x+(pet.x-P.x)*.68,z=P.z+(pet.z-P.z)*.68;pet.feedBowl.position.set(x,groundY(x,z)+.012,z);pet.feedFood.material.color.set(milk?0xfff0d5:0x845633);pet.feedBowl.visible=true;pet.feedBowl.traverse(o=>o.layers.enable(1));}
+function holdFeedingPet(pet,dt,t){if(!pet.feedUntil)return false;if(performance.now()>=pet.feedUntil||Math.hypot(P.x-pet.x,P.z-pet.z)>2.8){pet.feedUntil=0;pet.g.traverse(o=>o.layers.disable(1));if(pet.feedBowl)pet.feedBowl.visible=false;return false;}pet.to=null;pet.face=Math.atan2(P.x-pet.x,P.z-pet.z);animQuad(pet,0,dt,t,8);pet.headG?.rotation.set(.1,0,0);pet.g.position.set(pet.x,groundY(pet.x,pet.z),pet.z);pet.g.rotation.y=pet.face;return true;}
+
+buildGrid();buildArrivalSpots();placeNewArrival(); updateWild(); updateVeg();
 C.g.position.set(P.x,groundY(P.x,P.z),P.z); C.g.rotation.y=P.face; camera.position.set(P.x,4,P.z-8); renderBasket(); renderTasks(); updateBeds(); updatePlots(); updateShelfVis(); if(J.name) setMyLabel();
 setInterval(()=>{ if(J.tasks.day!==dayKey()) renderTasks(); },60000);
 requestAnimationFrame(loop);
@@ -3880,6 +3899,7 @@ requestAnimationFrame(loop);
 /* ================= check-in ================= */
 function visitCount(){ if(J.lastDay!==dayKey()){ J.visits++; J.lastDay=dayKey(); persist(); } }
 let profile=null;
+const clearedLegacyTestName=legacyTestName(J.name);if(clearedLegacyTestName){J.name='';J.legacyTestNameCleared=true;persist();}
 let welcomed=false;
 function welcome(){
  const wasWelcomed=welcomed;
@@ -3888,11 +3908,11 @@ function welcome(){
  <p class="meta" id="nameErr" hidden>Please enter your name.</p><h3>Choose your character</h3><p class="meta">Every friend comes with a wicker basket. Pick the look you love.</p>
  <div class="characterChoices">${WOODLAND_CHARACTERS.map(v=>`<button type="button" data-character="${v.id}" aria-pressed="${J.look.character===v.id}" class="characterChoice">${characterIllustration(v)}<strong>${v.name}</strong><span>${v.detail}</span></button>`).join('')}</div>
  <p id="characterPicked" class="meta" aria-live="polite">${chosenCharacter()?chosenCharacter().name+' selected.':'Your current look is kept until you choose a new one.'}</p>
- <p class="meta">Explore, harvest, and settle in. Your progress is saved on this device.</p><div class="actions"><button class="primary" id="wGo">Step into the garden</button></div>`,{center:true,close:()=>{if(!J.name)J.name='Guest';setMyLabel();welcomed=true;if(!wasWelcomed)visitCount();persist();sendPresence(true);}});
+ <p class="meta">Explore, harvest, and settle in. Your progress is saved on this device.</p><div class="actions"><button class="primary" id="wGo">Step into the garden</button></div>`,{center:true,close:()=>{if(!J.name)J.name='Guest';setMyLabel();welcomed=true;if(!wasWelcomed){placeNewArrival();visitCount();}persist();sendPresence(true);}});
  $('card').querySelectorAll('[data-character]').forEach(b=>b.onclick=()=>{chooseCharacter(b.dataset.character);$('card').querySelectorAll('[data-character]').forEach(x=>x.setAttribute('aria-pressed',x===b));$('characterPicked').textContent=chosenCharacter().name+' selected.';});
  const ni=$('nameIn');if(!touch&&!ni.value)ni.focus();const go=()=>{const name=clean(ni.value,20);if(!name){$('nameErr').hidden=false;ni.focus();return;}J.name=name;persist();if(!AC){$('bSound').setAttribute('aria-pressed','true');startAudio();}closeSheet();};$('wGo').onclick=go;ni.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();go();}};
 }
-if(!J.name&&!J.look.character)chooseCharacter('meadow');
+if(!J.name&&!J.look.character&&!clearedLegacyTestName&&!J.legacyTestNameCleared)chooseCharacter('meadow');
 
 welcome();
 $("whoHere").textContent="";
