@@ -3,5 +3,8 @@ api/garden.js
 
 **/*.pdf
 **/*.PDF
+# public papers linked from the site
+!cindy-sherman-paper.pdf
+!threads-of-becoming-thesis.pdf
 penland-application/
 Claude outputs/
