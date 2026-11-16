@@ -354,34 +354,28 @@
 
   <section class="section about-body" id="bio">
     <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
-      <h2 style="margin:0;">hi, I'm Anna</h2>
+      <h2 style="margin:0;">hi, I'm Anna Le</h2>
       <img src="persona5.webp" alt="" style="height:90px; width:auto; display:block;">
     </div>
     <p>
-      I was born and raised in Vietnam and moved to the United States at eighteen,
-      carrying curiosity and excitement for a new journey. Leaving home alone taught me
-      to embrace uncertainty, reshape myself, and see identity not as something fixed,
-      but as something discovered through exploration.
-      Art became my way of navigating that journey. It allows me to ask questions, to
-      understand myself through making, and to imagine new ways of relating to the world.
+      My practice is a practice of rebuilding identity. I am interested in how deeply we are drawn to the identities others give us: how society defines us, how media teaches us what we should look like, and how algorithms now sort and predict who we are. Yet I believe we hold the power and freedom to decide who we become.
+    </p>
+    <p>
+      I came to the United States at eighteen without English and without family. Living in a new environment reshaped me in ways I never expected. As an Asian woman in America, I have also lived inside the image media built for me, the stereotype of what an Asian girl should be.
+    </p>
+    <p>
+      These experiences taught me that identity is not something we simply have; it is something we perform. Society hands us roles to play, but a role can also be improvised, exaggerated, rewritten, or broken. In public, we are always being seen, and we learn to present the self that is expected of us: through how we dress, speak, move, and now, how we appear online. Over time, these performances can harden into who we believe we are. My work asks viewers to notice their own performances: which selves they play, who they play them for, and what might change if they chose differently. To understand our performance is the first step toward freedom from it, and toward performing ourselves creatively, on our own terms.
+    </p>
+    <p>
+      Crochet Persona grows from this. Crochet is one of the few techniques no machine can replicate; every stitch requires a human hand. Through a single thread, I shape a whole self, slowly, by choice. Where the algorithmic persona is assigned to us from outside, the crochet persona is built from within.
+    </p>
+    <p>
+      Working across interactive installation, sculpture, crochet, creative coding, and emerging technologies, I create participatory experiences that invite viewers to reflect on the multiple selves we construct, perform, and negotiate. As artificial intelligence and algorithmic systems increasingly mediate everyday life, they no longer only observe our identities; they help produce them, predicting who we are and nudging us toward who we should be. This is why the question of identity feels urgent now. My work blurs the boundaries between the physical and the digital, the personal and the computational, to open a space where identity can be questioned, resisted, and freely remade.
     </p>
   </section>
 
   <!-- illustrated scene: a small house, a rose garden, a river, a tree —
        and five personas each caught in a different, quiet moment -->
-  <div class="draw-toolbar">
-    <span>// draw on the scene:</span>
-    <button class="draw-swatch active" style="background:#ff3d9a" data-color="#ff3d9a" aria-label="pink"></button>
-    <button class="draw-swatch" style="background:#ff9f4d" data-color="#ff9f4d" aria-label="orange"></button>
-    <button class="draw-swatch" style="background:#ffd23f" data-color="#ffd23f" aria-label="yellow"></button>
-    <button class="draw-swatch" style="background:#9dff9e" data-color="#9dff9e" aria-label="green"></button>
-    <button class="draw-swatch" style="background:#7fd4ff" data-color="#7fd4ff" aria-label="sky"></button>
-    <button class="draw-swatch" style="background:#8a5cf6" data-color="#8a5cf6" aria-label="purple"></button>
-    <button class="draw-swatch" style="background:#43e0c9" data-color="#43e0c9" aria-label="teal"></button>
-    <button class="draw-swatch" style="background:#eef4ee" data-color="#eef4ee" aria-label="cream"></button>
-    <button class="draw-eraser" id="draw-eraser" aria-label="eraser">◌</button>
-    <button class="draw-clear" id="draw-clear">clear</button>
-  </div>
 
   <div class="scene-draw-wrap">
   <section class="scene">
@@ -858,25 +852,6 @@
 </svg>
   </div>
 
-  <section class="section about-body" id="statement">
-    <h2>artist statement</h2>
-    <p>
-      My practice is a practice of rebuilding identity. I am interested in how deeply we are drawn to the identities others give us: how society defines us, how media teaches us what we should look like, and how algorithms now sort and predict who we are. Yet I believe we hold the power and freedom to decide who we become.
-    </p>
-    <p>
-      I came to the United States at eighteen without English and without family. Living in a new environment reshaped me in ways I never expected. As an Asian woman in America, I have also lived inside the image media built for me, the stereotype of what an Asian girl should be.
-    </p>
-    <p>
-      These experiences taught me that identity is not something we simply have; it is something we perform. Society hands us roles to play, but a role can also be improvised, exaggerated, rewritten, or broken. In public, we are always being seen, and we learn to present the self that is expected of us: through how we dress, speak, move, and now, how we appear online. Over time, these performances can harden into who we believe we are. My work asks viewers to notice their own performances: which selves they play, who they play them for, and what might change if they chose differently. To understand our performance is the first step toward freedom from it, and toward performing ourselves creatively, on our own terms.
-    </p>
-    <p>
-      Crochet Persona grows from this. Crochet is one of the few techniques no machine can replicate; every stitch requires a human hand. Through a single thread, I shape a whole self, slowly, by choice. Where the algorithmic persona is assigned to us from outside, the crochet persona is built from within.
-    </p>
-    <p>
-      Working across interactive installation, sculpture, crochet, creative coding, and emerging technologies, I create participatory experiences that invite viewers to reflect on the multiple selves we construct, perform, and negotiate. As artificial intelligence and algorithmic systems increasingly mediate everyday life, they no longer only observe our identities; they help produce them, predicting who we are and nudging us toward who we should be. This is why the question of identity feels urgent now. My work blurs the boundaries between the physical and the digital, the personal and the computational, to open a space where identity can be questioned, resisted, and freely remade.
-    </p>
-  </section>
-
 </main>
 
 
@@ -959,17 +934,17 @@
         erasing = false;
         document.querySelectorAll('.draw-swatch').forEach(b=>b.classList.remove('active'));
         btn.classList.add('active');
-        document.getElementById('draw-eraser').classList.remove('active');
+        document.getElementById('draw-eraser')?.classList.remove('active');
       });
     });
 
-    document.getElementById('draw-eraser').addEventListener('click', ()=>{
+    document.getElementById('draw-eraser')?.addEventListener('click', ()=>{
       erasing = true;
       document.querySelectorAll('.draw-swatch').forEach(b=>b.classList.remove('active'));
-      document.getElementById('draw-eraser').classList.add('active');
+      document.getElementById('draw-eraser')?.classList.add('active');
     });
 
-    document.getElementById('draw-clear').addEventListener('click', ()=>{
+    document.getElementById('draw-clear')?.addEventListener('click', ()=>{
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     });
   })();
